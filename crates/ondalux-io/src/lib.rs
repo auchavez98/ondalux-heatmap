@@ -1,5 +1,6 @@
 //! Ondalux Heatmap I/O: project files, floor plan import, CSV and report export.
 
+pub mod ap_csv;
 pub mod error;
 pub mod pdf;
 pub mod plan_image;
