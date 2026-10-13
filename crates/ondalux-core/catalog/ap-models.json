@@ -665,6 +665,44 @@
         { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.4, "spatial_streams": 4, "max_width": "20" },
         { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 8, "max_width": "80" } ],
       "tx_power_basis": "vendor_max", "source": "https://documentation.meraki.com/MR/MR_Overview_and_Specifications/MR56_Datasheet",
-      "notes": "Highest value of Meraki's per-rate TX power table (units not stated)." }
+      "notes": "Highest value of Meraki's per-rate TX power table (units not stated)." },
+    { "vendor": "Huawei", "model": "AirEngine 5761-11", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 2, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://info.support.huawei.com/hedex/api/pages/EDOC1100210438/AEK0901G/09/resources/w_product_02353VUR.html",
+      "notes": "Combined power (24 dBm per chain); 22 dBm per radio on 802.3af. Gain = combined gain (single-antenna peak 4 / 5 dBi). Channel widths not stated; typical maximum assumed." },
+    { "vendor": "Huawei", "model": "AirEngine 5762C-10-V2", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 2, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://support.huawei.com/enterprise/en/doc/EDOC1100278610/77cbd8f2/airengine-5762c-10-v2-50087862",
+      "notes": "Combined power (20 dBm per chain). Gain = combined gain (single-antenna peak 4 / 5 dBi). Channel widths not stated; typical maximum assumed." },
+    { "vendor": "EnGenius", "model": "ECW220", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.engeniustech.com/wp-content/uploads/2023/08/ECW220-Datasheet.pdf",
+      "notes": "2023 data sheet (2021 revision listed 20 dBm). Channel widths not stated; typical maximum assumed." },
+    { "vendor": "EnGenius", "model": "ECW260", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.engeniustech.com/wp-content/uploads/2023/01/ECW260-DataSheet.pdf",
+      "notes": "Bundled 5 dBi external omni antennas (the data sheet table also shows 6 dBi). Channel widths not stated; typical maximum assumed." },
+    { "vendor": "EnGenius", "model": "ECW336", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.engeniustech.com/wp-content/uploads/2024/01/ECW336-Datasheet.pdf",
+      "notes": "Channel widths not stated; typical maximum assumed." },
+    { "vendor": "Cambium Networks", "model": "XE3-4", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 29, "antenna_gain_dbi": 4.85, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 31, "antenna_gain_dbi": 6.12, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 30, "antenna_gain_dbi": 6.29, "spatial_streams": 4, "max_width": "160" } ],
+      "tx_power_basis": "eirp", "source": "https://brandcentral.cambiumnetworks.com/m/5a8cc208bd02a653/original/XE3-4-Wi-Fi-6-6E-Access-Point-Data-Sheet.pdf",
+      "notes": "Max EIRP from the data sheet. The 5/6 GHz radio is software-definable (4x4:4), modelled in 6 GHz mode, plus a dedicated 5 GHz 2x2:2 radio." }
   ]
 }
