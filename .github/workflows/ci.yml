@@ -28,3 +28,5 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - name: Benchmarks compile
+        run: cargo bench --workspace --no-run

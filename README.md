@@ -3,8 +3,8 @@
 Open source desktop tool for WiFi network design with heat maps, written in
 Rust. Windows, macOS and Linux.
 
-**Status: Phase 1 (predictive design) and Phase 2 (field survey) complete.
-Phase 3 (reports) is not started.** See [what works](#status) below.
+**Status: Phases 1 (predictive design), 2 (field survey) and 3 (reports)
+complete.** See [what works](#status) below. Repository not published yet.
 
 ![Ondalux Heatmap predicting 5 GHz signal strength on a demo office](docs/images/heatmap-signal-5ghz.jpg)
 
@@ -30,7 +30,10 @@ Phase 3 (reports) is not started.** See [what works](#status) below.
 | Survey CSV import and export | ✅ |
 | Measured heat maps: IDW and ordinary kriging, SSID filter, all six metrics | ✅ |
 | Predicted vs. measured: difference map, per-point error, mean/RMSE | ✅ |
-| PNG/PDF reports, AP list CSV export | ❌ Phase 3 |
+| Heat map PNG export (current metric / band / source) | ✅ |
+| PDF design report (ES/EN): summary, maps per band, numbered coverage gaps, rule-based recommendations, AP table, survey bias | ✅ see [docs/reports.md](docs/reports.md) |
+| AP list CSV export | ✅ |
+| Manual entry of AP data (per AP, or as custom catalog models) | ✅ |
 | GPU (wgpu) compute | ❌ Not needed so far (CPU + rayon meets the target) |
 
 ## Building
@@ -96,6 +99,18 @@ cargo run -p ondalux-io --example demo_project -- demo.lux
 On Windows 11 24H2+, scanning requires *Settings → Privacy & security →
 Location → Let desktop apps access your location*.
 
+### Reports and exports
+
+**File → Export** saves the heat map on screen as PNG, the AP list or the
+survey as CSV, or a PDF design report (Spanish or English) with signal and
+coverage maps per band, numbered areas with poor coverage, recommendations
+and the AP table. Details and the recommendation rules:
+[docs/reports.md](docs/reports.md).
+
+| Report summary | Band section |
+|---|---|
+| ![Report summary page](docs/images/report-summary-page.png) | ![Report band page with signal and coverage maps](docs/images/report-band-page.png) |
+
 | Shortcut | Action |
 |---|---|
 | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S | New from plan / Open / Save / Save as |
@@ -116,9 +131,11 @@ crates/
 │   units, geometry (spatial index), channel (802.11 plan), material,
 │   ap, propagation (path loss, noise), predict (RSSI + wall ray casting),
 │   grid (per-radio layer cache, rayon), metrics, project,
-│   survey (data model), interpolate (IDW, kriging), measured
-├─ ondalux-io     .lux files, PNG/JPEG/PDF plan import, survey CSV (pure Rust)
+│   survey (data model), interpolate (IDW, kriging), measured,
+│   catalog (AP models), colormap, analysis (coverage gaps, findings)
+├─ ondalux-io     .lux files, PNG/JPEG/PDF plan import, survey/AP CSV, user catalog
 ├─ ondalux-scan   WifiScanner trait: Windows / macOS / Linux / simulated
+├─ ondalux-report Heat map images and PDF reports (pdf-writer, ab_glyph; pure Rust)
 └─ ondalux-app    egui/eframe desktop app (binary `ondalux`)
 ```
 
@@ -132,6 +149,7 @@ worker thread that always processes the newest request.
 - [docs/scanning.md](docs/scanning.md): scanning backends and platform limitations.
 - [docs/survey-csv.md](docs/survey-csv.md): survey CSV format.
 - [docs/ap-catalog.md](docs/ap-catalog.md): AP model catalog, sources and custom models.
+- [docs/reports.md](docs/reports.md): exports, PDF report contents and recommendation rules.
 
 ## Development
 
@@ -141,6 +159,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo bench -p ondalux-core
 cargo run -p ondalux-scan --example scan   # one real WiFi scan
+cargo run --release -p ondalux-report --example report -- demo.lux out es --pages
 ```
 
 CI (GitHub Actions) runs the same checks on Windows, macOS and Linux.

@@ -15,8 +15,13 @@ ondalux-core.workspace = true
 ondalux-io.workspace = true
 pdf-writer = "0.15"
 
+[[bench]]
+name = "report"
+harness = false
+
 [lints]
 workspace = true
 
 [dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
 hayro = "0.8"

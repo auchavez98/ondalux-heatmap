@@ -2754,6 +2754,7 @@ name = "ondalux-report"
 version = "0.1.0"
 dependencies = [
  "ab_glyph",
+ "criterion",
  "epaint_default_fonts",
  "hayro",
  "image",
