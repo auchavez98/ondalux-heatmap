@@ -8,7 +8,7 @@ values. Every value can still be edited per AP.
 ## Where the values come from
 
 Every model has a `source` URL. Values were taken from the vendor's own
-datasheet or specification page, retrieved on 2026-10-13. A few are marked
+datasheet or specification page, retrieved on 2026-10-13. It currently holds 105 models from 14 vendors: Ubiquiti (22), TP-Link Omada (20), Grandstream (18), HPE Aruba Networking (17), Cisco Catalyst (9), Cisco Meraki (4), EnGenius (4), Huawei (3), Cambium (2), Ruckus (2), Extreme Networks, MikroTik, Ruijie and Zyxel (1 each). A few are marked
 otherwise in their `notes`:
 
 - **HPE Aruba Networking:** the official PDFs could not be downloaded
@@ -18,13 +18,18 @@ otherwise in their `notes`:
 - **Cisco Meraki:** the RF tables list per-rate values without labelling
   them aggregate or per chain. The highest listed value is used. Treat these
   two models as approximate.
+- **Spatial streams:** a few pages give only data rates (e.g. 450 / 1300
+  Mbps). Streams are then derived from the 802.11 rate tables and the notes
+  say so.
 - **Channel width:** when a datasheet does not state the maximum width per
   band, a typical maximum is used and the model's notes say so.
 
 Models whose datasheet does not publish a maximum transmit power are **not**
 included rather than guessed. Examples found during research: Ruckus R650,
 Juniper Mist AP45, NETGEAR WAX620, Fortinet FortiAP 231F, Ruijie
-RG-RAP2260(G). You can add them as custom models once you have their figures.
+RG-RAP2260(G), Grandstream GWN7673, Cisco Meraki MR57, Cambium XV2-21X,
+Extreme AP410C. Fortinet's series data sheet is a 10 MB PDF that could not
+be processed automatically. You can add them as custom models once you have their figures.
 
 ## How the figures are used
 

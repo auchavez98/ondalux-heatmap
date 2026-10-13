@@ -770,6 +770,30 @@
         { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
         { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" } ],
       "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-outdoor/eap225-outdoor/",
-      "notes": "FCC values." }
+      "notes": "FCC values." },
+    { "vendor": "HPE Aruba Networking", "model": "AP-303", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 2.1, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 5.7, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://www.securewirelessworks.com/aruba-ap-303.asp",
+      "notes": "Discontinued. Gain = peak of the average (effective) pattern (single-element peak 3.5 / 6.9 dBi). Aruba data sheet as reproduced by the reseller." },
+    { "vendor": "HPE Aruba Networking", "model": "AP-325", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 3.5, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 5.0, "spatial_streams": 4, "max_width": "80" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://www.securewirelessworks.com/aruba-ap-325.asp",
+      "notes": "Single-element peak gain (no average pattern published). Aruba data sheet as reproduced by the reseller." },
+    { "vendor": "HPE Aruba Networking", "model": "AP-365", "standard": "Wi-Fi 5", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 2.7, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4.3, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://www.securewirelessworks.com/aruba-ap-365.asp",
+      "notes": "Discontinued. Aruba data sheet as reproduced by the reseller." },
+    { "vendor": "HPE Aruba Networking", "model": "AP-565", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3.2, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://www.securewirelessworks.com/aruba-ap-565.asp",
+      "notes": "23 dBm per chain; max EIRP 29.2 / 31.4 dBm. Aruba data sheet as reproduced by the reseller." }
   ]
 }
