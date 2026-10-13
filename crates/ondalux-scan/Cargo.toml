@@ -1,6 +1,6 @@
 [package]
 name = "ondalux-scan"
-description = "Per-platform WiFi scanning behind a common trait (Phase 2)"
+description = "Per-platform WiFi scanning behind a common trait"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,3 +11,15 @@ ondalux-core.workspace = true
 
 [lints]
 workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.60", features = ["Win32_NetworkManagement_WiFi", "Win32_Foundation"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-core-wlan = "0.3"
+objc2-foundation = { version = "0.3", features = ["NSArray", "NSSet", "NSString", "NSError"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+wl-nl80211 = "0.8"
+tokio = { version = "1", features = ["rt", "time"] }
+futures = "0.3"
