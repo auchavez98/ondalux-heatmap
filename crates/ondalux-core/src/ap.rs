@@ -30,7 +30,11 @@ impl Radio {
 pub struct AccessPoint {
     pub id: ApId,
     pub name: String,
-    /// Free-text model name entered by the user.
+    /// Vendor of the model, empty for generic APs. Older files load with
+    /// an empty vendor.
+    #[serde(default)]
+    pub vendor: String,
+    /// Model name: from the AP catalog or free text.
     pub model: String,
     /// Position on the floor plan, in meters.
     pub position: Vec2,

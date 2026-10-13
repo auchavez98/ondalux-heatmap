@@ -28,6 +28,7 @@ fn aps() -> Vec<AccessPoint> {
         .map(|(i, (x, y, ch))| AccessPoint {
             id: ApId(i as u32 + 1),
             name: format!("AP{}", i + 1),
+            vendor: String::new(),
             model: String::new(),
             position: Vec2::new(x, y),
             height_m: 3.0,

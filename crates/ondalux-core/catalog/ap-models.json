@@ -1,0 +1,410 @@
+{
+  "models": [
+    {
+      "vendor": "Ubiquiti", "model": "U6 Lite", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 2.8, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u6-lite",
+      "notes": "Channel widths not stated per band; typical maximum assumed."
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U6+", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u6-plus"
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U6 Pro", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u6-pro"
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U6 LR", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.5, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u6-lr",
+      "notes": "Channel widths not stated per band; typical maximum assumed."
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U6 Enterprise", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 3.2, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.3, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u6-enterprise"
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U6 Mesh", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u6-mesh",
+      "notes": "Channel widths not stated per band; typical maximum assumed."
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U7 Pro", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.8, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u7-pro",
+      "notes": "5 GHz supports 240 MHz (not modelled; capped at 160 MHz)."
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U7 Pro Max", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 29, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.9, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u7-pro-max"
+    },
+    {
+      "vendor": "Ubiquiti", "model": "U7 Outdoor", "standard": "Wi-Fi 7", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://techspecs.ui.com/unifi/wifi/u7-outdoor",
+      "notes": "Gains are for the external omni antennas. The internal directional antenna (8 dBi 2.4 GHz, 12.5 dBi 5 GHz) is not modelled."
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7605", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7605-technical-specifications/"
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7630", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7630-technical-specifications/"
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7660", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7660-technical-specifications/"
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7661", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 3.51, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 5.37, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7661-technical-specifications/",
+      "notes": "In-wall AP. Highest of the two published antenna gains per band."
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7662", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 3.65, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 5.26, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7662-technical-specifications/"
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7664", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7664-technical-specifications/"
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7665", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 4.5, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7665-technical-specifications/"
+    },
+    {
+      "vendor": "Grandstream", "model": "GWN7670", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5.5, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.grandstream.com/knowledge-base/gwn7670-technical-specifications/"
+    },
+    {
+      "vendor": "TP-Link", "model": "Omada EAP610", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-ceiling-mount/eap610/",
+      "notes": "FCC values (CE: 20 dBm EIRP 2.4 GHz, 23 dBm EIRP 5 GHz band 1/2). Channel widths not stated; typical maximum assumed."
+    },
+    {
+      "vendor": "TP-Link", "model": "Omada EAP650", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-ceiling-mount/eap650/",
+      "notes": "US page. 5 GHz U-NII-1 is limited to 24 dBm."
+    },
+    {
+      "vendor": "TP-Link", "model": "Omada EAP670", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 28, "antenna_gain_dbi": 5.5, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-ceiling-mount/eap670/",
+      "notes": "US page values."
+    },
+    {
+      "vendor": "TP-Link", "model": "Omada EAP773", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-ceiling-mount/eap773/",
+      "notes": "US page. 5 GHz U-NII-2A/2C limited to 24 dBm."
+    },
+    {
+      "vendor": "HPE Aruba Networking", "model": "AP-505", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4.3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 5.6, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.securewirelessworks.com/aruba-ap-505.asp",
+      "notes": "Figures from the Aruba data sheet as reproduced by the reseller (official PDF not reachable). Gain = peak of the combined average pattern. 18 dBm per chain."
+    },
+    {
+      "vendor": "HPE Aruba Networking", "model": "AP-515", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 3.8, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 4.6, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.securewirelessworks.com/aruba-ap-515.asp",
+      "notes": "Figures from the Aruba data sheet as reproduced by the reseller. Gain = peak of the effective per-antenna pattern (single-element peak: 4.2 / 7.5 dBi)."
+    },
+    {
+      "vendor": "HPE Aruba Networking", "model": "AP-635", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 2.9, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4.9, "spatial_streams": 2, "max_width": "80" },
+        { "band": "6GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4.3, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.securewirelessworks.com/aruba-ap-635.asp",
+      "notes": "Gains confirmed in the HPE data sheet (PSN1013609611). TX power from the Aruba series data sheet as reproduced by the reseller. Gain = peak of the combined average pattern."
+    },
+    {
+      "vendor": "HPE Aruba Networking", "model": "AP-655", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 3.3, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 2.9, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 4.0, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.securewirelessworks.com/aruba-ap-655.asp",
+      "notes": "Figures from the Aruba data sheet as reproduced by the reseller. Gain = peak of the combined average pattern (single-element peak: 4.8 / 5.3 / 5.4 dBi)."
+    },
+    {
+      "vendor": "Cisco", "model": "Catalyst 9105AXI", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9100ax-access-points/datasheet-c78-744062.html"
+    },
+    {
+      "vendor": "Cisco", "model": "Catalyst 9115AXI", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9100ax-access-points/datasheet-c78-741988.html",
+      "notes": "4x4 requires 802.3at; 2x2 on 802.3af or above 40 °C."
+    },
+    {
+      "vendor": "Cisco", "model": "Catalyst 9120AXI", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9120ax-series-access-points/datasheet-c78-742115.html",
+      "notes": "Drops to 2x2 above 40 °C."
+    },
+    {
+      "vendor": "Cisco", "model": "Catalyst 9130AXI", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 8, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9100ax-access-points/nb-06-cat-9130-ser-ap-ds-cte-en.html",
+      "notes": "5 GHz 8x8 (shifts to 4x4 above 40 °C)."
+    },
+    {
+      "vendor": "Cisco", "model": "Catalyst 9136I", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5, "spatial_streams": 8, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9100ax-access-points/nb-06-cat9136-access-point-ds-cte-en.html"
+    },
+    {
+      "vendor": "Cisco", "model": "CW9162I", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "80" },
+        { "band": "6GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9100ax-access-points/cat-9162-series-access-points-ds.html"
+    },
+    {
+      "vendor": "Cisco", "model": "CW9166I", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.cisco.com/c/en/us/products/collateral/wireless/catalyst-9166-series-access-points/catalyst-9166-series-access-points-ds.html",
+      "notes": "Low Power Indoor values. 5 GHz up to 80+80 MHz."
+    },
+    {
+      "vendor": "Cisco Meraki", "model": "MR36", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 17.5, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.meraki.com/MR/MR_Overview_and_Specifications/MR36_Datasheet",
+      "notes": "Highest value in Meraki's per-rate RF table; the table does not label units or aggregate/per-chain. Verify before use."
+    },
+    {
+      "vendor": "Cisco Meraki", "model": "MR46", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.4, "spatial_streams": 4, "max_width": "20" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://documentation.meraki.com/MR/MR_Overview_and_Specifications/MR46_Datasheet",
+      "notes": "Highest value in Meraki's per-rate RF table (labelled conducted for 2.4 GHz)."
+    },
+    {
+      "vendor": "Ruckus", "model": "R550", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://webresources.commscope.com/download/assets/RUCKUS+R550+Data+Sheet/4378f5643bd511f0a4acea1fa90d937b",
+      "notes": "Peak TX power = Tx port/chain + combining gain. Ruckus BeamFlex adaptive antennas are modelled as omni with 'up to 3 dBi'. Channel widths not stated; typical maximum assumed."
+    },
+    {
+      "vendor": "Ruckus", "model": "R750", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 28, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://webresources.ruckuswireless.com/datasheets/r750/ds-ruckus-r750-ko.pdf",
+      "notes": "Peak TX power = Tx port/chain + combining gain. BeamFlex modelled as omni 'up to 3 dBi'. Channel widths not stated; typical maximum assumed."
+    },
+    {
+      "vendor": "MikroTik", "model": "cAP ax", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 5.5, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://mikrotik.com/product/cap_ax",
+      "notes": "Highest value in MikroTik's per-rate TX power table. Channel widths not stated; typical maximum assumed."
+    },
+    {
+      "vendor": "EnGenius", "model": "ECW230", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "80" }
+      ],
+      "tx_power_basis": "vendor_max",
+      "source": "https://www.engeniustech.com/wp-content/uploads/2024/01/ECW230-Datasheet.pdf",
+      "notes": "Channel widths not stated; typical maximum assumed."
+    },
+    {
+      "vendor": "Zyxel", "model": "NWA210AX", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.zyxel.com/global/en/products/wireless/ax3000-wifi-6-dual-radio-nebulaflex-access-point-nwa210ax/specification",
+      "notes": "US conducted typical power (EU: 19 / 22 dBm). Zyxel lists '4x4 + 2x2 MIMO'; 4x4 assumed on 5 GHz."
+    },
+    {
+      "vendor": "Huawei", "model": "AirEngine 5761-21", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 2, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 28, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://info.support.huawei.com/hedex/api/pages/EDOC1100334321/AEM1020X/05/resources/w_product_02353VUT.html",
+      "notes": "Combined power (22 dBm per chain). Gain = combined gain (single-antenna peak 4 / 5 dBi). Limited to 22 dBm per radio on 802.3af. Channel widths not stated; typical maximum assumed."
+    },
+    {
+      "vendor": "Cambium Networks", "model": "XV2-2", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 29, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 31, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "eirp",
+      "source": "https://brandcentral.cambiumnetworks.com/m/3aa1d0726fa7f3/original/XV2-2-Wi-Fi-6-Access-Point-Data-Sheet.pdf",
+      "notes": "Data sheet gives max EIRP; conducted power = EIRP − antenna gain. Channel widths not stated; typical maximum assumed."
+    }
+  ]
+}

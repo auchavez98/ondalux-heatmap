@@ -207,6 +207,7 @@ pub(crate) mod tests {
         AccessPoint {
             id: ApId(id),
             name: format!("AP{id}"),
+            vendor: String::new(),
             model: String::new(),
             position: Vec2::new(x, y),
             height_m: 3.0,

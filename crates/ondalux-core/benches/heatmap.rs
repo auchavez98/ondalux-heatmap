@@ -54,6 +54,7 @@ fn aps() -> Vec<AccessPoint> {
             AccessPoint {
                 id: ApId(i),
                 name: format!("AP{i}"),
+                vendor: String::new(),
                 model: String::new(),
                 position: Vec2::new(x, y),
                 height_m: 3.0,

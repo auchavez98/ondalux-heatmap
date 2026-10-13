@@ -110,6 +110,7 @@ mod tests {
         AccessPoint {
             id: ApId(7),
             name: "AP".into(),
+            vendor: String::new(),
             model: String::new(),
             position: Vec2::new(0.0, 0.0),
             height_m: 1.0,

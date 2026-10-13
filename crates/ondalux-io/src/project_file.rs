@@ -162,6 +162,7 @@ mod tests {
         p.aps.push(AccessPoint {
             id: ApId(1),
             name: "Lobby".into(),
+            vendor: String::new(),
             model: "Generic Wi-Fi 6".into(),
             position: Vec2::new(4.0, 5.0),
             height_m: 2.8,

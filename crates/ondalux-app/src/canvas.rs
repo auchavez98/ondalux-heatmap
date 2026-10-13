@@ -595,6 +595,7 @@ pub fn new_ap(project: &Project, position: WVec2) -> AccessPoint {
     AccessPoint {
         id,
         name: format!("AP-{}", id.0),
+        vendor: String::new(),
         model: "Generic".into(),
         position,
         height_m: 3.0,

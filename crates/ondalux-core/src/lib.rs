@@ -5,6 +5,7 @@
 //! floor plan calibration.
 
 pub mod ap;
+pub mod catalog;
 pub mod channel;
 pub mod geometry;
 pub mod grid;
