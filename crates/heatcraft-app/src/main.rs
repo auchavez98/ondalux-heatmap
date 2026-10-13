@@ -1,7 +1,28 @@
 //! HeatCraft desktop application entry point.
-//!
-//! STUB: the UI (egui/eframe) arrives in later Phase 1 commits.
 
-fn main() {
-    println!("HeatCraft {}", env!("CARGO_PKG_VERSION"));
+// Hide the console window on Windows release builds.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod app;
+mod canvas;
+mod document;
+mod heatmap;
+mod panels;
+mod view;
+
+fn main() -> eframe::Result {
+    let path = std::env::args_os().nth(1).map(std::path::PathBuf::from);
+    let options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_title("HeatCraft")
+            .with_inner_size([1400.0, 900.0])
+            .with_min_inner_size([800.0, 500.0])
+            .with_maximized(true),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "HeatCraft",
+        options,
+        Box::new(|cc| Ok(Box::new(app::HeatCraftApp::new(cc, path)))),
+    )
 }

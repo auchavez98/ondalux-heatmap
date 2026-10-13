@@ -14,6 +14,8 @@ path = "src/main.rs"
 heatcraft-core.workspace = true
 heatcraft-io.workspace = true
 heatcraft-scan.workspace = true
+eframe = "0.36"
+rfd = "0.17"
 
 [lints]
 workspace = true
