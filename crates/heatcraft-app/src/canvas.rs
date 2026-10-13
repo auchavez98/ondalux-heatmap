@@ -124,7 +124,17 @@ pub fn show(app: &mut HeatCraftApp, ui: &mut egui::Ui) {
 
     let pointer = response.hover_pos().or(response.interact_pointer_pos());
     let shift = ui.input(|i| i.modifiers.shift);
+    let selection_before = app.selection;
     handle_tool(app, &response, pointer, shift);
+    // Side panels were drawn before the canvas this frame; repaint so they
+    // reflect what the tool just changed.
+    if app.selection != selection_before
+        || response.clicked()
+        || response.secondary_clicked()
+        || response.drag_stopped()
+    {
+        ui.ctx().request_repaint();
+    }
     if (app.view.origin, app.view.zoom) != view_before {
         app.canvas.auto_fit = false;
     }
