@@ -80,6 +80,7 @@ pub fn inspector(app: &mut OndaluxApp, ui: &mut egui::Ui) {
                 app.delete_selection();
             }
         }
+        Selection::Measurement(id) => crate::survey_ui::measurement_inspector(app, ui, id),
         Selection::None => project_summary(app, ui),
     }
 }

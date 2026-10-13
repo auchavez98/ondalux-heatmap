@@ -1,20 +1,45 @@
 //! Background heat map computation and color mapping.
 //!
 //! The UI thread sends the current inputs whenever they change; the worker
-//! always processes only the most recent request, keeps the per-radio layer
-//! cache between requests and sends back a colored image plus the metrics.
+//! always processes only the most recent request. It keeps the predicted
+//! per-radio layer cache and the interpolated survey layers between
+//! requests, and sends back a colored image plus the displayed values.
 
 use eframe::egui::{Color32, ColorImage, Context};
 use ondalux_core::ap::AccessPoint;
 use ondalux_core::channel::Band;
 use ondalux_core::grid::{GridSpec, LayerCache};
+use ondalux_core::interpolate::Variogram;
 use ondalux_core::material::{MaterialLibrary, Wall};
-use ondalux_core::metrics::{MetricKind, Metrics, Requirements};
+use ondalux_core::measured::{self, MeasuredMap, MeasuredSettings};
+use ondalux_core::metrics::{MetricKind, Metrics, Requirements, NO_SERVER};
 use ondalux_core::predict::Obstacles;
 use ondalux_core::propagation::PropagationSettings;
+use ondalux_core::survey::{Measurement, Survey};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+
+/// Which data the heat map shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Source {
+    Predicted,
+    Measured,
+    /// Measured − predicted.
+    Difference,
+}
+
+impl Source {
+    pub const ALL: [Source; 3] = [Source::Predicted, Source::Measured, Source::Difference];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Source::Predicted => "Predicted",
+            Source::Measured => "Measured",
+            Source::Difference => "Measured − predicted",
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Inputs {
@@ -26,12 +51,58 @@ pub struct Inputs {
     pub grid: GridSpec,
     pub band: Band,
     pub metric: MetricKind,
+    pub source: Source,
+    /// Active survey, if any.
+    pub survey: Option<Survey>,
+    pub measured: MeasuredSettings,
+    /// In difference mode, cells with |Δ| below this are hidden (0 = show all).
+    pub diff_threshold: f32,
+}
+
+/// Color scale of the displayed values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scale {
+    Metric(MetricKind),
+    Difference,
+}
+
+/// The values currently displayed (`NaN` = no data / transparent).
+pub struct Field {
+    pub grid: GridSpec,
+    pub values: Vec<f32>,
+    pub scale: Scale,
+    pub source: Source,
+    /// Share of cells (with data) meeting the coverage requirements.
+    pub coverage: Option<f32>,
+}
+
+impl Field {
+    pub fn value_at(&self, col: usize, row: usize) -> Option<f32> {
+        if col >= self.grid.cols || row >= self.grid.rows {
+            return None;
+        }
+        let v = self.values[row * self.grid.cols + col];
+        (!v.is_nan()).then_some(v)
+    }
+}
+
+/// Measured vs predicted best signal at the survey points.
+#[derive(Debug, Clone, Default)]
+pub struct Comparison {
+    /// `(measurement id, measured − predicted)` in dB.
+    pub points: Vec<(u32, f32)>,
+    pub mean: f32,
+    pub rmse: f32,
 }
 
 pub struct Output {
     id: u64,
     pub image: ColorImage,
-    pub metrics: Arc<Metrics>,
+    pub field: Arc<Field>,
+    pub comparison: Option<Comparison>,
+    /// Radios inferred from the survey (after SSID filtering).
+    pub measured_radios: usize,
+    pub variogram: Option<Variogram>,
     pub elapsed: Duration,
     pub layers_recomputed: usize,
 }
@@ -94,58 +165,82 @@ impl Worker {
     }
 }
 
+type MeasuredKey = (Vec<Measurement>, MeasuredSettings, GridSpec);
+
+#[derive(Default)]
 struct WorkerState {
     obstacles_key: Option<(Vec<Wall>, MaterialLibrary)>,
     obstacles: Option<Obstacles>,
     settings: Option<PropagationSettings>,
     cache: Option<LayerCache>,
+    measured_key: Option<MeasuredKey>,
+    measured: Option<MeasuredMap>,
 }
 
 fn run(rx: Receiver<(u64, Inputs)>, tx: Sender<Output>, ctx: Context) {
-    let mut st = WorkerState {
-        obstacles_key: None,
-        obstacles: None,
-        settings: None,
-        cache: None,
-    };
+    let mut st = WorkerState::default();
     while let Ok((mut id, mut job)) = rx.recv() {
         // Skip stale requests: only the newest one matters.
         while let Ok((newer_id, newer)) = rx.try_recv() {
             (id, job) = (newer_id, newer);
         }
         let start = Instant::now();
-        let key = (job.walls.clone(), job.materials.clone());
-        let mut invalidate = false;
-        if st.obstacles_key.as_ref() != Some(&key) {
-            st.obstacles = Some(Obstacles::new(&job.walls, &job.materials));
-            st.obstacles_key = Some(key);
-            invalidate = true;
-        }
-        if st.settings.as_ref() != Some(&job.settings) {
-            st.settings = Some(job.settings.clone());
-            invalidate = true;
-        }
-        if st.cache.as_ref().map(|c| *c.grid()) != Some(job.grid) {
-            st.cache = Some(LayerCache::new(job.grid));
-        }
-        let cache = st.cache.as_mut().expect("cache set above");
-        if invalidate {
-            cache.invalidate_all();
-        }
-        let obstacles = st.obstacles.as_ref().expect("obstacles set above");
-        let recomputed = cache.sync(&job.aps, obstacles, &job.settings);
-        let metrics = Metrics::compute(
-            job.grid,
-            &cache.layers(),
-            Some(job.band),
-            &job.settings,
-            job.requirements,
-        );
-        let image = colorize(&metrics, job.metric);
+        let (predicted, recomputed) = predict(&mut st, &job);
+
+        let survey = job.survey.as_ref().filter(|s| !s.measurements.is_empty());
+        let measured = survey.map(|s| {
+            let key = (s.measurements.clone(), job.measured.clone(), job.grid);
+            if st.measured_key.as_ref() != Some(&key) {
+                st.measured = Some(measured::build(s, job.grid, &job.measured));
+                st.measured_key = Some(key);
+            }
+            st.measured.as_ref().expect("set above")
+        });
+        let measured_metrics = measured.map(|m| {
+            let layers: Vec<_> = m.layers.iter().collect();
+            Metrics::compute(
+                job.grid,
+                &layers,
+                Some(job.band),
+                &job.settings,
+                job.requirements,
+            )
+        });
+
+        let field = match (job.source, &measured_metrics, measured) {
+            (Source::Measured, Some(mm), Some(m)) => {
+                metric_field(mm, job.metric, Some(&m.valid), Source::Measured)
+            }
+            (Source::Difference, Some(mm), Some(m)) => {
+                let meas = metric_field(mm, job.metric, Some(&m.valid), Source::Measured);
+                let pred = metric_field(&predicted, job.metric, None, Source::Predicted);
+                difference_field(&meas, &pred, job.diff_threshold)
+            }
+            // Without survey data the measured views are empty.
+            (Source::Measured | Source::Difference, _, _) => Field {
+                grid: job.grid,
+                values: vec![f32::NAN; job.grid.len()],
+                scale: if job.source == Source::Difference {
+                    Scale::Difference
+                } else {
+                    Scale::Metric(job.metric)
+                },
+                source: job.source,
+                coverage: None,
+            },
+            (Source::Predicted, _, _) => {
+                metric_field(&predicted, job.metric, None, Source::Predicted)
+            }
+        };
+        let comparison = survey.map(|s| compare(s, &predicted, &job));
+        let image = colorize(&field);
         let out = Output {
             id,
             image,
-            metrics: Arc::new(metrics),
+            field: Arc::new(field),
+            comparison,
+            measured_radios: measured.map_or(0, |m| m.radios.len()),
+            variogram: measured.and_then(|m| m.variogram),
             elapsed: start.elapsed(),
             layers_recomputed: recomputed,
         };
@@ -154,6 +249,119 @@ fn run(rx: Receiver<(u64, Inputs)>, tx: Sender<Output>, ctx: Context) {
         }
         ctx.request_repaint();
     }
+}
+
+fn predict(st: &mut WorkerState, job: &Inputs) -> (Metrics, usize) {
+    let key = (job.walls.clone(), job.materials.clone());
+    let mut invalidate = false;
+    if st.obstacles_key.as_ref() != Some(&key) {
+        st.obstacles = Some(Obstacles::new(&job.walls, &job.materials));
+        st.obstacles_key = Some(key);
+        invalidate = true;
+    }
+    if st.settings.as_ref() != Some(&job.settings) {
+        st.settings = Some(job.settings.clone());
+        invalidate = true;
+    }
+    if st.cache.as_ref().map(|c| *c.grid()) != Some(job.grid) {
+        st.cache = Some(LayerCache::new(job.grid));
+    }
+    let cache = st.cache.as_mut().expect("cache set above");
+    if invalidate {
+        cache.invalidate_all();
+    }
+    let obstacles = st.obstacles.as_ref().expect("obstacles set above");
+    let recomputed = cache.sync(&job.aps, obstacles, &job.settings);
+    let metrics = Metrics::compute(
+        job.grid,
+        &cache.layers(),
+        Some(job.band),
+        &job.settings,
+        job.requirements,
+    );
+    (metrics, recomputed)
+}
+
+/// Values below this RSSI are drawn transparent (no usable signal).
+const RSSI_CUTOFF: f32 = -95.0;
+
+fn metric_field(m: &Metrics, kind: MetricKind, valid: Option<&[bool]>, source: Source) -> Field {
+    let mut meets = 0usize;
+    let mut cells = 0usize;
+    let values = (0..m.grid.len())
+        .map(|i| {
+            if valid.is_some_and(|v| !v[i]) {
+                return f32::NAN;
+            }
+            cells += 1;
+            if m.meets_requirements(i) {
+                meets += 1;
+            }
+            let unusable = m.serving[i] == NO_SERVER || m.rssi[i] < RSSI_CUTOFF;
+            if unusable && kind != MetricKind::Coverage && kind != MetricKind::ApCount {
+                f32::NAN
+            } else {
+                m.value(kind, i)
+            }
+        })
+        .collect();
+    Field {
+        grid: m.grid,
+        values,
+        scale: Scale::Metric(kind),
+        source,
+        coverage: (cells > 0).then(|| meets as f32 / cells as f32),
+    }
+}
+
+fn difference_field(meas: &Field, pred: &Field, threshold: f32) -> Field {
+    let values = meas
+        .values
+        .iter()
+        .zip(&pred.values)
+        .map(|(m, p)| {
+            let d = m - p;
+            if d.is_nan() || d.abs() < threshold {
+                f32::NAN
+            } else {
+                d
+            }
+        })
+        .collect();
+    Field {
+        grid: meas.grid,
+        values,
+        scale: Scale::Difference,
+        source: Source::Difference,
+        coverage: None,
+    }
+}
+
+/// Measured best RSSI at each survey point vs the predicted best RSSI there.
+fn compare(survey: &Survey, predicted: &Metrics, job: &Inputs) -> Comparison {
+    let g = predicted.grid;
+    let mut points = Vec::new();
+    for m in &survey.measurements {
+        let Some(measured) = measured::best_rssi(m, &job.measured, Some(job.band)) else {
+            continue;
+        };
+        let (c, r) = (
+            ((m.position.x - g.origin.x) / g.cell_m).floor(),
+            ((m.position.y - g.origin.y) / g.cell_m).floor(),
+        );
+        if c < 0.0 || r < 0.0 || c as usize >= g.cols || r as usize >= g.rows {
+            continue;
+        }
+        let i = r as usize * g.cols + c as usize;
+        if predicted.serving[i] == NO_SERVER {
+            continue;
+        }
+        points.push((m.id, measured.0 - predicted.rssi[i]));
+    }
+    let n = points.len().max(1) as f32;
+    let mean = points.iter().map(|(_, e)| e).sum::<f32>() / n;
+    let rmse = (points.iter().map(|(_, e)| e * e).sum::<f32>() / n).sqrt();
+    Comparison { points, mean, rmse }
 }
 
 /// Color stops `(value, color)`, ascending by value.
@@ -167,6 +375,8 @@ const GREEN: [u8; 3] = [50, 170, 80];
 const DARK_GREEN: [u8; 3] = [20, 110, 60];
 const TEAL: [u8; 3] = [40, 160, 170];
 const BLUE: [u8; 3] = [60, 100, 200];
+const NEUTRAL: [u8; 3] = [215, 215, 215];
+const LIGHT_BLUE: [u8; 3] = [120, 175, 235];
 
 const RSSI_STOPS: Stops = &[
     (-90.0, RED),
@@ -193,31 +403,37 @@ const COUNT_STOPS: Stops = &[
 ];
 const OVERLAP_STOPS: Stops = &[(0.0, GREEN), (1.0, YELLOW), (2.0, ORANGE), (3.0, RED)];
 const COVERAGE_STOPS: Stops = &[(0.0, RED), (1.0, GREEN)];
+/// Diverging: red = weaker than predicted, blue = stronger.
+const DIFF_STOPS: Stops = &[
+    (-15.0, RED),
+    (-6.0, ORANGE),
+    (0.0, NEUTRAL),
+    (6.0, LIGHT_BLUE),
+    (15.0, BLUE),
+];
 
-/// Values below this RSSI are drawn transparent (no usable signal).
-const RSSI_CUTOFF: f32 = -95.0;
-
-pub fn stops(kind: MetricKind) -> Stops {
-    match kind {
-        MetricKind::Rssi => RSSI_STOPS,
-        MetricKind::Snr | MetricKind::Sinr => SNR_STOPS,
-        MetricKind::ApCount => COUNT_STOPS,
-        MetricKind::ChannelOverlap => OVERLAP_STOPS,
-        MetricKind::Coverage => COVERAGE_STOPS,
+pub fn stops(scale: Scale) -> Stops {
+    match scale {
+        Scale::Metric(MetricKind::Rssi) => RSSI_STOPS,
+        Scale::Metric(MetricKind::Snr | MetricKind::Sinr) => SNR_STOPS,
+        Scale::Metric(MetricKind::ApCount) => COUNT_STOPS,
+        Scale::Metric(MetricKind::ChannelOverlap) => OVERLAP_STOPS,
+        Scale::Metric(MetricKind::Coverage) => COVERAGE_STOPS,
+        Scale::Difference => DIFF_STOPS,
     }
 }
 
-/// Whether the metric is discrete (drawn with hard color steps).
-pub fn is_discrete(kind: MetricKind) -> bool {
+/// Whether the scale is discrete (drawn with hard color steps).
+pub fn is_discrete(scale: Scale) -> bool {
     matches!(
-        kind,
-        MetricKind::ApCount | MetricKind::ChannelOverlap | MetricKind::Coverage
+        scale,
+        Scale::Metric(MetricKind::ApCount | MetricKind::ChannelOverlap | MetricKind::Coverage)
     )
 }
 
-pub fn color_at(kind: MetricKind, v: f32) -> Color32 {
-    let s = stops(kind);
-    let rgb = if is_discrete(kind) {
+pub fn color_at(scale: Scale, v: f32) -> Color32 {
+    let s = stops(scale);
+    let rgb = if is_discrete(scale) {
         s.iter()
             .rev()
             .find(|(t, _)| v >= *t - 0.5)
@@ -236,56 +452,80 @@ pub fn color_at(kind: MetricKind, v: f32) -> Color32 {
     Color32::from_rgb(rgb[0], rgb[1], rgb[2])
 }
 
-fn colorize(m: &Metrics, kind: MetricKind) -> ColorImage {
-    let pixels = (0..m.grid.len())
-        .map(|i| {
-            let unusable =
-                m.serving[i] == ondalux_core::metrics::NO_SERVER || m.rssi[i] < RSSI_CUTOFF;
-            if unusable && kind != MetricKind::Coverage && kind != MetricKind::ApCount {
+fn colorize(f: &Field) -> ColorImage {
+    let pixels = f
+        .values
+        .iter()
+        .map(|v| {
+            if v.is_nan() {
                 Color32::TRANSPARENT
             } else {
-                color_at(kind, m.value(kind, i))
+                color_at(f.scale, *v)
             }
         })
         .collect();
-    ColorImage::new([m.grid.cols, m.grid.rows], pixels)
+    ColorImage::new([f.grid.cols, f.grid.rows], pixels)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const RSSI: Scale = Scale::Metric(MetricKind::Rssi);
+
     #[test]
     fn continuous_scale_interpolates_and_clamps() {
-        assert_eq!(
-            color_at(MetricKind::Rssi, -200.0),
-            Color32::from_rgb(215, 48, 39)
-        );
-        assert_eq!(
-            color_at(MetricKind::Rssi, -20.0),
-            Color32::from_rgb(20, 110, 60)
-        );
-        let mid = color_at(MetricKind::Rssi, -85.0);
+        assert_eq!(color_at(RSSI, -200.0), Color32::from_rgb(215, 48, 39));
+        assert_eq!(color_at(RSSI, -20.0), Color32::from_rgb(20, 110, 60));
+        let mid = color_at(RSSI, -85.0);
         assert!(mid.r() < 244 && mid.r() > 215);
     }
 
     #[test]
     fn discrete_scale_steps() {
+        let count = Scale::Metric(MetricKind::ApCount);
+        assert_eq!(color_at(count, 0.0), Color32::from_rgb(215, 48, 39));
+        assert_eq!(color_at(count, 2.0), Color32::from_rgb(50, 170, 80));
+        assert_eq!(color_at(count, 9.0), Color32::from_rgb(60, 100, 200));
         assert_eq!(
-            color_at(MetricKind::ApCount, 0.0),
+            color_at(Scale::Metric(MetricKind::Coverage), 1.0),
+            Color32::from_rgb(50, 170, 80)
+        );
+    }
+
+    #[test]
+    fn difference_scale_is_diverging() {
+        assert_eq!(
+            color_at(Scale::Difference, 0.0),
+            Color32::from_rgb(215, 215, 215)
+        );
+        assert_eq!(
+            color_at(Scale::Difference, -30.0),
             Color32::from_rgb(215, 48, 39)
         );
         assert_eq!(
-            color_at(MetricKind::ApCount, 2.0),
-            Color32::from_rgb(50, 170, 80)
-        );
-        assert_eq!(
-            color_at(MetricKind::ApCount, 9.0),
+            color_at(Scale::Difference, 30.0),
             Color32::from_rgb(60, 100, 200)
         );
-        assert_eq!(
-            color_at(MetricKind::Coverage, 1.0),
-            Color32::from_rgb(50, 170, 80)
+    }
+
+    #[test]
+    fn difference_hides_small_and_missing_values() {
+        let grid = GridSpec::covering(3.0, 1.0, 1.0);
+        let mk = |values: Vec<f32>| Field {
+            grid,
+            values,
+            scale: RSSI,
+            source: Source::Measured,
+            coverage: None,
+        };
+        let d = difference_field(
+            &mk(vec![-60.0, -70.0, f32::NAN]),
+            &mk(vec![-62.0, -60.0, -50.0]),
+            6.0,
         );
+        assert!(d.values[0].is_nan(), "2 dB is below the threshold");
+        assert_eq!(d.values[1], -10.0);
+        assert!(d.values[2].is_nan());
     }
 }

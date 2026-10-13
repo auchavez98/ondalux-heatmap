@@ -8,6 +8,7 @@ mod canvas;
 mod document;
 mod heatmap;
 mod panels;
+mod survey_ui;
 mod view;
 
 fn main() -> eframe::Result {

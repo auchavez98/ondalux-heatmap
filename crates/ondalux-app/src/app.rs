@@ -2,15 +2,17 @@
 
 use crate::canvas::CanvasState;
 use crate::document::Document;
-use crate::heatmap::{self, Worker};
+use crate::heatmap::{self, Comparison, Field, Source, Worker};
 use crate::panels;
+use crate::survey_ui::{self, SurveyState};
 use crate::view::View;
 use eframe::egui::{self, Key, KeyboardShortcut, Modifiers, TextureHandle, TextureOptions};
 use ondalux_core::ap::ApId;
 use ondalux_core::channel::Band;
 use ondalux_core::grid::GridSpec;
+use ondalux_core::interpolate::Variogram;
 use ondalux_core::material::MaterialId;
-use ondalux_core::metrics::{MetricKind, Metrics};
+use ondalux_core::metrics::MetricKind;
 use ondalux_core::project::Project;
 use ondalux_io::{decode_plan, import_plan, ProjectFile};
 use std::path::PathBuf;
@@ -23,10 +25,17 @@ pub enum Tool {
     Wall,
     Ap,
     Calibrate,
+    Survey,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 4] = [Tool::Select, Tool::Wall, Tool::Ap, Tool::Calibrate];
+    pub const ALL: [Tool; 5] = [
+        Tool::Select,
+        Tool::Wall,
+        Tool::Ap,
+        Tool::Calibrate,
+        Tool::Survey,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
@@ -34,6 +43,7 @@ impl Tool {
             Tool::Wall => "Wall (W)",
             Tool::Ap => "Access point (A)",
             Tool::Calibrate => "Calibrate (C)",
+            Tool::Survey => "Survey (S)",
         }
     }
 
@@ -47,6 +57,9 @@ impl Tool {
             }
             Tool::Ap => "Click to place an access point · Esc returns to Select",
             Tool::Calibrate => "Click two points a known distance apart, then enter the distance",
+            Tool::Survey => {
+                "Stand still and click your position on the plan to record a WiFi scan · Esc returns to Select"
+            }
         }
     }
 }
@@ -56,6 +69,15 @@ pub enum Selection {
     None,
     Ap(ApId),
     Wall(usize),
+    /// A point of the active survey, by measurement id.
+    Measurement(u32),
+}
+
+/// Content of the right side panel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RightTab {
+    Inspector,
+    Survey,
 }
 
 /// Action waiting for the user to confirm discarding unsaved changes.
@@ -72,8 +94,14 @@ pub struct HeatmapView {
     pub metric: MetricKind,
     pub band: Band,
     pub opacity: f32,
+    pub source: Source,
+    /// Difference view: hide cells with |Δ| below this (dB).
+    pub diff_threshold: f32,
     pub texture: Option<TextureHandle>,
-    pub metrics: Option<Arc<Metrics>>,
+    pub field: Option<Arc<Field>>,
+    pub comparison: Option<Comparison>,
+    pub measured_radios: usize,
+    pub variogram: Option<Variogram>,
     pub last_elapsed: Option<Duration>,
     pub last_recomputed: usize,
 }
@@ -89,6 +117,8 @@ pub struct OndaluxApp {
     pub wall_material: MaterialId,
     pub heat: HeatmapView,
     worker: Worker,
+    pub survey: SurveyState,
+    pub right_tab: RightTab,
     pub show_materials: bool,
     pub show_settings: bool,
     show_about: bool,
@@ -120,12 +150,19 @@ impl OndaluxApp {
                 metric: MetricKind::Rssi,
                 band: Band::G5,
                 opacity: 0.6,
+                source: Source::Predicted,
+                diff_threshold: 0.0,
                 texture: None,
-                metrics: None,
+                field: None,
+                comparison: None,
+                measured_radios: 0,
+                variogram: None,
                 last_elapsed: None,
                 last_recomputed: 0,
             },
             worker: Worker::spawn(cc.egui_ctx.clone()),
+            survey: SurveyState::default(),
+            right_tab: RightTab::Inspector,
             show_materials: false,
             show_settings: false,
             show_about: false,
@@ -204,7 +241,9 @@ impl OndaluxApp {
         self.selection = Selection::None;
         self.canvas = CanvasState::default();
         self.heat.texture = None;
-        self.heat.metrics = None;
+        self.heat.field = None;
+        self.heat.comparison = None;
+        self.survey.active = 0;
         self.worker.reset();
         self.fit_pending = true;
         self.wall_material = self
@@ -336,6 +375,12 @@ impl OndaluxApp {
                 doc.checkpoint();
                 doc.project.walls.remove(i);
             }
+            Selection::Measurement(id) => {
+                doc.checkpoint();
+                if let Some(s) = doc.project.surveys.get_mut(self.survey.active) {
+                    s.measurements.retain(|m| m.id != id);
+                }
+            }
             _ => return,
         }
         self.selection = Selection::None;
@@ -344,6 +389,9 @@ impl OndaluxApp {
     pub fn set_tool(&mut self, tool: Tool) {
         self.tool = tool;
         self.canvas.cancel();
+        if tool == Tool::Survey {
+            self.right_tab = RightTab::Survey;
+        }
     }
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
@@ -384,6 +432,9 @@ impl OndaluxApp {
         }
         if key(Key::C) {
             self.set_tool(Tool::Calibrate);
+        }
+        if key(Key::S) {
+            self.set_tool(Tool::Survey);
         }
         if key(Key::F) {
             self.fit_pending = true;
@@ -600,6 +651,13 @@ impl OndaluxApp {
                         ui.selectable_value(&mut self.heat.band, b, b.label());
                     }
                 });
+            egui::ComboBox::from_id_salt("heatmap-source")
+                .selected_text(self.heat.source.label())
+                .show_ui(ui, |ui| {
+                    for s in Source::ALL {
+                        ui.selectable_value(&mut self.heat.source, s, s.label());
+                    }
+                });
             ui.add(
                 egui::Slider::new(&mut self.heat.opacity, 0.1..=1.0)
                     .text("Opacity")
@@ -627,8 +685,8 @@ impl OndaluxApp {
                         self.heat.last_recomputed
                     ));
                 }
-                if let Some(m) = &self.heat.metrics {
-                    ui.weak(format!("coverage {:.0}%", m.coverage_ratio() * 100.0));
+                if let Some(c) = self.heat.field.as_ref().and_then(|f| f.coverage) {
+                    ui.weak(format!("coverage {:.0}%", c * 100.0));
                 }
                 if let Some(text) = self.canvas.hover_text.take() {
                     ui.label(text);
@@ -660,6 +718,10 @@ impl OndaluxApp {
             grid: GridSpec::covering(w, h, p.grid_cell_m.clamp(0.05, 5.0)),
             band: self.heat.band,
             metric: self.heat.metric,
+            source: self.heat.source,
+            survey: p.surveys.get(self.survey.active).cloned(),
+            measured: p.survey_settings.clone(),
+            diff_threshold: self.heat.diff_threshold,
         };
         self.worker.request(inputs);
     }
@@ -673,7 +735,10 @@ impl OndaluxApp {
                         Some(ctx.load_texture("heatmap", out.image, TextureOptions::LINEAR));
                 }
             }
-            self.heat.metrics = Some(out.metrics);
+            self.heat.field = Some(out.field);
+            self.heat.comparison = out.comparison;
+            self.heat.measured_radios = out.measured_radios;
+            self.heat.variogram = out.variogram;
             self.heat.last_elapsed = Some(out.elapsed);
             self.heat.last_recomputed = out.layers_recomputed;
         }
@@ -753,6 +818,7 @@ impl eframe::App for OndaluxApp {
 
         self.shortcuts(&ctx);
         self.poll_heatmap(&ctx);
+        survey_ui::poll(self);
 
         egui::Panel::top("menu").show(ui, |ui| self.menu_bar(ui));
         egui::Panel::top("toolbar").show(ui, |ui| self.toolbar(ui));
@@ -762,7 +828,15 @@ impl eframe::App for OndaluxApp {
                 .resizable(true)
                 .default_size(300.0)
                 .show(ui, |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| panels::inspector(self, ui));
+                    ui.horizontal(|ui| {
+                        ui.selectable_value(&mut self.right_tab, RightTab::Inspector, "Inspector");
+                        ui.selectable_value(&mut self.right_tab, RightTab::Survey, "Survey");
+                    });
+                    ui.separator();
+                    egui::ScrollArea::vertical().show(ui, |ui| match self.right_tab {
+                        RightTab::Inspector => panels::inspector(self, ui),
+                        RightTab::Survey => survey_ui::panel(self, ui),
+                    });
                 });
         }
         egui::CentralPanel::default()

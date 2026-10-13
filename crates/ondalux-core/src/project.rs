@@ -4,6 +4,7 @@
 use crate::ap::{AccessPoint, ApId};
 use crate::geometry::Vec2;
 use crate::material::{MaterialId, MaterialLibrary, Wall};
+use crate::measured::MeasuredSettings;
 use crate::metrics::Requirements;
 use crate::propagation::PropagationSettings;
 use crate::survey::Survey;
@@ -76,6 +77,9 @@ pub struct Project {
     /// Field surveys (added in format version 2).
     #[serde(default)]
     pub surveys: Vec<Survey>,
+    /// How surveys are turned into heat maps (format version 2).
+    #[serde(default)]
+    pub survey_settings: MeasuredSettings,
 }
 
 impl Project {
@@ -94,6 +98,7 @@ impl Project {
             requirements: Requirements::default(),
             grid_cell_m: 0.25,
             surveys: Vec::new(),
+            survey_settings: MeasuredSettings::default(),
         }
     }
 

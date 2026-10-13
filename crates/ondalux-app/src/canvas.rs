@@ -1,7 +1,7 @@
 //! The floor plan canvas: drawing and tool interaction.
 
 use crate::app::{OndaluxApp, Selection, Tool};
-use crate::heatmap;
+use crate::heatmap::{self, Scale, Source};
 use crate::view::View;
 use eframe::egui::{
     self, Align2, Color32, FontId, PointerButton, Pos2, Rect, Sense, Shape, Stroke, StrokeKind,
@@ -19,10 +19,12 @@ const AP_HIT: f32 = 12.0;
 const HANDLE_HIT: f32 = 8.0;
 const WALL_HIT: f32 = 6.0;
 const SNAP: f32 = 10.0;
+const POINT_HIT: f32 = 9.0;
 
 #[derive(Debug, Clone, Copy)]
 enum Drag {
     Ap { id: ApId, offset: WVec2 },
+    Measurement { id: u32, offset: WVec2 },
     WallEnd { index: usize, end_b: bool },
     Pan,
 }
@@ -162,8 +164,8 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     }
 
     if app.heat.show {
-        if let (Some(tex), Some(m)) = (&app.heat.texture, &app.heat.metrics) {
-            let g = m.grid;
+        if let (Some(tex), Some(f)) = (&app.heat.texture, &app.heat.field) {
+            let g = f.grid;
             let grid_rect = Rect::from_min_max(
                 xf.to_screen(g.origin),
                 xf.to_screen(WVec2::new(
@@ -183,6 +185,7 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
 
     draw_walls(&painter, project, xf, app.selection);
     draw_aps(&painter, project, xf, app.selection, app.heat.band);
+    draw_measurements(&painter, app, xf, ui.input(|i| i.time));
     draw_tool_overlay(app, &painter, xf, pointer, shift);
 
     if app.heat.show && project.aps.is_empty() {
@@ -194,28 +197,40 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
             ui.visuals().weak_text_color(),
         );
     }
-    if app.heat.show && app.heat.texture.is_some() {
+    if let (true, Some(field)) = (app.heat.show, &app.heat.field) {
         draw_legend(
             &painter,
             rect,
-            app.heat.metric,
+            field.scale,
+            field.source,
             project.requirements,
             ui.visuals(),
         );
+    }
+    if app.survey.scanning_at().is_some() {
+        ui.ctx().request_repaint();
     }
 
     // ---- status bar readout ----
     app.canvas.hover_text = pointer.filter(|p| rect.contains(*p)).map(|p| {
         let m = xf.to_m(p);
         let mut s = format!("x {:.2} m  y {:.2} m", m.x, m.y);
-        if let Some(metrics) = &app.heat.metrics {
-            let g = metrics.grid;
+        if let Some(field) = &app.heat.field {
+            let g = field.grid;
             let (c, r) = ((m.x - g.origin.x) / g.cell_m, (m.y - g.origin.y) / g.cell_m);
-            if c >= 0.0 && r >= 0.0 && (c as usize) < g.cols && (r as usize) < g.rows {
-                let i = r as usize * g.cols + c as usize;
+            if c >= 0.0 && r >= 0.0 {
                 let kind = app.heat.metric;
-                let v = metrics.value(kind, i);
-                s.push_str(&format!("   {}: {}", kind.label(), format_value(kind, v)));
+                let text = match (field.value_at(c as usize, r as usize), field.scale) {
+                    (Some(v), Scale::Difference) => format!("{v:+.1}"),
+                    (Some(v), _) => format_value(kind, v),
+                    (None, _) => "no data".to_owned(),
+                };
+                let prefix = match field.source {
+                    Source::Predicted => "",
+                    Source::Measured => "measured ",
+                    Source::Difference => "Δ ",
+                };
+                s.push_str(&format!("   {prefix}{}: {text}", kind.label()));
             }
         }
         s
@@ -243,6 +258,17 @@ fn hit_ap(project: &Project, xf: Xf, p: Pos2) -> Option<ApId> {
         .iter()
         .map(|a| (a.id, xf.to_screen(a.position).distance(p)))
         .filter(|(_, d)| *d <= AP_HIT)
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .map(|(id, _)| id)
+}
+
+fn hit_measurement(app: &OndaluxApp, xf: Xf, p: Pos2) -> Option<u32> {
+    let survey = app.doc.as_ref()?.project.surveys.get(app.survey.active)?;
+    survey
+        .measurements
+        .iter()
+        .map(|m| (m.id, xf.to_screen(m.position).distance(p)))
+        .filter(|(_, d)| *d <= POINT_HIT)
         .min_by(|a, b| a.1.total_cmp(&b.1))
         .map(|(id, _)| id)
 }
@@ -320,6 +346,27 @@ fn handle_tool(
 ) {
     let view = app.view;
     let tool = app.tool;
+    let active_survey = app.survey.active;
+    let press_pos = response
+        .ctx
+        .input(|i| i.pointer.press_origin())
+        .or(response.interact_pointer_pos());
+    let (point_at_press, point_at_click) = {
+        let Some(doc) = app.doc.as_ref() else {
+            return;
+        };
+        let xf = Xf {
+            view,
+            plan: &doc.project.plan,
+        };
+        (
+            press_pos.and_then(|p| hit_measurement(app, xf, p)),
+            response
+                .interact_pointer_pos()
+                .and_then(|p| hit_measurement(app, xf, p)),
+        )
+    };
+    let mut scan_error = None;
     let Some(doc) = app.doc.as_mut() else {
         return;
     };
@@ -348,6 +395,18 @@ fn handle_tool(
                     doc.checkpoint();
                     app.canvas.drag = Some(Drag::Ap { id, offset });
                     app.selection = Selection::Ap(id);
+                } else if let Some(id) = point_at_press {
+                    let pos = doc
+                        .project
+                        .surveys
+                        .get(active_survey)
+                        .and_then(|s| s.measurements.iter().find(|m| m.id == id))
+                        .map(|m| m.position)
+                        .unwrap_or_default();
+                    let offset = pos - xf.to_m(p);
+                    doc.checkpoint();
+                    app.canvas.drag = Some(Drag::Measurement { id, offset });
+                    app.selection = Selection::Measurement(id);
                 } else if let Some((index, end_b)) =
                     hit_wall_end(&doc.project, xf, p, selected_wall)
                 {
@@ -395,6 +454,23 @@ fn handle_tool(
                             }
                         }
                     }
+                    Some(Drag::Measurement { id, offset }) => {
+                        if let Some(p) = pointer {
+                            let xf = Xf {
+                                view,
+                                plan: &doc.project.plan,
+                            };
+                            let target = clamp_to_plan(&doc.project.plan, xf.to_m(p) + offset);
+                            if let Some(m) = doc
+                                .project
+                                .surveys
+                                .get_mut(active_survey)
+                                .and_then(|s| s.measurements.iter_mut().find(|m| m.id == id))
+                            {
+                                m.position = target;
+                            }
+                        }
+                    }
                     Some(Drag::Pan) => app.view.origin += response.drag_delta(),
                     None => {}
                 }
@@ -410,6 +486,8 @@ fn handle_tool(
                     };
                     app.selection = if let Some(id) = hit_ap(&doc.project, xf, p) {
                         Selection::Ap(id)
+                    } else if let Some(id) = point_at_click {
+                        Selection::Measurement(id)
                     } else if let Some(i) = hit_wall(&doc.project, xf, p) {
                         Selection::Wall(i)
                     } else {
@@ -462,6 +540,23 @@ fn handle_tool(
                 app.view.origin += response.drag_delta();
             }
         }
+        Tool::Survey => {
+            if response.clicked() {
+                if let Some(p) = response.interact_pointer_pos() {
+                    let xf = Xf {
+                        view,
+                        plan: &doc.project.plan,
+                    };
+                    let m = clamp_to_plan(&doc.project.plan, xf.to_m(p));
+                    if let Err(e) = app.survey.start_scan(m, &doc.project, &response.ctx) {
+                        scan_error = Some(e);
+                    }
+                }
+            }
+            if response.dragged_by(PointerButton::Primary) {
+                app.view.origin += response.drag_delta();
+            }
+        }
         Tool::Calibrate => {
             if response.secondary_clicked() {
                 app.canvas.calib_first = None;
@@ -480,6 +575,9 @@ fn handle_tool(
                 app.view.origin += response.drag_delta();
             }
         }
+    }
+    if let Some(e) = scan_error {
+        app.error(e);
     }
 }
 
@@ -655,15 +753,52 @@ fn label_box(painter: &egui::Painter, pos: Pos2, text: String) {
     painter.text(pos, Align2::LEFT_BOTTOM, text, font, Color32::WHITE);
 }
 
+fn draw_measurements(painter: &egui::Painter, app: &OndaluxApp, xf: Xf, time: f64) {
+    let Some(survey) = app
+        .doc
+        .as_ref()
+        .and_then(|d| d.project.surveys.get(app.survey.active))
+    else {
+        return;
+    };
+    let errors = app.heat.comparison.as_ref().map(|c| &c.points);
+    let show_errors = app.heat.source == Source::Difference;
+    for m in &survey.measurements {
+        let p = xf.to_screen(m.position);
+        let selected = app.selection == Selection::Measurement(m.id);
+        let err = errors.and_then(|e| e.iter().find(|(id, _)| *id == m.id).map(|(_, v)| *v));
+        let fill = match (show_errors, err) {
+            (true, Some(e)) => heatmap::color_at(Scale::Difference, e),
+            _ => Color32::WHITE,
+        };
+        if selected {
+            painter.circle_stroke(p, 9.0, Stroke::new(2.5, Color32::from_rgb(80, 160, 255)));
+        }
+        painter.circle(p, 4.5, fill, Stroke::new(1.5, Color32::from_gray(30)));
+        if let (true, Some(e)) = (show_errors, err) {
+            label_box(painter, p + egui::vec2(7.0, -5.0), format!("{e:+.0}"));
+        }
+    }
+    if let Some(at) = app.survey.scanning_at() {
+        let p = xf.to_screen(at);
+        let pulse = 8.0 + 6.0 * ((time * 4.0).sin() as f32 * 0.5 + 0.5);
+        let orange = Color32::from_rgb(255, 170, 40);
+        painter.circle_stroke(p, pulse, Stroke::new(2.0, orange));
+        painter.circle_filled(p, 4.0, orange);
+        label_box(painter, p + egui::vec2(14.0, -8.0), "Scanning…".to_owned());
+    }
+}
+
 fn draw_legend(
     painter: &egui::Painter,
     canvas: Rect,
-    kind: MetricKind,
+    scale: Scale,
+    source: Source,
     req: Requirements,
     visuals: &egui::Visuals,
 ) {
-    let stops = heatmap::stops(kind);
-    let width = 260.0;
+    let stops = heatmap::stops(scale);
+    let width = 280.0;
     let height = 58.0;
     let rect = Rect::from_min_size(
         canvas.left_bottom() + egui::vec2(12.0, -height - 12.0),
@@ -676,16 +811,21 @@ fn draw_legend(
         visuals.window_stroke,
         StrokeKind::Inside,
     );
-    let title = match kind {
-        MetricKind::Coverage => format!(
+    let title = match scale {
+        Scale::Difference => "Measured − predicted (dB): red = weaker".to_owned(),
+        Scale::Metric(MetricKind::Coverage) => format!(
             "Coverage: ≥ {:.0} dBm and SNR ≥ {:.0} dB",
             req.min_rssi.0, req.min_snr.0
         ),
-        MetricKind::ApCount => format!("APs heard at ≥ {:.0} dBm", req.min_rssi.0),
-        MetricKind::ChannelOverlap => {
+        Scale::Metric(MetricKind::ApCount) => format!("APs heard at ≥ {:.0} dBm", req.min_rssi.0),
+        Scale::Metric(MetricKind::ChannelOverlap) => {
             format!("Overlapping radios above {:.0} dBm", req.cca_threshold.0)
         }
-        _ => format!("{} ({})", kind.label(), kind.unit()),
+        Scale::Metric(kind) => format!("{} ({})", kind.label(), kind.unit()),
+    };
+    let title = match source {
+        Source::Measured => format!("Measured · {title}"),
+        _ => title,
     };
     painter.text(
         rect.min + egui::vec2(8.0, 6.0),
@@ -699,15 +839,17 @@ fn draw_legend(
         egui::vec2(width - 16.0, 12.0),
     );
     let (lo, hi) = (stops[0].0, stops[stops.len() - 1].0);
-    if heatmap::is_discrete(kind) {
+    if heatmap::is_discrete(scale) {
         let n = stops.len();
         for (i, (v, _)) in stops.iter().enumerate() {
             let x0 = bar.left() + bar.width() * i as f32 / n as f32;
             let x1 = bar.left() + bar.width() * (i + 1) as f32 / n as f32;
             let cell = Rect::from_min_max(Pos2::new(x0, bar.top()), Pos2::new(x1, bar.bottom()));
-            painter.rect_filled(cell, 0.0, heatmap::color_at(kind, *v));
-            let text = match kind {
-                MetricKind::Coverage => if *v > 0.5 { "meets" } else { "fails" }.to_owned(),
+            painter.rect_filled(cell, 0.0, heatmap::color_at(scale, *v));
+            let text = match scale {
+                Scale::Metric(MetricKind::Coverage) => {
+                    if *v > 0.5 { "meets" } else { "fails" }.to_owned()
+                }
                 _ if i == n - 1 => format!("{v:.0}+"),
                 _ => format!("{v:.0}"),
             };
@@ -729,14 +871,19 @@ fn draw_legend(
                 Pos2::new(bar.left() + bar.width() * t0, bar.top()),
                 Pos2::new(bar.left() + bar.width() * t1 + 0.5, bar.bottom()),
             );
-            painter.rect_filled(cell, 0.0, heatmap::color_at(kind, v));
+            painter.rect_filled(cell, 0.0, heatmap::color_at(scale, v));
         }
         for (v, _) in stops {
             let x = bar.left() + bar.width() * (v - lo) / (hi - lo);
+            let text = if scale == Scale::Difference && *v > 0.0 {
+                format!("+{v:.0}")
+            } else {
+                format!("{v:.0}")
+            };
             painter.text(
                 Pos2::new(x, bar.bottom() + 2.0),
                 Align2::CENTER_TOP,
-                format!("{v:.0}"),
+                text,
                 FontId::proportional(11.0),
                 visuals.text_color(),
             );
