@@ -31,7 +31,11 @@ fn main() {
                 let ch = r.channel().map_or("?".to_owned(), |(_, n)| n.to_string());
                 println!(
                     "{:<32} {:<17} {:>6.0} {:>6} {:>4}  {}",
-                    if r.ssid.is_empty() { "(hidden)" } else { &r.ssid },
+                    if r.ssid.is_empty() {
+                        "(hidden)"
+                    } else {
+                        &r.ssid
+                    },
                     r.bssid,
                     r.rssi.0,
                     r.frequency_mhz,

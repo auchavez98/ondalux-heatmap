@@ -4,6 +4,7 @@ pub mod error;
 pub mod pdf;
 pub mod plan_image;
 pub mod project_file;
+pub mod survey_csv;
 
 pub use error::IoError;
 pub use plan_image::{decode_plan, import_plan, DecodedPlan};
