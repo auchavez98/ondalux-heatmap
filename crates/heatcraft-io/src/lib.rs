@@ -1,6 +1,7 @@
 //! HeatCraft I/O: project files, floor plan import, CSV and report export.
 
 pub mod error;
+pub mod pdf;
 pub mod plan_image;
 pub mod project_file;
 

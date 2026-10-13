@@ -1,14 +1,12 @@
-//! Floor plan import (PNG, JPEG).
-//!
-//! STUB: single-page PDF import is not implemented yet; see the PDF spike
-//! planned at the end of Phase 1.
+//! Floor plan import (PNG, JPEG, first page of a PDF).
 
 use crate::error::IoError;
 use crate::project_file::PlanImage;
 use std::path::Path;
 
-/// Largest accepted side, in pixels, to keep memory and GPU textures sane.
-pub const MAX_SIDE_PX: u32 = 16_384;
+/// Largest accepted side, in pixels. 8192 is the smallest maximum texture
+/// size guaranteed by the GPU backends the UI runs on.
+pub const MAX_SIDE_PX: u32 = 8192;
 
 /// Decoded RGBA8 pixels, ready for display.
 #[derive(Debug, Clone)]
@@ -25,23 +23,21 @@ pub fn import_plan(path: &Path) -> Result<(PlanImage, DecodedPlan), IoError> {
         .and_then(|e| e.to_str())
         .map(str::to_ascii_lowercase)
         .unwrap_or_default();
-    let extension = match ext.as_str() {
-        "png" => "png",
-        "jpg" | "jpeg" => "jpg",
-        "pdf" => {
-            return Err(IoError::Unsupported(
-                "PDF floor plans are not supported yet; export the page to PNG first".into(),
-            ))
-        }
+    let plan = match ext.as_str() {
+        "png" | "jpg" | "jpeg" => PlanImage {
+            extension: if ext == "png" { "png" } else { "jpg" }.to_owned(),
+            bytes: std::fs::read(path)?,
+        },
+        // Only the first page is used; the plan is stored as PNG.
+        "pdf" => PlanImage {
+            extension: "png".to_owned(),
+            bytes: crate::pdf::rasterize_first_page(std::fs::read(path)?)?.png,
+        },
         other => {
             return Err(IoError::Unsupported(format!(
-                "floor plan format {other:?} (use PNG or JPEG)"
+                "floor plan format {other:?} (use PNG, JPEG or PDF)"
             )))
         }
-    };
-    let plan = PlanImage {
-        extension: extension.to_owned(),
-        bytes: std::fs::read(path)?,
     };
     let decoded = decode_plan(&plan)?;
     Ok((plan, decoded))
@@ -93,8 +89,20 @@ mod tests {
     }
 
     #[test]
-    fn pdf_is_reported_as_unsupported() {
-        let err = import_plan(Path::new("plan.pdf")).unwrap_err();
+    fn imports_pdf_as_png() {
+        let dir = std::env::temp_dir().join(format!("heatcraft-pdf-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("plan.pdf");
+        std::fs::write(&path, crate::pdf::tests::sample_pdf()).unwrap();
+        let (plan, decoded) = import_plan(&path).unwrap();
+        assert_eq!(plan.extension, "png");
+        assert_eq!(decoded.width, 2 * decoded.height);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn unknown_formats_are_rejected() {
+        let err = import_plan(Path::new("plan.bmp")).unwrap_err();
         assert!(matches!(err, IoError::Unsupported(_)));
     }
 

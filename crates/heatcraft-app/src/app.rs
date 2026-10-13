@@ -216,8 +216,7 @@ impl HeatCraftApp {
     fn new_from_plan(&mut self, ctx: &egui::Context) {
         let Some(path) = rfd::FileDialog::new()
             .set_title("Import floor plan")
-            .add_filter("Images", &["png", "jpg", "jpeg"])
-            .add_filter("PDF (not supported yet)", &["pdf"])
+            .add_filter("Floor plans", &["png", "jpg", "jpeg", "pdf"])
             .pick_file()
         else {
             return;
