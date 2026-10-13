@@ -193,10 +193,10 @@ impl Survey {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    fn reading(bssid: &str, ssid: &str, rssi: f32, f: u32) -> BssReading {
+    pub(crate) fn reading(bssid: &str, ssid: &str, rssi: f32, f: u32) -> BssReading {
         BssReading {
             bssid: bssid.into(),
             ssid: ssid.into(),

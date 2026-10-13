@@ -10,6 +10,7 @@ pub mod geometry;
 pub mod grid;
 pub mod interpolate;
 pub mod material;
+pub mod measured;
 pub mod metrics;
 pub mod predict;
 pub mod project;
