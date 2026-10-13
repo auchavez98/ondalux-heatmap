@@ -703,6 +703,73 @@
         { "band": "5GHz", "max_tx_power_dbm": 31, "antenna_gain_dbi": 6.12, "spatial_streams": 2, "max_width": "160" },
         { "band": "6GHz", "max_tx_power_dbm": 30, "antenna_gain_dbi": 6.29, "spatial_streams": 4, "max_width": "160" } ],
       "tx_power_basis": "eirp", "source": "https://brandcentral.cambiumnetworks.com/m/5a8cc208bd02a653/original/XE3-4-Wi-Fi-6-6E-Access-Point-Data-Sheet.pdf",
-      "notes": "Max EIRP from the data sheet. The 5/6 GHz radio is software-definable (4x4:4), modelled in 6 GHz mode, plus a dedicated 5 GHz 2x2:2 radio." }
+      "notes": "Max EIRP from the data sheet. The 5/6 GHz radio is software-definable (4x4:4), modelled in 6 GHz mode, plus a dedicated 5 GHz 2x2:2 radio." },
+    { "vendor": "Extreme Networks", "model": "AP305C", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 18, "antenna_gain_dbi": 2.7, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 18, "antenna_gain_dbi": 4.0, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.extremenetworks.com/wireless/AP_Guides/AP305C-CX/GUID-BBA0BD2F-BCA7-4959-AFD7-A41F3EAD2FC1.shtml",
+      "notes": "Per-radio power from the installation guide power table (802.3af/at). Another Extreme guide lists 2.67 / 3.75 dBi. Channel widths not stated; typical maximum assumed." },
+    { "vendor": "Ruijie", "model": "RG-AP880-L", "standard": "Wi-Fi 6E",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.2, "spatial_streams": 2, "max_width": "80" },
+        { "band": "6GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "aggregate_conducted", "source": "https://www.ruijienetworks.com/products/wireless/cloud-managed-ap/ap880l",
+      "notes": "Total power (24 / 23 dBm per chain); 2 chains derived from the per-chain figures. Channel widths not stated; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "U7 Pro XG", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "320" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u7-pro-xg",
+      "notes": "Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "U6 Extender", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u6-extender",
+      "notes": "Plug-in mesh AP. Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "UAP-AC-IW", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 1, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 2, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/uap-ac-iw",
+      "notes": "In-wall AP." },
+    { "vendor": "TP-Link", "model": "Omada EAP115", "standard": "Wi-Fi 4",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-ceiling-mount/eap115/",
+      "notes": "Single-band 2.4 GHz. Streams derived from the 300 Mbps rate." },
+    { "vendor": "TP-Link", "model": "Omada EAP613", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-ceiling-mount/eap613/",
+      "notes": "FCC values. Streams derived from published rates (574 / 1201 Mbps). Channel widths not stated; typical maximum assumed." },
+    { "vendor": "TP-Link", "model": "Omada EAP615-Wall", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-wall-plate/eap615-wall/",
+      "notes": "Wall-plate AP. FCC values. Streams derived from published rates (574 / 1201 Mbps)." },
+    { "vendor": "TP-Link", "model": "Omada EAP235-Wall", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-wall-plate/eap235-wall/",
+      "notes": "Wall-plate AP. Streams derived from published rates (300 / 867 Mbps)." },
+    { "vendor": "TP-Link", "model": "Omada EAP650-Outdoor", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-outdoor/eap650-outdoor/",
+      "notes": "FCC values. Streams derived from published rates (574 / 2402 Mbps at 160 MHz)." },
+    { "vendor": "TP-Link", "model": "Omada EAP225-Outdoor", "standard": "Wi-Fi 5", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://www.omadanetworks.com/us/business-networking/omada-wifi-outdoor/eap225-outdoor/",
+      "notes": "FCC values." }
   ]
 }
