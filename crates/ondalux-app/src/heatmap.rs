@@ -59,12 +59,8 @@ pub struct Inputs {
     pub diff_threshold: f32,
 }
 
-/// Color scale of the displayed values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Scale {
-    Metric(MetricKind),
-    Difference,
-}
+pub use ondalux_core::colormap::ColorScale as Scale;
+use ondalux_core::colormap::RSSI_CUTOFF;
 
 /// The values currently displayed (`NaN` = no data / transparent).
 pub struct Field {
@@ -282,9 +278,6 @@ fn predict(st: &mut WorkerState, job: &Inputs) -> (Metrics, usize) {
     (metrics, recomputed)
 }
 
-/// Values below this RSSI are drawn transparent (no usable signal).
-const RSSI_CUTOFF: f32 = -95.0;
-
 fn metric_field(m: &Metrics, kind: MetricKind, valid: Option<&[bool]>, source: Source) -> Field {
     let mut meets = 0usize;
     let mut cells = 0usize;
@@ -364,94 +357,18 @@ fn compare(survey: &Survey, predicted: &Metrics, job: &Inputs) -> Comparison {
     Comparison { points, mean, rmse }
 }
 
-/// Color stops `(value, color)`, ascending by value.
-type Stops = &'static [(f32, [u8; 3])];
-
-const RED: [u8; 3] = [215, 48, 39];
-const ORANGE: [u8; 3] = [244, 140, 50];
-const YELLOW: [u8; 3] = [240, 220, 70];
-const LIME: [u8; 3] = [160, 210, 80];
-const GREEN: [u8; 3] = [50, 170, 80];
-const DARK_GREEN: [u8; 3] = [20, 110, 60];
-const TEAL: [u8; 3] = [40, 160, 170];
-const BLUE: [u8; 3] = [60, 100, 200];
-const NEUTRAL: [u8; 3] = [215, 215, 215];
-const LIGHT_BLUE: [u8; 3] = [120, 175, 235];
-
-const RSSI_STOPS: Stops = &[
-    (-90.0, RED),
-    (-80.0, ORANGE),
-    (-72.0, YELLOW),
-    (-67.0, LIME),
-    (-60.0, GREEN),
-    (-45.0, DARK_GREEN),
-];
-const SNR_STOPS: Stops = &[
-    (5.0, RED),
-    (12.0, ORANGE),
-    (20.0, YELLOW),
-    (25.0, LIME),
-    (32.0, GREEN),
-    (45.0, DARK_GREEN),
-];
-const COUNT_STOPS: Stops = &[
-    (0.0, RED),
-    (1.0, YELLOW),
-    (2.0, GREEN),
-    (3.0, TEAL),
-    (4.0, BLUE),
-];
-const OVERLAP_STOPS: Stops = &[(0.0, GREEN), (1.0, YELLOW), (2.0, ORANGE), (3.0, RED)];
-const COVERAGE_STOPS: Stops = &[(0.0, RED), (1.0, GREEN)];
-/// Diverging: red = weaker than predicted, blue = stronger.
-const DIFF_STOPS: Stops = &[
-    (-15.0, RED),
-    (-6.0, ORANGE),
-    (0.0, NEUTRAL),
-    (6.0, LIGHT_BLUE),
-    (15.0, BLUE),
-];
-
-pub fn stops(scale: Scale) -> Stops {
-    match scale {
-        Scale::Metric(MetricKind::Rssi) => RSSI_STOPS,
-        Scale::Metric(MetricKind::Snr | MetricKind::Sinr) => SNR_STOPS,
-        Scale::Metric(MetricKind::ApCount) => COUNT_STOPS,
-        Scale::Metric(MetricKind::ChannelOverlap) => OVERLAP_STOPS,
-        Scale::Metric(MetricKind::Coverage) => COVERAGE_STOPS,
-        Scale::Difference => DIFF_STOPS,
-    }
+pub fn stops(scale: Scale) -> ondalux_core::colormap::Stops {
+    scale.stops()
 }
 
-/// Whether the scale is discrete (drawn with hard color steps).
 pub fn is_discrete(scale: Scale) -> bool {
-    matches!(
-        scale,
-        Scale::Metric(MetricKind::ApCount | MetricKind::ChannelOverlap | MetricKind::Coverage)
-    )
+    scale.is_discrete()
 }
 
 pub fn color_at(scale: Scale, v: f32) -> Color32 {
-    let s = stops(scale);
-    let rgb = if is_discrete(scale) {
-        s.iter()
-            .rev()
-            .find(|(t, _)| v >= *t - 0.5)
-            .map_or(s[0].1, |(_, c)| *c)
-    } else if v <= s[0].0 {
-        s[0].1
-    } else if v >= s[s.len() - 1].0 {
-        s[s.len() - 1].1
-    } else {
-        let i = s.windows(2).position(|w| v < w[1].0).unwrap_or(0);
-        let ((a, ca), (b, cb)) = (s[i], s[i + 1]);
-        let t = (v - a) / (b - a);
-        let lerp = |x: u8, y: u8| (x as f32 + (y as f32 - x as f32) * t).round() as u8;
-        [lerp(ca[0], cb[0]), lerp(ca[1], cb[1]), lerp(ca[2], cb[2])]
-    };
-    Color32::from_rgb(rgb[0], rgb[1], rgb[2])
+    let [r, g, b] = scale.rgb(v);
+    Color32::from_rgb(r, g, b)
 }
-
 fn colorize(f: &Field) -> ColorImage {
     let pixels = f
         .values
@@ -472,42 +389,6 @@ mod tests {
     use super::*;
 
     const RSSI: Scale = Scale::Metric(MetricKind::Rssi);
-
-    #[test]
-    fn continuous_scale_interpolates_and_clamps() {
-        assert_eq!(color_at(RSSI, -200.0), Color32::from_rgb(215, 48, 39));
-        assert_eq!(color_at(RSSI, -20.0), Color32::from_rgb(20, 110, 60));
-        let mid = color_at(RSSI, -85.0);
-        assert!(mid.r() < 244 && mid.r() > 215);
-    }
-
-    #[test]
-    fn discrete_scale_steps() {
-        let count = Scale::Metric(MetricKind::ApCount);
-        assert_eq!(color_at(count, 0.0), Color32::from_rgb(215, 48, 39));
-        assert_eq!(color_at(count, 2.0), Color32::from_rgb(50, 170, 80));
-        assert_eq!(color_at(count, 9.0), Color32::from_rgb(60, 100, 200));
-        assert_eq!(
-            color_at(Scale::Metric(MetricKind::Coverage), 1.0),
-            Color32::from_rgb(50, 170, 80)
-        );
-    }
-
-    #[test]
-    fn difference_scale_is_diverging() {
-        assert_eq!(
-            color_at(Scale::Difference, 0.0),
-            Color32::from_rgb(215, 215, 215)
-        );
-        assert_eq!(
-            color_at(Scale::Difference, -30.0),
-            Color32::from_rgb(215, 48, 39)
-        );
-        assert_eq!(
-            color_at(Scale::Difference, 30.0),
-            Color32::from_rgb(60, 100, 200)
-        );
-    }
 
     #[test]
     fn difference_hides_small_and_missing_values() {

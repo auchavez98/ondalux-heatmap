@@ -4,9 +4,11 @@
 //! World coordinates are in meters; image pixels are mapped through the
 //! floor plan calibration.
 
+pub mod analysis;
 pub mod ap;
 pub mod catalog;
 pub mod channel;
+pub mod colormap;
 pub mod geometry;
 pub mod grid;
 pub mod interpolate;
