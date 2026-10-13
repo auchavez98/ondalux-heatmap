@@ -406,5 +406,122 @@
       "source": "https://brandcentral.cambiumnetworks.com/m/3aa1d0726fa7f3/original/XV2-2-Wi-Fi-6-Access-Point-Data-Sheet.pdf",
       "notes": "Data sheet gives max EIRP; conducted power = EIRP − antenna gain. Channel widths not stated; typical maximum assumed."
     }
-  ]
+
+    ,
+    { "vendor": "Ubiquiti", "model": "U7 Lite", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u7-lite",
+      "notes": "Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "U7 Pro Wall", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "320" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u7-pro-wall",
+      "notes": "Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "E7", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 30, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "320" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/e7",
+      "notes": "6 GHz: 24 dBm (LPI) / 30 dBm listed; LPI value used. Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "U7 Mesh", "standard": "Wi-Fi 7", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 6, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u7-mesh",
+      "notes": "5 GHz omni gain (directional mode 10 dBi not modelled). Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "U6 Mesh Pro", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 8, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 8, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u6-mesh-pro",
+      "notes": "Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "U6 IW", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.9, "spatial_streams": 4, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/u6-iw",
+      "notes": "In-wall AP. Channel widths not stated per band; typical maximum assumed." },
+    { "vendor": "Ubiquiti", "model": "UAP-AC-Pro", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 3, "spatial_streams": 3, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 3, "spatial_streams": 3, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/uap-ac-pro" },
+    { "vendor": "Ubiquiti", "model": "UAP-AC-Lite", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 20, "antenna_gain_dbi": 3, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/uap-ac-lite" },
+    { "vendor": "Ubiquiti", "model": "UAP-nanoHD", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 2.8, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/uap-nanohd" },
+    { "vendor": "Ubiquiti", "model": "UAP-AC-HD", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 3, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://techspecs.ui.com/unifi/wifi/uap-ac-hd" },
+    { "vendor": "Grandstream", "model": "GWN7603", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7603-technical-specifications/",
+      "notes": "Highest of the two published antenna gains per band." },
+    { "vendor": "Grandstream", "model": "GWN7615", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3, "spatial_streams": 3, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 3, "spatial_streams": 3, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7615-technical-specifications/" },
+    { "vendor": "Grandstream", "model": "GWN7625", "standard": "Wi-Fi 5",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4.5, "spatial_streams": 4, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7625-technical-specifications/" },
+    { "vendor": "Grandstream", "model": "GWN7660E", "standard": "Wi-Fi 6",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7660e-technical-specifications/",
+      "notes": "5 GHz is 3x3:2 (three chains, two streams)." },
+    { "vendor": "Grandstream", "model": "GWN7660LR", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 30, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7660lr-technical-specifications/" },
+    { "vendor": "Grandstream", "model": "GWN7664LR", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3.5, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 3.5, "spatial_streams": 4, "max_width": "80" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7664lr-technical-specifications/" },
+    { "vendor": "Grandstream", "model": "GWN7670E", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26.5, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5.5, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7670e-technical-specifications/",
+      "notes": "5 GHz is 3x3:2 (three chains, two streams)." },
+    { "vendor": "Grandstream", "model": "GWN7670LR", "standard": "Wi-Fi 7", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "160" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7670lr-technical-specifications/",
+      "notes": "External omni gain used; internal directional antenna (8 / 13.5 dBi) not modelled." },
+    { "vendor": "Grandstream", "model": "GWN7672", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5.5, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 24, "antenna_gain_dbi": 5.5, "spatial_streams": 2, "max_width": "320" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7672-technical-specifications/",
+      "notes": "5 GHz also supports 240 MHz (capped at 160 MHz)." },
+    { "vendor": "Grandstream", "model": "GWN7674", "standard": "Wi-Fi 7",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 4.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 5.5, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "320" } ],
+      "tx_power_basis": "vendor_max", "source": "https://documentation.grandstream.com/knowledge-base/gwn7674-technical-specifications/",
+      "notes": "5 GHz also supports 240 MHz (capped at 160 MHz)." }  ]
 }
