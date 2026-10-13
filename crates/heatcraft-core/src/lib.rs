@@ -7,4 +7,5 @@
 pub mod channel;
 pub mod geometry;
 pub mod material;
+pub mod propagation;
 pub mod units;
