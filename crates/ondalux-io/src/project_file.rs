@@ -11,7 +11,9 @@ use std::io::{Read, Seek, Write};
 use std::path::Path;
 
 pub const FORMAT_ID: &str = "ondalux-project";
-pub const FORMAT_VERSION: u32 = 1;
+/// Version history: 1 = Phase 1 model; 2 = adds `surveys` (v1 files load
+/// unchanged, with no surveys).
+pub const FORMAT_VERSION: u32 = 2;
 pub const EXTENSION: &str = "lux";
 /// Format id and extension used before the project was renamed. Still read.
 pub const LEGACY_FORMAT_ID: &str = "heatcraft-project";
@@ -236,6 +238,23 @@ mod tests {
         let legacy = json.replace(FORMAT_ID, LEGACY_FORMAT_ID);
         let loaded = ProjectFile::read_from(archive_with(&legacy)).unwrap();
         assert_eq!(loaded.project, sample().project);
+    }
+
+    #[test]
+    fn loads_version_1_without_surveys() {
+        let mut header = serde_json::json!({
+            "format": FORMAT_ID,
+            "format_version": 1,
+            "project": serde_json::to_value(&sample().project).unwrap(),
+        });
+        header["project"]
+            .as_object_mut()
+            .unwrap()
+            .remove("surveys")
+            .unwrap();
+        let loaded = ProjectFile::read_from(archive_with(&header.to_string())).unwrap();
+        assert!(loaded.project.surveys.is_empty());
+        assert_eq!(loaded.project.aps, sample().project.aps);
     }
 
     #[test]

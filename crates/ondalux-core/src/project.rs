@@ -6,6 +6,7 @@ use crate::geometry::Vec2;
 use crate::material::{MaterialId, MaterialLibrary, Wall};
 use crate::metrics::Requirements;
 use crate::propagation::PropagationSettings;
+use crate::survey::Survey;
 use serde::{Deserialize, Serialize};
 
 /// Scale used until the user calibrates the plan.
@@ -72,6 +73,9 @@ pub struct Project {
     pub requirements: Requirements,
     /// Heat map sampling step, in meters.
     pub grid_cell_m: f32,
+    /// Field surveys (added in format version 2).
+    #[serde(default)]
+    pub surveys: Vec<Survey>,
 }
 
 impl Project {
@@ -89,6 +93,7 @@ impl Project {
             settings: PropagationSettings::default(),
             requirements: Requirements::default(),
             grid_cell_m: 0.25,
+            surveys: Vec::new(),
         }
     }
 
@@ -107,6 +112,9 @@ impl Project {
         }
         for ap in &mut self.aps {
             ap.position = ap.position * k;
+        }
+        for m in self.surveys.iter_mut().flat_map(|s| &mut s.measurements) {
+            m.position = m.position * k;
         }
     }
 

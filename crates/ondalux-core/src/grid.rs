@@ -73,7 +73,20 @@ pub struct RadioLayer {
     pub channel: Channel,
     /// RSSI in dBm, row-major, `GridSpec::len()` values.
     pub rssi: Vec<f32>,
-    signature: Signature,
+    /// None for layers that do not come from the prediction cache.
+    signature: Option<Signature>,
+}
+
+impl RadioLayer {
+    /// A layer from externally computed values (e.g. interpolated measurements).
+    pub fn from_values(key: RadioKey, channel: Channel, rssi: Vec<f32>) -> Self {
+        Self {
+            key,
+            channel,
+            rssi,
+            signature: None,
+        }
+    }
 }
 
 /// Cache of per-radio RSSI layers for one grid.
@@ -132,8 +145,11 @@ impl LayerCache {
                 wanted.insert(key, (ap, idx, sig));
             }
         }
-        self.layers
-            .retain(|k, l| wanted.get(k).is_some_and(|(_, _, sig)| *sig == l.signature));
+        self.layers.retain(|k, l| {
+            wanted
+                .get(k)
+                .is_some_and(|(_, _, sig)| l.signature.as_ref() == Some(sig))
+        });
         let mut recomputed = 0;
         for (key, (ap, idx, sig)) in wanted {
             if self.layers.contains_key(&key) {
@@ -146,7 +162,7 @@ impl LayerCache {
                     key,
                     channel: ap.radios[idx].channel,
                     rssi,
-                    signature: sig,
+                    signature: Some(sig),
                 },
             );
             recomputed += 1;

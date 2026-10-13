@@ -208,6 +208,39 @@ fn center_of(band: Band, ch: u16) -> f32 {
     }
 }
 
+/// Band and channel number for a 20 MHz channel center frequency, as
+/// reported by WiFi scans. Returns `None` outside the 802.11 WLAN bands.
+pub fn channel_from_frequency(freq_mhz: u32) -> Option<(Band, u16)> {
+    match freq_mhz {
+        2484 => Some((Band::G2_4, 14)),
+        2412..=2472 if (freq_mhz - 2407) % 5 == 0 => {
+            Some((Band::G2_4, ((freq_mhz - 2407) / 5) as u16))
+        }
+        5935 => Some((Band::G6, 2)),
+        5955..=7115 if (freq_mhz - 5950) % 5 == 0 => {
+            Some((Band::G6, ((freq_mhz - 5950) / 5) as u16))
+        }
+        5150..=5925 if freq_mhz % 5 == 0 => Some((Band::G5, ((freq_mhz - 5000) / 5) as u16)),
+        _ => None,
+    }
+}
+
+impl Channel {
+    /// Builds a channel from scan data, falling back to the closest valid
+    /// primary channel and to 20 MHz when the reported values are not in
+    /// the channel plan (e.g. 6 GHz channel 2 or a regional 5 GHz channel).
+    pub fn closest(band: Band, number: u16, width: ChannelWidth) -> Channel {
+        let channels = band.channels();
+        let number = *channels
+            .iter()
+            .min_by_key(|c| (i32::from(**c) - i32::from(number)).abs())
+            .expect("every band has channels");
+        Channel::new(band, number, width)
+            .or_else(|_| Channel::new(band, number, ChannelWidth::Mhz20))
+            .expect("closest valid channel with 20 MHz width is always valid")
+    }
+}
+
 impl fmt::Display for Channel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -299,6 +332,32 @@ mod tests {
         let r3 = ch(Band::G2_4, 3, Mhz20).range();
         assert_eq!(r1.overlap_mhz(&r6), 0.0);
         assert_eq!(r1.overlap_mhz(&r3), 10.0);
+    }
+
+    #[test]
+    fn frequency_to_channel() {
+        assert_eq!(channel_from_frequency(2412), Some((Band::G2_4, 1)));
+        assert_eq!(channel_from_frequency(2484), Some((Band::G2_4, 14)));
+        assert_eq!(channel_from_frequency(5180), Some((Band::G5, 36)));
+        assert_eq!(channel_from_frequency(5825), Some((Band::G5, 165)));
+        assert_eq!(channel_from_frequency(5955), Some((Band::G6, 1)));
+        assert_eq!(channel_from_frequency(6135), Some((Band::G6, 37)));
+        assert_eq!(channel_from_frequency(5935), Some((Band::G6, 2)));
+        assert_eq!(channel_from_frequency(900), None);
+        // Round trip with the forward mapping.
+        for band in Band::ALL {
+            for n in band.channels() {
+                let f = ch(band, n, Mhz20).primary_center_mhz() as u32;
+                assert_eq!(channel_from_frequency(f), Some((band, n)), "{band} {n}");
+            }
+        }
+    }
+
+    #[test]
+    fn closest_valid_channel() {
+        assert_eq!(Channel::closest(Band::G6, 2, Mhz80).number, 1);
+        assert_eq!(Channel::closest(Band::G5, 38, Mhz40).number, 36);
+        assert_eq!(Channel::closest(Band::G2_4, 6, Mhz80).width, Mhz20);
     }
 
     #[test]
