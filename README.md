@@ -16,6 +16,7 @@ Phase 3 (reports) is not started.** See [what works](#status) below.
 | Scale calibration (two points + known distance) | ✅ |
 | Draw walls with snapping; material library with editable dB per band (2.4/5/6 GHz) | ✅ |
 | Place / drag APs; radios with band, channel, width, Tx power, antenna gain; AP height | ✅ |
+| AP model catalog by vendor (41 models, 12 vendors, datasheet values with sources) + custom models | ✅ see [docs/ap-catalog.md](docs/ap-catalog.md) |
 | AP orientation / directional antennas | ⚠️ **STUB**: stored and editable, ignored by the engine (omni only) |
 | RF engine: FSPL / log-distance, wall ray casting, RSSI, SNR, SINR (co- and adjacent-channel), AP count, channel overlap | ✅ |
 | Heat maps: signal, SNR, SINR, AP count, channel overlap, coverage requirement (configurable thresholds) | ✅ |
@@ -64,9 +65,10 @@ cargo run -p ondalux-io --example demo_project -- demo.lux
 3. **Wall (W)**: pick a material in the toolbar and click to draw walls.
    Shift snaps to 45°; Esc, right-click or double-click ends the wall. Wall
    ends snap to existing ends.
-4. **Access point (A)**: click to place APs. Each new AP gets a 2.4 GHz and
-   a 5 GHz radio on rotating channels (plus a disabled 6 GHz radio). Edit
-   them in the right panel.
+4. **Access point (A)**: pick the model in the toolbar (or Generic) and click
+   to place APs. Radios are filled from the model's datasheet values, on
+   rotating channels. Change an AP's model or edit its radios in the right
+   panel. **Edit → AP catalog…** browses all models and manages custom ones.
 5. **Select (V)**: drag APs or the ends of the selected wall; the heat map
    updates live.
 6. Pick the metric (keys **1–6**), band and source (predicted / measured /
@@ -129,6 +131,7 @@ worker thread that always processes the newest request.
 - [docs/project-format.md](docs/project-format.md): `.lux` file format.
 - [docs/scanning.md](docs/scanning.md): scanning backends and platform limitations.
 - [docs/survey-csv.md](docs/survey-csv.md): survey CSV format.
+- [docs/ap-catalog.md](docs/ap-catalog.md): AP model catalog, sources and custom models.
 
 ## Development
 

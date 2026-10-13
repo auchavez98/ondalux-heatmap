@@ -5,6 +5,7 @@
 
 mod app;
 mod canvas;
+mod catalog_ui;
 mod document;
 mod heatmap;
 mod panels;

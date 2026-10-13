@@ -67,6 +67,7 @@ meters × px_per_m.
 {
   "id": 1,
   "name": "Lobby",
+  "vendor": "Ubiquiti",
   "model": "Generic Wi-Fi 6",
   "position": { "x": 4.0, "y": 5.0 },
   "height_m": 2.8,
@@ -85,6 +86,8 @@ meters × px_per_m.
 `band` is `"2.4GHz"`, `"5GHz"` or `"6GHz"`. `width` is `"20"`, `"40"`,
 `"80"`, `"160"` or `"320"` (MHz). `tx_power` is in dBm, `antenna_gain` in dBi.
 `orientation_deg` is stored but not used by the engine yet (omni antennas only).
+`vendor` is optional (empty for generic APs) and identifies the catalog model
+together with `model`.
 
 ### Survey
 

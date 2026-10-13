@@ -531,7 +531,11 @@ fn handle_tool(
                     };
                     let m = clamp_to_plan(&doc.project.plan, xf.to_m(p));
                     doc.checkpoint();
-                    let ap = new_ap(&doc.project, m);
+                    let mut ap = new_ap(&doc.project, m);
+                    if let Some(model) = app.catalog.new_ap_model() {
+                        ap.radios.clear();
+                        model.apply_to(&mut ap, doc.project.aps.len());
+                    }
                     app.selection = Selection::Ap(ap.id);
                     doc.project.aps.push(ap);
                 }

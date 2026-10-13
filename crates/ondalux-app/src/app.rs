@@ -1,6 +1,7 @@
 //! Application state, menus, shortcuts and layout.
 
 use crate::canvas::CanvasState;
+use crate::catalog_ui::{self, CatalogState};
 use crate::document::Document;
 use crate::heatmap::{self, Comparison, Field, Source, Worker};
 use crate::panels;
@@ -119,6 +120,7 @@ pub struct OndaluxApp {
     worker: Worker,
     pub survey: SurveyState,
     pub right_tab: RightTab,
+    pub catalog: CatalogState,
     pub show_materials: bool,
     pub show_settings: bool,
     show_about: bool,
@@ -136,6 +138,7 @@ impl OndaluxApp {
     /// `path` (from the command line) may be a project or a floor plan image.
     pub fn new(cc: &eframe::CreationContext<'_>, path: Option<PathBuf>) -> Self {
         cc.egui_ctx.set_theme(egui::Theme::Dark);
+        let (catalog, catalog_error) = CatalogState::load();
         let mut app = Self {
             doc: None,
             tool: Tool::Select,
@@ -163,6 +166,7 @@ impl OndaluxApp {
             worker: Worker::spawn(cc.egui_ctx.clone()),
             survey: SurveyState::default(),
             right_tab: RightTab::Inspector,
+            catalog,
             show_materials: false,
             show_settings: false,
             show_about: false,
@@ -171,6 +175,9 @@ impl OndaluxApp {
             status: None,
             status_at: None,
         };
+        if let Some(e) = catalog_error {
+            app.error(e);
+        }
         if let Some(path) = path {
             let is_project = path.extension().is_some_and(|e| {
                 e.eq_ignore_ascii_case(ondalux_io::project_file::EXTENSION)
@@ -569,6 +576,9 @@ impl OndaluxApp {
                 {
                     self.show_materials = true;
                 }
+                if ui.button("AP catalog…").clicked() {
+                    self.catalog.open = true;
+                }
                 if ui
                     .add_enabled(
                         self.doc.is_some(),
@@ -630,6 +640,17 @@ impl OndaluxApp {
                             ui.selectable_value(&mut self.wall_material, m.id, &m.name);
                         }
                     });
+                ui.separator();
+            }
+            if self.tool == Tool::Ap {
+                ui.label("New AP:");
+                catalog_ui::model_combo(
+                    ui,
+                    "new-ap-model",
+                    &self.catalog.catalog,
+                    &mut self.catalog.new_ap_model,
+                    "Generic",
+                );
                 ui.separator();
             }
             ui.checkbox(&mut self.heat.show, "Heat map");
@@ -798,6 +819,7 @@ impl OndaluxApp {
         panels::calibration_dialog(self, ctx);
         panels::materials_window(self, ctx);
         panels::settings_window(self, ctx);
+        catalog_ui::window(self, ctx);
     }
 }
 
@@ -834,7 +856,13 @@ impl eframe::App for OndaluxApp {
                     });
                     ui.separator();
                     egui::ScrollArea::vertical().show(ui, |ui| match self.right_tab {
-                        RightTab::Inspector => panels::inspector(self, ui),
+                        RightTab::Inspector => {
+                            if let Selection::Ap(id) = self.selection {
+                                catalog_ui::ap_model_editor(self, ui, id);
+                                ui.separator();
+                            }
+                            panels::inspector(self, ui)
+                        }
                         RightTab::Survey => survey_ui::panel(self, ui),
                     });
                 });
