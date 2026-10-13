@@ -225,7 +225,7 @@ fn import_csv(app: &mut OndaluxApp) {
     }
 }
 
-fn export_csv(app: &mut OndaluxApp) {
+pub fn export_csv(app: &mut OndaluxApp) {
     let Some(survey) = active_survey(app).cloned() else {
         return;
     };

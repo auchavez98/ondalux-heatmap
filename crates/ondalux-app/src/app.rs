@@ -3,6 +3,7 @@
 use crate::canvas::CanvasState;
 use crate::catalog_ui::{self, CatalogState};
 use crate::document::Document;
+use crate::export_ui::{self, ExportState};
 use crate::heatmap::{self, Comparison, Field, Source, Worker};
 use crate::panels;
 use crate::survey_ui::{self, SurveyState};
@@ -121,6 +122,7 @@ pub struct OndaluxApp {
     pub survey: SurveyState,
     pub right_tab: RightTab,
     pub catalog: CatalogState,
+    pub export: ExportState,
     pub show_materials: bool,
     pub show_settings: bool,
     show_about: bool,
@@ -167,6 +169,7 @@ impl OndaluxApp {
             survey: SurveyState::default(),
             right_tab: RightTab::Inspector,
             catalog,
+            export: ExportState::default(),
             show_materials: false,
             show_settings: false,
             show_about: false,
@@ -522,6 +525,23 @@ impl OndaluxApp {
                     self.save(true);
                 }
                 ui.separator();
+                ui.add_enabled_ui(has_doc, |ui| {
+                    ui.menu_button("Export", |ui| {
+                        if ui.button("Heat map image (PNG)…").clicked() {
+                            export_ui::export_png(self);
+                        }
+                        if ui.button("Report (PDF)…").clicked() {
+                            self.export.report_open = true;
+                        }
+                        if ui.button("Access points (CSV)…").clicked() {
+                            export_ui::export_ap_csv(self);
+                        }
+                        if ui.button("Survey measurements (CSV)…").clicked() {
+                            survey_ui::export_csv(self);
+                        }
+                    });
+                });
+                ui.separator();
                 if ui
                     .add_enabled(has_doc, egui::Button::new("Close project"))
                     .clicked()
@@ -820,6 +840,7 @@ impl OndaluxApp {
         panels::materials_window(self, ctx);
         panels::settings_window(self, ctx);
         catalog_ui::window(self, ctx);
+        export_ui::report_window(self, ctx);
     }
 }
 
@@ -841,6 +862,7 @@ impl eframe::App for OndaluxApp {
         self.shortcuts(&ctx);
         self.poll_heatmap(&ctx);
         survey_ui::poll(self);
+        export_ui::poll(self);
 
         egui::Panel::top("menu").show(ui, |ui| self.menu_bar(ui));
         egui::Panel::top("toolbar").show(ui, |ui| self.toolbar(ui));

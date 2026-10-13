@@ -2720,6 +2720,7 @@ dependencies = [
  "eframe",
  "ondalux-core",
  "ondalux-io",
+ "ondalux-report",
  "ondalux-scan",
  "rfd",
 ]

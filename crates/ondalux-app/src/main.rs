@@ -7,6 +7,7 @@ mod app;
 mod canvas;
 mod catalog_ui;
 mod document;
+mod export_ui;
 mod heatmap;
 mod panels;
 mod survey_ui;

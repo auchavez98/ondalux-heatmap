@@ -16,6 +16,7 @@ ondalux-io.workspace = true
 ondalux-scan.workspace = true
 eframe = "0.36"
 rfd = "0.17"
+ondalux-report = { version = "0.1.0", path = "../ondalux-report" }
 
 [lints]
 workspace = true
