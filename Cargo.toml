@@ -5,6 +5,7 @@ members = [
     "crates/ondalux-io",
     "crates/ondalux-scan",
     "crates/ondalux-app",
+    "crates/ondalux-report",
 ]
 
 [workspace.package]

@@ -2749,6 +2749,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ondalux-report"
+version = "0.1.0"
+dependencies = [
+ "ab_glyph",
+ "epaint_default_fonts",
+ "hayro",
+ "image",
+ "miniz_oxide 0.8.9",
+ "ondalux-core",
+ "ondalux-io",
+ "pdf-writer",
+]
+
+[[package]]
 name = "ondalux-scan"
 version = "0.1.0"
 dependencies = [
@@ -2839,6 +2853,18 @@ dependencies = [
  "redox_syscall 0.5.18",
  "smallvec",
  "windows-link",
+]
+
+[[package]]
+name = "pdf-writer"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5e456864a7a304047bff84977dc6fb162bd956475d40ba50b2dcecaada7f753"
+dependencies = [
+ "bitflags 2.13.2",
+ "itoa",
+ "memchr",
+ "ryu",
 ]
 
 [[package]]

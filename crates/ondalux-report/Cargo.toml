@@ -1,0 +1,22 @@
+[package]
+name = "ondalux-report"
+description = "Heat map images and PDF reports for Ondalux Heatmap"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ab_glyph = "0.2"
+epaint_default_fonts = "0.36"
+image = { version = "0.25", default-features = false, features = ["png"] }
+miniz_oxide = "0.8"
+ondalux-core.workspace = true
+ondalux-io.workspace = true
+pdf-writer = "0.15"
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+hayro = "0.8"
