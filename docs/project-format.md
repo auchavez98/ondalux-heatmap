@@ -1,4 +1,4 @@
-# `.lux` project format — version 1
+# `.lux` project format — version 2
 
 A `.lux` file is a standard ZIP archive. Any unzip tool can open it.
 
@@ -16,7 +16,7 @@ ZIP is pure Rust to read and write (no C toolchain) and widely supported.
 ```json
 {
   "format": "ondalux-project",
-  "format_version": 1,
+  "format_version": 2,
   "generator": "Ondalux Heatmap 0.1.0",
   "project": { ... }
 }
@@ -25,6 +25,14 @@ ZIP is pure Rust to read and write (no C toolchain) and widely supported.
 Readers must reject files whose `format` differs and files whose
 `format_version` is higher than the one they support. Older versions are
 migrated on load, one version at a time.
+
+| Version | Changes |
+|---|---|
+| 1 | Initial format (floor plan, materials, walls, APs, settings) |
+| 2 | Adds `surveys` and `survey_settings`. Version 1 files load unchanged with no surveys |
+
+Files written under the project's former name (extension `.hcraft`, `format`
+`"heatcraft-project"`) are still read.
 
 ### `project`
 
@@ -39,6 +47,8 @@ migrated on load, one version at a time.
 | `settings` | object | `model`, `receiver_height_m`, `receiver_gain` (dBi), `noise_figure` (dB) |
 | `requirements` | object | `min_rssi` (dBm), `min_snr` (dB), `cca_threshold` (dBm) |
 | `grid_cell_m` | number | Heat map sampling step in meters |
+| `surveys[]` | array | Field surveys, see below (v2) |
+| `survey_settings` | object | `interpolation` (`method`: `"idw"`/`"kriging"`, `idw_power`, `neighbors`, `max_distance_m`), `ssids` (list; empty = all), `missing_rssi` (dBm) (v2) |
 
 All positions are in meters in the plan's coordinate system: origin at the
 top-left corner of the image, x to the right, y down. Pixel position =
@@ -75,3 +85,32 @@ meters × px_per_m.
 `band` is `"2.4GHz"`, `"5GHz"` or `"6GHz"`. `width` is `"20"`, `"40"`,
 `"80"`, `"160"` or `"320"` (MHz). `tx_power` is in dBm, `antenna_gain` in dBi.
 `orientation_deg` is stored but not used by the engine yet (omni antennas only).
+
+### Survey
+
+```json
+{
+  "name": "Survey 1",
+  "source": "Windows WLAN API",
+  "measurements": [
+    {
+      "id": 1,
+      "position": { "x": 4.2, "y": 7.5 },
+      "timestamp_ms": 1760373000000,
+      "readings": [
+        {
+          "bssid": "aa:bb:cc:00:11:22",
+          "ssid": "Corp",
+          "rssi": -58.0,
+          "frequency_mhz": 5180,
+          "security": "wpa2_personal"
+        }
+      ]
+    }
+  ]
+}
+```
+
+`security` is one of `open`, `owe`, `wep`, `wpa_personal`, `wpa2_personal`,
+`wpa3_personal`, `enterprise`, `unknown`. `frequency_mhz` is the primary
+20 MHz channel center. Band and channel are derived from it.

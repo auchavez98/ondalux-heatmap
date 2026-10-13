@@ -163,7 +163,75 @@ in parallel by rows with rayon. Benchmark (`cargo bench -p ondalux-core`),
 | One radio layer | ~27 ms |
 | Combine 20 layers into 5 GHz metrics | ~11 ms |
 | **Move one AP (2 layers + metrics)** | **~50 ms** |
+| Measured map, IDW (200 points, 40 radios) | ~360 ms |
+| Measured map, kriging (200 points, 40 radios) | ~690 ms |
 
 The UI runs the computation on a worker thread and always processes only
 the latest request, so dragging stays smooth even when an update takes longer
 than a frame. GPU compute (wgpu) was not needed to reach the < 100 ms target.
+Measured maps are only rebuilt when the survey or its settings change, not
+when APs move.
+
+## 9. Measured heat maps (field survey)
+
+### From readings to radios
+
+Each survey point holds the BSSes heard there. Virtual BSSIDs of the same
+radio (one per SSID) are grouped into one radio. They share the frequency
+and the MAC address except for the locally-administered bit of the first
+byte and the low nibble of the last byte, which is the usual way vendors
+derive them. This is a heuristic: two physical radios on the same channel
+whose MACs differ only in the last nibble would be merged. The SSID filter
+limits the analysis to the user's own networks.
+
+For every radio and point, the value is the strongest reading of its
+BSSIDs, or the **detection floor** (−100 dBm by default) where it was not
+heard. Channel width is not reported reliably by scans, so measured
+interference assumes 20 MHz channels.
+
+### Interpolation
+
+Values are interpolated in dB onto the same grid as the prediction. Only the
+`k` nearest points (default 12) are used for each cell. Cells farther than
+`max_distance` (default 6 m) from every point get no data.
+
+- **IDW:** `v(x) = Σ wᵢ vᵢ / Σ wᵢ`, `wᵢ = 1 / dᵢᵖ` (p = 2 by default). It
+  is exact at the points and always stays within the range of the data.
+- **Ordinary kriging:** exponential variogram
+  `γ(h) = c₀ + c·(1 − e^(−3h/a))`, fitted by weighted least squares
+  (weights = number of pairs) to a pooled empirical semivariogram of all
+  radios (15 lag bins up to half the maximum distance). The weights solve
+  the kriging system with a Lagrange multiplier, `Σλᵢ = 1`, by Gaussian
+  elimination. If the system is singular, IDW is used for that cell.
+
+Weights depend only on point positions (and the variogram), so they are
+computed once per cell and reused for every radio. The same metrics as the
+prediction (signal, SNR, SINR, AP count, overlap, coverage) are then derived
+from the interpolated radio layers.
+
+### Comparing with the prediction
+
+- **Difference map:** measured − predicted value of the selected metric,
+  where both exist. Red means weaker than predicted, blue stronger.
+  Differences below a chosen threshold can be hidden to highlight problem
+  areas.
+- **Point statistics:** at each survey point, the measured best RSSI in the
+  selected band is compared with the predicted best RSSI in its cell. The app
+  reports the mean error (bias) and the RMSE. A positive mean means the model
+  is pessimistic; a negative one means it is optimistic.
+
+### Validation
+
+`crates/ondalux-scan/tests/survey_pipeline.rs` simulates a 96-point walk
+over a 30 × 20 m floor with two APs and a concrete wall, interpolates it and
+compares the result with the prediction that generated it:
+
+| Method | Shadow fading at points | Mean error | RMS error |
+|---|---|---|---|
+| IDW | 0 dB | −0.4 dB | 1.5 dB |
+| Kriging | 0 dB | −0.3 dB | 1.4 dB |
+| IDW | 4 dB | −1.0 dB | 2.8 dB |
+| Kriging | 4 dB | −0.9 dB | 3.1 dB |
+
+Kriging is not more accurate than IDW in this synthetic case. Its benefit
+in real buildings has not been measured yet.

@@ -3,8 +3,8 @@
 Open source desktop tool for WiFi network design with heat maps, written in
 Rust. Windows, macOS and Linux.
 
-**Status: Phase 1 (predictive design) complete. Phases 2 (field survey) and 3
-(reports) are not started.** See [what works](#status) below.
+**Status: Phase 1 (predictive design) and Phase 2 (field survey) complete.
+Phase 3 (reports) is not started.** See [what works](#status) below.
 
 ![Ondalux Heatmap predicting 5 GHz signal strength on a demo office](docs/images/heatmap-signal-5ghz.jpg)
 
@@ -21,9 +21,15 @@ Rust. Windows, macOS and Linux.
 | Heat maps: signal, SNR, SINR, AP count, channel overlap, coverage requirement (configurable thresholds) | ✅ |
 | Save / open versioned `.lux` projects | ✅ |
 | Undo / redo, dark and light themes, keyboard shortcuts | ✅ |
-| Field survey, WiFi scanning (`ondalux-scan`) | ⚠️ **STUB**: Phase 2 |
-| CSV import, IDW/kriging interpolation, predicted vs. measured | ❌ Phase 2 |
-| PNG/PDF reports, CSV export | ❌ Phase 3 |
+| Survey mode: click your position, record a WiFi scan (SSID, BSSID, RSSI, channel, band, security) | ✅ |
+| WiFi scanning: Windows (WLAN API) | ✅ tested on hardware |
+| WiFi scanning: macOS (CoreWLAN), Linux (nl80211) | ⚠️ compiles and passes clippy, **not yet run on real hardware**; see [docs/scanning.md](docs/scanning.md) |
+| macOS Location Services permission (needed for SSID/BSSID on macOS 14+) | ❌ not implemented |
+| Simulated scanner (prediction + random fading) for demos and tests | ✅ clearly labelled as simulated |
+| Survey CSV import and export | ✅ |
+| Measured heat maps: IDW and ordinary kriging, SSID filter, all six metrics | ✅ |
+| Predicted vs. measured: difference map, per-point error, mean/RMSE | ✅ |
+| PNG/PDF reports, AP list CSV export | ❌ Phase 3 |
 | GPU (wgpu) compute | ❌ Not needed so far (CPU + rayon meets the target) |
 
 ## Building
@@ -63,16 +69,36 @@ cargo run -p ondalux-io --example demo_project -- demo.lux
    them in the right panel.
 5. **Select (V)**: drag APs or the ends of the selected wall; the heat map
    updates live.
-6. Pick the metric (keys **1–6**) and band in the toolbar. **Edit →
+6. Pick the metric (keys **1–6**), band and source (predicted / measured /
+   difference) in the toolbar. **Edit →
    Prediction settings** sets the path loss model, client device and coverage
    requirements (presets: voice/video −67 dBm & 25 dB SNR, data −72 dBm &
    20 dB). **Edit → Materials** edits wall losses.
+
+### Field survey
+
+1. Open the **Survey** tab in the right panel and choose the scanner: this
+   computer's WiFi adapter, or the simulated scanner for demos.
+2. Pick the **Survey (S)** tool, walk to a spot, click your position on the
+   plan and stand still until the scan finishes (2–8 s). Repeat every few
+   meters. Points can be dragged to fix a misplaced click; select one to see
+   every network heard there.
+3. Alternatively, **Import CSV…** from another tool (format in
+   [docs/survey-csv.md](docs/survey-csv.md)).
+4. In **Networks**, keep only your SSIDs. Choose IDW or kriging and the
+   maximum distance from a point to interpolate.
+5. Set the toolbar source to **Measured** for the real heat map, or
+   **Measured − predicted** to see where the design is off. The Survey tab shows
+   the mean error and RMSE at the survey points.
+
+On Windows 11 24H2+, scanning requires *Settings → Privacy & security →
+Location → Let desktop apps access your location*.
 
 | Shortcut | Action |
 |---|---|
 | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S | New from plan / Open / Save / Save as |
 | Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) | Undo / Redo |
-| V, W, A, C | Select, Wall, AP, Calibrate tools |
+| V, W, A, C, S | Select, Wall, AP, Calibrate, Survey tools |
 | 1–6 | Signal, SNR, SINR, AP count, Channel overlap, Coverage |
 | H | Show / hide heat map |
 | F | Fit plan to window |
@@ -87,9 +113,10 @@ crates/
 ├─ ondalux-core   RF engine and data model. No UI, I/O or OS code.
 │   units, geometry (spatial index), channel (802.11 plan), material,
 │   ap, propagation (path loss, noise), predict (RSSI + wall ray casting),
-│   grid (per-radio layer cache, rayon), metrics, project
-├─ ondalux-io     .lux files, PNG/JPEG/PDF plan import (pure Rust)
-├─ ondalux-scan   WiFi scanning backends (STUB, Phase 2)
+│   grid (per-radio layer cache, rayon), metrics, project,
+│   survey (data model), interpolate (IDW, kriging), measured
+├─ ondalux-io     .lux files, PNG/JPEG/PDF plan import, survey CSV (pure Rust)
+├─ ondalux-scan   WifiScanner trait: Windows / macOS / Linux / simulated
 └─ ondalux-app    egui/eframe desktop app (binary `ondalux`)
 ```
 
@@ -100,6 +127,8 @@ worker thread that always processes the newest request.
 - [docs/rf-models.md](docs/rf-models.md): formulas, defaults, limitations
   and benchmark results.
 - [docs/project-format.md](docs/project-format.md): `.lux` file format.
+- [docs/scanning.md](docs/scanning.md): scanning backends and platform limitations.
+- [docs/survey-csv.md](docs/survey-csv.md): survey CSV format.
 
 ## Development
 
@@ -108,6 +137,7 @@ cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo bench -p ondalux-core
+cargo run -p ondalux-scan --example scan   # one real WiFi scan
 ```
 
 CI (GitHub Actions) runs the same checks on Windows, macOS and Linux.
