@@ -1,0 +1,19 @@
+[package]
+name = "heatcraft-app"
+description = "HeatCraft desktop application"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "heatcraft"
+path = "src/main.rs"
+
+[dependencies]
+heatcraft-core.workspace = true
+heatcraft-io.workspace = true
+heatcraft-scan.workspace = true
+
+[lints]
+workspace = true

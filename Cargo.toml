@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/heatcraft-core",
+    "crates/heatcraft-io",
+    "crates/heatcraft-scan",
+    "crates/heatcraft-app",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+rust-version = "1.80"
+repository = ""
+
+[workspace.dependencies]
+heatcraft-core = { path = "crates/heatcraft-core" }
+heatcraft-io = { path = "crates/heatcraft-io" }
+heatcraft-scan = { path = "crates/heatcraft-scan" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[profile.dev.package."*"]
+opt-level = 2
