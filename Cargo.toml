@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/heatcraft-core",
-    "crates/heatcraft-io",
-    "crates/heatcraft-scan",
-    "crates/heatcraft-app",
+    "crates/ondalux-core",
+    "crates/ondalux-io",
+    "crates/ondalux-scan",
+    "crates/ondalux-app",
 ]
 
 [workspace.package]
@@ -15,9 +15,9 @@ rust-version = "1.82"
 repository = ""
 
 [workspace.dependencies]
-heatcraft-core = { path = "crates/heatcraft-core" }
-heatcraft-io = { path = "crates/heatcraft-io" }
-heatcraft-scan = { path = "crates/heatcraft-scan" }
+ondalux-core = { path = "crates/ondalux-core" }
+ondalux-io = { path = "crates/ondalux-io" }
+ondalux-scan = { path = "crates/ondalux-scan" }
 serde = { version = "1", features = ["derive"] }
 rayon = "1"
 

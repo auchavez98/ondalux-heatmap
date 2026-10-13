@@ -1,4 +1,4 @@
-//! HeatCraft I/O: project files, floor plan import, CSV and report export.
+//! Ondalux Heatmap I/O: project files, floor plan import, CSV and report export.
 
 pub mod error;
 pub mod pdf;

@@ -1,18 +1,21 @@
-//! `.hcraft` project files. Format specification: `docs/project-format.md`.
+//! `.lux` project files. Format specification: `docs/project-format.md`.
 //!
-//! A `.hcraft` file is a ZIP archive containing:
+//! A `.lux` file is a ZIP archive containing:
 //! - `project.json`: header (`format`, `format_version`) + the project model;
 //! - `floorplan.<ext>`: the original floor plan image bytes (optional).
 
 use crate::error::IoError;
-use heatcraft_core::project::Project;
+use ondalux_core::project::Project;
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Seek, Write};
 use std::path::Path;
 
-pub const FORMAT_ID: &str = "heatcraft-project";
+pub const FORMAT_ID: &str = "ondalux-project";
 pub const FORMAT_VERSION: u32 = 1;
-pub const EXTENSION: &str = "hcraft";
+pub const EXTENSION: &str = "lux";
+/// Format id and extension used before the project was renamed. Still read.
+pub const LEGACY_FORMAT_ID: &str = "heatcraft-project";
+pub const LEGACY_EXTENSION: &str = "hcraft";
 
 const PROJECT_ENTRY: &str = "project.json";
 const PLAN_PREFIX: &str = "floorplan.";
@@ -72,7 +75,7 @@ impl ProjectFile {
         let header = HeaderOut {
             format: FORMAT_ID,
             format_version: FORMAT_VERSION,
-            generator: format!("HeatCraft {}", env!("CARGO_PKG_VERSION")),
+            generator: format!("Ondalux Heatmap {}", env!("CARGO_PKG_VERSION")),
             project: &self.project,
         };
         serde_json::to_writer_pretty(&mut zip, &header)?;
@@ -95,9 +98,9 @@ impl ProjectFile {
                 .map_err(|_| IoError::Format(format!("missing {PROJECT_ENTRY}")))?;
             serde_json::from_reader(entry)?
         };
-        if header.format != FORMAT_ID {
+        if header.format != FORMAT_ID && header.format != LEGACY_FORMAT_ID {
             return Err(IoError::Format(format!(
-                "not a HeatCraft project (format = {:?})",
+                "not an Ondalux Heatmap project (format = {:?})",
                 header.format
             )));
         }
@@ -135,12 +138,12 @@ impl ProjectFile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use heatcraft_core::ap::{AccessPoint, ApId, Radio};
-    use heatcraft_core::channel::{Band, Channel, ChannelWidth};
-    use heatcraft_core::geometry::{Segment, Vec2};
-    use heatcraft_core::material::{MaterialId, Wall};
-    use heatcraft_core::project::Calibration;
-    use heatcraft_core::units::{Db, Dbm};
+    use ondalux_core::ap::{AccessPoint, ApId, Radio};
+    use ondalux_core::channel::{Band, Channel, ChannelWidth};
+    use ondalux_core::geometry::{Segment, Vec2};
+    use ondalux_core::material::{MaterialId, Wall};
+    use ondalux_core::project::Calibration;
+    use ondalux_core::units::{Db, Dbm};
     use std::io::Cursor;
 
     fn sample() -> ProjectFile {
@@ -189,9 +192,9 @@ mod tests {
 
     #[test]
     fn round_trip_on_disk() {
-        let dir = std::env::temp_dir().join(format!("heatcraft-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ondalux-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("p.hcraft");
+        let path = dir.join("p.lux");
         let original = sample();
         original.save(&path).unwrap();
         assert_eq!(ProjectFile::load(&path).unwrap(), original);
@@ -211,12 +214,28 @@ mod tests {
 
     #[test]
     fn rejects_newer_versions() {
-        let json = r#"{"format":"heatcraft-project","format_version":999,"project":{}}"#;
+        let json = r#"{"format":"ondalux-project","format_version":999,"project":{}}"#;
         let err = ProjectFile::read_from(archive_with(json)).unwrap_err();
         assert!(
             matches!(err, IoError::NewerVersion { found: 999, .. }),
             "{err}"
         );
+    }
+
+    #[test]
+    fn reads_legacy_format_id() {
+        let mut buf = Cursor::new(Vec::new());
+        sample().write_to(&mut buf).unwrap();
+        buf.set_position(0);
+        let mut zip = zip::ZipArchive::new(buf).unwrap();
+        let mut json = String::new();
+        zip.by_name(PROJECT_ENTRY)
+            .unwrap()
+            .read_to_string(&mut json)
+            .unwrap();
+        let legacy = json.replace(FORMAT_ID, LEGACY_FORMAT_ID);
+        let loaded = ProjectFile::read_from(archive_with(&legacy)).unwrap();
+        assert_eq!(loaded.project, sample().project);
     }
 
     #[test]

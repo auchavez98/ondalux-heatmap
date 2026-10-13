@@ -1,18 +1,18 @@
 //! The floor plan canvas: drawing and tool interaction.
 
-use crate::app::{HeatCraftApp, Selection, Tool};
+use crate::app::{OndaluxApp, Selection, Tool};
 use crate::heatmap;
 use crate::view::View;
 use eframe::egui::{
     self, Align2, Color32, FontId, PointerButton, Pos2, Rect, Sense, Shape, Stroke, StrokeKind,
 };
-use heatcraft_core::ap::{AccessPoint, ApId, Radio};
-use heatcraft_core::channel::{Band, Channel, ChannelWidth};
-use heatcraft_core::geometry::{Segment, Vec2 as WVec2};
-use heatcraft_core::material::Wall;
-use heatcraft_core::metrics::{MetricKind, Requirements};
-use heatcraft_core::project::{FloorPlan, Project};
-use heatcraft_core::units::{Db, Dbm};
+use ondalux_core::ap::{AccessPoint, ApId, Radio};
+use ondalux_core::channel::{Band, Channel, ChannelWidth};
+use ondalux_core::geometry::{Segment, Vec2 as WVec2};
+use ondalux_core::material::Wall;
+use ondalux_core::metrics::{MetricKind, Requirements};
+use ondalux_core::project::{FloorPlan, Project};
+use ondalux_core::units::{Db, Dbm};
 
 /// Hit-test tolerances, in screen points.
 const AP_HIT: f32 = 12.0;
@@ -78,7 +78,7 @@ impl Xf<'_> {
     }
 }
 
-pub fn show(app: &mut HeatCraftApp, ui: &mut egui::Ui) {
+pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let rect = ui.available_rect_before_wrap();
     let response = ui.allocate_rect(rect, Sense::click_and_drag());
     let painter = ui.painter_at(rect);
@@ -313,7 +313,7 @@ fn clamp_to_plan(plan: &FloorPlan, m: WVec2) -> WVec2 {
 }
 
 fn handle_tool(
-    app: &mut HeatCraftApp,
+    app: &mut OndaluxApp,
     response: &egui::Response,
     pointer: Option<Pos2>,
     shift: bool,
@@ -591,7 +591,7 @@ fn draw_aps(painter: &egui::Painter, project: &Project, xf: Xf, selection: Selec
 }
 
 fn draw_tool_overlay(
-    app: &HeatCraftApp,
+    app: &OndaluxApp,
     painter: &egui::Painter,
     xf: Xf,
     pointer: Option<Pos2>,

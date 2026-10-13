@@ -1681,45 +1681,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "heatcraft-app"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "heatcraft-core",
- "heatcraft-io",
- "heatcraft-scan",
- "rfd",
-]
-
-[[package]]
-name = "heatcraft-core"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "rayon",
- "serde",
-]
-
-[[package]]
-name = "heatcraft-io"
-version = "0.1.0"
-dependencies = [
- "hayro",
- "heatcraft-core",
- "image",
- "serde",
- "serde_json",
- "zip",
-]
-
-[[package]]
-name = "heatcraft-scan"
-version = "0.1.0"
-dependencies = [
- "heatcraft-core",
-]
-
-[[package]]
 name = "hermit-abi"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2559,6 +2520,45 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "ondalux-app"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "ondalux-core",
+ "ondalux-io",
+ "ondalux-scan",
+ "rfd",
+]
+
+[[package]]
+name = "ondalux-core"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "rayon",
+ "serde",
+]
+
+[[package]]
+name = "ondalux-io"
+version = "0.1.0"
+dependencies = [
+ "hayro",
+ "image",
+ "ondalux-core",
+ "serde",
+ "serde_json",
+ "zip",
+]
+
+[[package]]
+name = "ondalux-scan"
+version = "0.1.0"
+dependencies = [
+ "ondalux-core",
+]
 
 [[package]]
 name = "oorandom"

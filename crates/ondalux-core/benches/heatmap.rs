@@ -6,15 +6,15 @@
 //! 20 dual-band APs (40 radio layers).
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use heatcraft_core::ap::{AccessPoint, ApId, Radio};
-use heatcraft_core::channel::{Band, Channel, ChannelWidth};
-use heatcraft_core::geometry::{Segment, Vec2};
-use heatcraft_core::grid::{compute_layer, GridSpec, LayerCache};
-use heatcraft_core::material::{MaterialId, MaterialLibrary, Wall};
-use heatcraft_core::metrics::{Metrics, Requirements};
-use heatcraft_core::predict::Obstacles;
-use heatcraft_core::propagation::PropagationSettings;
-use heatcraft_core::units::{Db, Dbm};
+use ondalux_core::ap::{AccessPoint, ApId, Radio};
+use ondalux_core::channel::{Band, Channel, ChannelWidth};
+use ondalux_core::geometry::{Segment, Vec2};
+use ondalux_core::grid::{compute_layer, GridSpec, LayerCache};
+use ondalux_core::material::{MaterialId, MaterialLibrary, Wall};
+use ondalux_core::metrics::{Metrics, Requirements};
+use ondalux_core::predict::Obstacles;
+use ondalux_core::propagation::PropagationSettings;
+use ondalux_core::units::{Db, Dbm};
 
 const SIZE_M: f32 = 100.0;
 

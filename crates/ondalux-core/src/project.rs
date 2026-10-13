@@ -1,5 +1,5 @@
 //! The project data model: floor plan calibration, materials, walls, APs
-//! and prediction settings. Serialized by `heatcraft-io`.
+//! and prediction settings. Serialized by `ondalux-io`.
 
 use crate::ap::{AccessPoint, ApId};
 use crate::geometry::Vec2;

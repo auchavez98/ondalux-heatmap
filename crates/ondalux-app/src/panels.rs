@@ -3,17 +3,17 @@
 //! Editors work on a copy of the data; if the copy changed, the document
 //! takes an undo checkpoint and the copy is written back.
 
-use crate::app::{HeatCraftApp, Selection, Tool};
+use crate::app::{OndaluxApp, Selection, Tool};
 use eframe::egui::{self, DragValue};
-use heatcraft_core::ap::{AccessPoint, Radio};
-use heatcraft_core::channel::{Band, Channel, ChannelWidth, PerBand};
-use heatcraft_core::material::MaterialLibrary;
-use heatcraft_core::metrics::Requirements;
-use heatcraft_core::project::Calibration;
-use heatcraft_core::propagation::{PathLossModel, PropagationSettings};
-use heatcraft_core::units::{Db, Dbm};
+use ondalux_core::ap::{AccessPoint, Radio};
+use ondalux_core::channel::{Band, Channel, ChannelWidth, PerBand};
+use ondalux_core::material::MaterialLibrary;
+use ondalux_core::metrics::Requirements;
+use ondalux_core::project::Calibration;
+use ondalux_core::propagation::{PathLossModel, PropagationSettings};
+use ondalux_core::units::{Db, Dbm};
 
-pub fn inspector(app: &mut HeatCraftApp, ui: &mut egui::Ui) {
+pub fn inspector(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let Some(doc) = app.doc.as_mut() else {
         return;
     };
@@ -84,7 +84,7 @@ pub fn inspector(app: &mut HeatCraftApp, ui: &mut egui::Ui) {
     }
 }
 
-fn project_summary(app: &mut HeatCraftApp, ui: &mut egui::Ui) {
+fn project_summary(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let Some(doc) = app.doc.as_mut() else {
         return;
     };
@@ -288,7 +288,7 @@ fn radio_editor(ui: &mut egui::Ui, radio: &mut Radio) {
     ui.weak(format!("Occupies {:.0}–{:.0} MHz", r.lo_mhz, r.hi_mhz));
 }
 
-pub fn calibration_dialog(app: &mut HeatCraftApp, ctx: &egui::Context) {
+pub fn calibration_dialog(app: &mut OndaluxApp, ctx: &egui::Context) {
     let Some((a, b, mut text)) = app.canvas.calib_pending.clone() else {
         return;
     };
@@ -341,7 +341,7 @@ pub fn calibration_dialog(app: &mut HeatCraftApp, ctx: &egui::Context) {
     }
 }
 
-pub fn materials_window(app: &mut HeatCraftApp, ctx: &egui::Context) {
+pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
     if !app.show_materials {
         return;
     }
@@ -415,7 +415,7 @@ pub fn materials_window(app: &mut HeatCraftApp, ctx: &egui::Context) {
     app.show_materials = open;
 }
 
-pub fn settings_window(app: &mut HeatCraftApp, ctx: &egui::Context) {
+pub fn settings_window(app: &mut OndaluxApp, ctx: &egui::Context) {
     if !app.show_settings {
         return;
     }

@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn imports_pdf_as_png() {
-        let dir = std::env::temp_dir().join(format!("heatcraft-pdf-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ondalux-pdf-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("plan.pdf");
         std::fs::write(&path, crate::pdf::tests::sample_pdf()).unwrap();

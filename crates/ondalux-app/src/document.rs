@@ -3,8 +3,8 @@
 //! Undo uses whole-project snapshots: the project model excludes the floor
 //! plan image, so a snapshot is small (walls, APs, settings).
 
-use heatcraft_core::project::Project;
-use heatcraft_io::{PlanImage, ProjectFile};
+use ondalux_core::project::Project;
+use ondalux_io::{PlanImage, ProjectFile};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 

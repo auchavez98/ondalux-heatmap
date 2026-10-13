@@ -1,5 +1,5 @@
 [package]
-name = "heatcraft-scan"
+name = "ondalux-scan"
 description = "Per-platform WiFi scanning behind a common trait (Phase 2)"
 version.workspace = true
 edition.workspace = true
@@ -7,7 +7,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-heatcraft-core.workspace = true
+ondalux-core.workspace = true
 
 [lints]
 workspace = true

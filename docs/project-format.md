@@ -1,6 +1,6 @@
-# `.hcraft` project format — version 1
+# `.lux` project format — version 1
 
-A `.hcraft` file is a standard ZIP archive. Any unzip tool can open it.
+A `.lux` file is a standard ZIP archive. Any unzip tool can open it.
 
 | Entry | Compression | Content |
 |---|---|---|
@@ -15,9 +15,9 @@ ZIP is pure Rust to read and write (no C toolchain) and widely supported.
 
 ```json
 {
-  "format": "heatcraft-project",
+  "format": "ondalux-project",
   "format_version": 1,
-  "generator": "HeatCraft 0.1.0",
+  "generator": "Ondalux Heatmap 0.1.0",
   "project": { ... }
 }
 ```

@@ -6,13 +6,13 @@ use crate::heatmap::{self, Worker};
 use crate::panels;
 use crate::view::View;
 use eframe::egui::{self, Key, KeyboardShortcut, Modifiers, TextureHandle, TextureOptions};
-use heatcraft_core::ap::ApId;
-use heatcraft_core::channel::Band;
-use heatcraft_core::grid::GridSpec;
-use heatcraft_core::material::MaterialId;
-use heatcraft_core::metrics::{MetricKind, Metrics};
-use heatcraft_core::project::Project;
-use heatcraft_io::{decode_plan, import_plan, ProjectFile};
+use ondalux_core::ap::ApId;
+use ondalux_core::channel::Band;
+use ondalux_core::grid::GridSpec;
+use ondalux_core::material::MaterialId;
+use ondalux_core::metrics::{MetricKind, Metrics};
+use ondalux_core::project::Project;
+use ondalux_io::{decode_plan, import_plan, ProjectFile};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -78,7 +78,7 @@ pub struct HeatmapView {
     pub last_recomputed: usize,
 }
 
-pub struct HeatCraftApp {
+pub struct OndaluxApp {
     pub doc: Option<Document>,
     pub tool: Tool,
     pub selection: Selection,
@@ -102,7 +102,7 @@ pub struct HeatCraftApp {
 /// How long status bar messages stay visible.
 const STATUS_TTL: Duration = Duration::from_secs(8);
 
-impl HeatCraftApp {
+impl OndaluxApp {
     /// `path` (from the command line) may be a project or a floor plan image.
     pub fn new(cc: &eframe::CreationContext<'_>, path: Option<PathBuf>) -> Self {
         cc.egui_ctx.set_theme(egui::Theme::Dark);
@@ -135,9 +135,10 @@ impl HeatCraftApp {
             status_at: None,
         };
         if let Some(path) = path {
-            let is_project = path
-                .extension()
-                .is_some_and(|e| e.eq_ignore_ascii_case(heatcraft_io::project_file::EXTENSION));
+            let is_project = path.extension().is_some_and(|e| {
+                e.eq_ignore_ascii_case(ondalux_io::project_file::EXTENSION)
+                    || e.eq_ignore_ascii_case(ondalux_io::project_file::LEGACY_EXTENSION)
+            });
             if is_project {
                 app.open_path(&cc.egui_ctx, path);
             } else {
@@ -245,8 +246,11 @@ impl HeatCraftApp {
         let Some(path) = rfd::FileDialog::new()
             .set_title("Open project")
             .add_filter(
-                "HeatCraft project",
-                &[heatcraft_io::project_file::EXTENSION],
+                "Ondalux Heatmap project",
+                &[
+                    ondalux_io::project_file::EXTENSION,
+                    ondalux_io::project_file::LEGACY_EXTENSION,
+                ],
             )
             .pick_file()
         else {
@@ -277,18 +281,18 @@ impl HeatCraftApp {
                     .set_file_name(format!(
                         "{}.{}",
                         doc.project.name,
-                        heatcraft_io::project_file::EXTENSION
+                        ondalux_io::project_file::EXTENSION
                     ))
                     .add_filter(
-                        "HeatCraft project",
-                        &[heatcraft_io::project_file::EXTENSION],
+                        "Ondalux Heatmap project",
+                        &[ondalux_io::project_file::EXTENSION],
                     )
                     .save_file()
                 else {
                     return;
                 };
                 if p.extension().is_none() {
-                    p.set_extension(heatcraft_io::project_file::EXTENSION);
+                    p.set_extension(ondalux_io::project_file::EXTENSION);
                 }
                 p
             }
@@ -546,7 +550,7 @@ impl HeatCraftApp {
                 }
             });
             ui.menu_button("Help", |ui| {
-                if ui.button("About HeatCraft").clicked() {
+                if ui.button("About Ondalux Heatmap").clicked() {
                     self.show_about = true;
                 }
             });
@@ -715,12 +719,12 @@ impl HeatCraftApp {
         }
 
         if self.show_about {
-            egui::Window::new("About HeatCraft")
+            egui::Window::new("About Ondalux Heatmap")
                 .open(&mut self.show_about)
                 .collapsible(false)
                 .resizable(false)
                 .show(ctx, |ui| {
-                    ui.label(format!("HeatCraft {}", env!("CARGO_PKG_VERSION")));
+                    ui.label(format!("Ondalux Heatmap {}", env!("CARGO_PKG_VERSION")));
                     ui.label("Open source WiFi design and heat map tool.");
                     ui.label("Licensed under MIT or Apache-2.0.");
                 });
@@ -732,7 +736,7 @@ impl HeatCraftApp {
     }
 }
 
-impl eframe::App for HeatCraftApp {
+impl eframe::App for OndaluxApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
 
@@ -742,8 +746,8 @@ impl eframe::App for HeatCraftApp {
         }
 
         let title = match &self.doc {
-            Some(d) => format!("{} — HeatCraft", d.title()),
-            None => "HeatCraft".to_owned(),
+            Some(d) => format!("{} — Ondalux Heatmap", d.title()),
+            None => "Ondalux Heatmap".to_owned(),
         };
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
 
@@ -783,11 +787,11 @@ fn file_name(path: &std::path::Path) -> String {
     )
 }
 
-fn welcome(app: &mut HeatCraftApp, ui: &mut egui::Ui) {
+fn welcome(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
     ui.vertical_centered(|ui| {
         ui.add_space(ui.available_height() * 0.3);
-        ui.heading("HeatCraft");
+        ui.heading("Ondalux Heatmap");
         ui.label("WiFi design and heat maps");
         ui.add_space(16.0);
         if ui.button("New project from floor plan…").clicked() {

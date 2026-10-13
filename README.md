@@ -1,4 +1,4 @@
-# HeatCraft (provisional name)
+# Ondalux Heatmap
 
 Open source desktop tool for WiFi network design with heat maps, written in
 Rust. Windows, macOS and Linux.
@@ -6,7 +6,7 @@ Rust. Windows, macOS and Linux.
 **Status: Phase 1 (predictive design) complete. Phases 2 (field survey) and 3
 (reports) are not started.** See [what works](#status) below.
 
-![HeatCraft predicting 5 GHz signal strength on a demo office](docs/images/heatmap-signal-5ghz.jpg)
+![Ondalux Heatmap predicting 5 GHz signal strength on a demo office](docs/images/heatmap-signal-5ghz.jpg)
 
 ## Status
 
@@ -19,9 +19,9 @@ Rust. Windows, macOS and Linux.
 | AP orientation / directional antennas | ⚠️ **STUB**: stored and editable, ignored by the engine (omni only) |
 | RF engine: FSPL / log-distance, wall ray casting, RSSI, SNR, SINR (co- and adjacent-channel), AP count, channel overlap | ✅ |
 | Heat maps: signal, SNR, SINR, AP count, channel overlap, coverage requirement (configurable thresholds) | ✅ |
-| Save / open versioned `.hcraft` projects | ✅ |
+| Save / open versioned `.lux` projects | ✅ |
 | Undo / redo, dark and light themes, keyboard shortcuts | ✅ |
-| Field survey, WiFi scanning (`heatcraft-scan`) | ⚠️ **STUB**: Phase 2 |
+| Field survey, WiFi scanning (`ondalux-scan`) | ⚠️ **STUB**: Phase 2 |
 | CSV import, IDW/kriging interpolation, predicted vs. measured | ❌ Phase 2 |
 | PNG/PDF reports, CSV export | ❌ Phase 3 |
 | GPU (wgpu) compute | ❌ Not needed so far (CPU + rayon meets the target) |
@@ -31,7 +31,7 @@ Rust. Windows, macOS and Linux.
 Requires Rust 1.82 or newer.
 
 ```bash
-cargo run --release -p heatcraft-app
+cargo run --release -p ondalux-app
 ```
 
 On Linux, egui needs the usual windowing libraries
@@ -41,13 +41,13 @@ on Debian/Ubuntu).
 You can pass a project or a floor plan on the command line:
 
 ```bash
-cargo run --release -p heatcraft-app -- plan.pdf
+cargo run --release -p ondalux-app -- plan.pdf
 ```
 
 To generate a demo project (synthetic 40 × 25 m office with 4 APs):
 
 ```bash
-cargo run -p heatcraft-io --example demo_project -- demo.hcraft
+cargo run -p ondalux-io --example demo_project -- demo.lux
 ```
 
 ## Quick guide
@@ -84,13 +84,13 @@ cargo run -p heatcraft-io --example demo_project -- demo.hcraft
 
 ```
 crates/
-├─ heatcraft-core   RF engine and data model. No UI, I/O or OS code.
+├─ ondalux-core   RF engine and data model. No UI, I/O or OS code.
 │   units, geometry (spatial index), channel (802.11 plan), material,
 │   ap, propagation (path loss, noise), predict (RSSI + wall ray casting),
 │   grid (per-radio layer cache, rayon), metrics, project
-├─ heatcraft-io     .hcraft files, PNG/JPEG/PDF plan import (pure Rust)
-├─ heatcraft-scan   WiFi scanning backends (STUB, Phase 2)
-└─ heatcraft-app    egui/eframe desktop app (binary `heatcraft`)
+├─ ondalux-io     .lux files, PNG/JPEG/PDF plan import (pure Rust)
+├─ ondalux-scan   WiFi scanning backends (STUB, Phase 2)
+└─ ondalux-app    egui/eframe desktop app (binary `ondalux`)
 ```
 
 The engine keeps one RSSI grid per radio and only recomputes the radios
@@ -99,7 +99,7 @@ worker thread that always processes the newest request.
 
 - [docs/rf-models.md](docs/rf-models.md): formulas, defaults, limitations
   and benchmark results.
-- [docs/project-format.md](docs/project-format.md): `.hcraft` file format.
+- [docs/project-format.md](docs/project-format.md): `.lux` file format.
 
 ## Development
 
@@ -107,14 +107,14 @@ worker thread that always processes the newest request.
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo bench -p heatcraft-core
+cargo bench -p ondalux-core
 ```
 
 CI (GitHub Actions) runs the same checks on Windows, macOS and Linux.
 
 ## Clean-room statement
 
-HeatCraft is an independent implementation based only on public knowledge
+Ondalux Heatmap is an independent implementation based only on public knowledge
 (RF propagation theory, IEEE 802.11 standards, public vendor documentation).
 It uses no code, assets, names or trademarks from any commercial product.
 

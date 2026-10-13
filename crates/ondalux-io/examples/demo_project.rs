@@ -1,16 +1,16 @@
 //! Generates a demo project: a synthetic 40 m × 25 m office floor plan with
 //! matching walls and four dual-band APs.
 //!
-//! Usage: `cargo run -p heatcraft-io --example demo_project -- [out.hcraft]`
+//! Usage: `cargo run -p ondalux-io --example demo_project -- [out.lux]`
 
-use heatcraft_core::ap::{AccessPoint, ApId, Radio};
-use heatcraft_core::channel::{Band, Channel, ChannelWidth};
-use heatcraft_core::geometry::{Segment, Vec2};
-use heatcraft_core::material::{MaterialId, Wall};
-use heatcraft_core::project::{Calibration, Project};
-use heatcraft_core::units::{Db, Dbm};
-use heatcraft_io::{PlanImage, ProjectFile};
 use image::{Rgba, RgbaImage};
+use ondalux_core::ap::{AccessPoint, ApId, Radio};
+use ondalux_core::channel::{Band, Channel, ChannelWidth};
+use ondalux_core::geometry::{Segment, Vec2};
+use ondalux_core::material::{MaterialId, Wall};
+use ondalux_core::project::{Calibration, Project};
+use ondalux_core::units::{Db, Dbm};
+use ondalux_io::{PlanImage, ProjectFile};
 use std::path::PathBuf;
 
 const PX_PER_M: f32 = 40.0;
@@ -25,7 +25,7 @@ const METAL: u32 = 6;
 fn main() {
     let out = std::env::args_os()
         .nth(1)
-        .map_or_else(|| PathBuf::from("demo.hcraft"), PathBuf::from);
+        .map_or_else(|| PathBuf::from("demo.lux"), PathBuf::from);
 
     // (x0, y0, x1, y1, material) in meters.
     let walls: &[(f32, f32, f32, f32, u32)] = &[

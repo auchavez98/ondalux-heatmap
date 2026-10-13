@@ -6,9 +6,9 @@ pub enum IoError {
     Json(serde_json::Error),
     Zip(zip::result::ZipError),
     Image(image::ImageError),
-    /// The file is not a valid HeatCraft file.
+    /// The file is not a valid Ondalux Heatmap file.
     Format(String),
-    /// The file was written by a newer HeatCraft version.
+    /// The file was written by a newer Ondalux Heatmap version.
     NewerVersion {
         found: u32,
         supported: u32,
@@ -27,7 +27,7 @@ impl fmt::Display for IoError {
             IoError::Format(m) => write!(f, "invalid file: {m}"),
             IoError::NewerVersion { found, supported } => write!(
                 f,
-                "project format version {found} is newer than the supported version {supported}; update HeatCraft"
+                "project format version {found} is newer than the supported version {supported}; update Ondalux Heatmap"
             ),
             IoError::Unsupported(m) => write!(f, "unsupported: {m}"),
         }

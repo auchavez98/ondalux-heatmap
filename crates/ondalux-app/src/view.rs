@@ -1,7 +1,7 @@
 //! Canvas viewport: maps image pixels to screen points (pan + zoom).
 
 use eframe::egui::{Pos2, Rect, Vec2};
-use heatcraft_core::geometry::Vec2 as WVec2;
+use ondalux_core::geometry::Vec2 as WVec2;
 
 pub const MIN_ZOOM: f32 = 0.02;
 pub const MAX_ZOOM: f32 = 40.0;

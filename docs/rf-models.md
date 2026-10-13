@@ -1,7 +1,7 @@
-# RF models used by HeatCraft
+# RF models used by Ondalux Heatmap
 
 This document describes exactly what the prediction engine
-(`crates/heatcraft-core`) computes, and what it does not. All formulas come
+(`crates/ondalux-core`) computes, and what it does not. All formulas come
 from public RF propagation theory and the IEEE 802.11 channel plan.
 
 ## 1. Received signal (RSSI)
@@ -153,7 +153,7 @@ measurements.
 
 The engine keeps one RSSI layer per radio and recomputes only the layers
 whose inputs changed (position, height, channel, EIRP). Layers are computed
-in parallel by rows with rayon. Benchmark (`cargo bench -p heatcraft-core`),
+in parallel by rows with rayon. Benchmark (`cargo bench -p ondalux-core`),
 100 × 100 m plan at 20 px/m (2000 × 2000 px) sampled every 0.2 m
 (250 000 cells), ~440 walls, 20 dual-band APs, on an Intel Core 5 210H
 (12 threads):

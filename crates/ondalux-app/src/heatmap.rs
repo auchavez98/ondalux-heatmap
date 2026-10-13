@@ -5,13 +5,13 @@
 //! cache between requests and sends back a colored image plus the metrics.
 
 use eframe::egui::{Color32, ColorImage, Context};
-use heatcraft_core::ap::AccessPoint;
-use heatcraft_core::channel::Band;
-use heatcraft_core::grid::{GridSpec, LayerCache};
-use heatcraft_core::material::{MaterialLibrary, Wall};
-use heatcraft_core::metrics::{MetricKind, Metrics, Requirements};
-use heatcraft_core::predict::Obstacles;
-use heatcraft_core::propagation::PropagationSettings;
+use ondalux_core::ap::AccessPoint;
+use ondalux_core::channel::Band;
+use ondalux_core::grid::{GridSpec, LayerCache};
+use ondalux_core::material::{MaterialLibrary, Wall};
+use ondalux_core::metrics::{MetricKind, Metrics, Requirements};
+use ondalux_core::predict::Obstacles;
+use ondalux_core::propagation::PropagationSettings;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -240,7 +240,7 @@ fn colorize(m: &Metrics, kind: MetricKind) -> ColorImage {
     let pixels = (0..m.grid.len())
         .map(|i| {
             let unusable =
-                m.serving[i] == heatcraft_core::metrics::NO_SERVER || m.rssi[i] < RSSI_CUTOFF;
+                m.serving[i] == ondalux_core::metrics::NO_SERVER || m.rssi[i] < RSSI_CUTOFF;
             if unusable && kind != MetricKind::Coverage && kind != MetricKind::ApCount {
                 Color32::TRANSPARENT
             } else {
