@@ -81,6 +81,11 @@ pub enum Finding {
         rmse_db: f32,
         points: usize,
     },
+    /// Coverage meets the target but some small areas do not.
+    MinorGaps {
+        count: usize,
+        area_m2: f32,
+    },
     /// Everything meets the requirements.
     AllGood,
 }
@@ -98,6 +103,7 @@ impl Finding {
             Finding::NonStandard24Channels { .. }
             | Finding::Wide24Channels { .. }
             | Finding::ReduceChannelWidth { .. }
+            | Finding::MinorGaps { .. }
             | Finding::AllGood => Severity::Info,
         }
     }
@@ -271,6 +277,12 @@ pub fn analyze_band(
     if radios.is_empty() {
         findings.push(Finding::NoAccessPoints);
     } else {
+        if coverage_ratio >= TARGET_COVERAGE && !gaps.is_empty() {
+            findings.push(Finding::MinorGaps {
+                count: gaps.len(),
+                area_m2: gaps.iter().map(|z| z.area_m2).sum(),
+            });
+        }
         if coverage_ratio < TARGET_COVERAGE {
             findings.push(Finding::LowCoverage {
                 ratio: coverage_ratio,

@@ -169,6 +169,7 @@ pub fn compute_bands(
                         band.label()
                     )),
                     band: Some(band),
+                    label_scale: 1.7,
                     ..Default::default()
                 },
             );
@@ -195,6 +196,11 @@ pub fn compute_bands(
                         project.requirements.min_snr.0
                     )),
                     band: Some(band),
+                    label_scale: 1.7,
+                    discrete_labels: Some(vec![
+                        lang.t("No cumple", "Fails").to_owned(),
+                        lang.t("Cumple", "Meets").to_owned(),
+                    ]),
                     ..Default::default()
                 },
             );
@@ -303,6 +309,15 @@ pub fn finding_text(f: &Finding, l: Lang) -> String {
             l.t(
                 "Ajuste las atenuaciones de las paredes o el exponente de pérdida para calibrar el modelo.",
                 "Adjust wall losses or the path loss exponent to calibrate the model."
+            )
+        ),
+        Finding::MinorGaps { count, area_m2 } => format!(
+            "{} {count} {} ({area_m2:.1} m²) {}",
+            l.t("La cobertura cumple el objetivo, pero", "Coverage meets the target, but"),
+            l.t("zona(s) pequeña(s)", "small area(s)"),
+            l.t(
+                "no cumplen los requisitos; vea la tabla de zonas.",
+                "do not meet the requirements; see the table of areas."
             )
         ),
         Finding::AllGood => l
@@ -503,25 +518,19 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
                 "Analysed area: inside the outline of the walls"
             ),
         ));
-        doc.text(
+        doc.figure(
             l.t("Intensidad de señal", "Signal strength"),
-            11.0,
-            true,
-            TEXT,
-            0.0,
+            &r.signal_map,
+            310.0,
         );
-        doc.image(&r.signal_map, 330.0);
-        doc.text(
+        doc.figure(
             l.t(
                 "Cobertura según requisitos (zonas sin cobertura numeradas)",
                 "Coverage against requirements (gaps numbered)",
             ),
-            11.0,
-            true,
-            TEXT,
-            0.0,
+            &r.coverage_map,
+            310.0,
         );
-        doc.image(&r.coverage_map, 330.0);
 
         if !r.analysis.gaps.is_empty() {
             doc.heading(

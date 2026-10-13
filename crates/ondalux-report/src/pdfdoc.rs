@@ -280,6 +280,20 @@ impl Doc {
         self.space(6.0);
     }
 
+    /// Height in points of `img` when placed with [`Self::image`].
+    pub fn image_height(img: &RgbaImage, max_h: f32) -> f32 {
+        let avail_w = PAGE_W - 2.0 * MARGIN;
+        let (iw, ih) = (img.width() as f32, img.height() as f32);
+        ih * (avail_w / iw).min(max_h / ih)
+    }
+
+    /// Caption and image kept together on one page.
+    pub fn figure(&mut self, caption: &str, img: &RgbaImage, max_h: f32) {
+        self.ensure(Self::image_height(img, max_h) + 22.0);
+        self.text(caption, 11.0, true, TEXT, 0.0);
+        self.image(img, max_h);
+    }
+
     /// Image scaled to fit the text width (and `max_h` points).
     pub fn image(&mut self, img: &RgbaImage, max_h: f32) {
         let avail_w = PAGE_W - 2.0 * MARGIN;

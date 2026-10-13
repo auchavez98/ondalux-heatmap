@@ -39,6 +39,10 @@ pub struct MapOptions<'a> {
     pub band: Option<Band>,
     pub show_walls: bool,
     pub show_aps: bool,
+    /// Multiplies label, AP and legend sizes (e.g. for images shrunk in a PDF).
+    pub label_scale: f32,
+    /// Replaces the tick labels of a discrete scale (one per stop).
+    pub discrete_labels: Option<Vec<String>>,
 }
 
 impl Default for MapOptions<'_> {
@@ -51,6 +55,8 @@ impl Default for MapOptions<'_> {
             band: None,
             show_walls: true,
             show_aps: true,
+            label_scale: 1.0,
+            discrete_labels: None,
         }
     }
 }
@@ -115,7 +121,7 @@ pub fn render_map(project: &Project, plan: Option<&DecodedPlan>, opts: &MapOptio
     // Output pixels per meter.
     let ppm = project.plan.px_per_m() * s;
     let to_px = |m: Vec2| (m.x * ppm, m.y * ppm);
-    let ui = (out_w as f32 / 1200.0).clamp(0.6, 2.0);
+    let ui = (out_w as f32 / 1200.0).clamp(0.6, 2.0) * opts.label_scale.max(0.1);
 
     if let Some(layer) = &opts.heat {
         let alpha = (layer.opacity.clamp(0.0, 1.0) * 255.0) as u8;
@@ -198,7 +204,19 @@ pub fn render_map(project: &Project, plan: Option<&DecodedPlan>, opts: &MapOptio
     }
 
     if let (Some(layer), Some(title)) = (&opts.heat, &opts.legend_title) {
-        draw_legend(&mut cv, layer.scale, title, ui);
+        // The legend goes in a strip below the plan so it never hides it.
+        let strip = (76.0 * ui).ceil() as u32;
+        let mut tall = RgbaImage::from_pixel(out_w, out_h + strip, Rgba(WHITE));
+        imageops::overlay(&mut tall, &cv.img, 0, 0);
+        let mut cv = Canvas::new(tall);
+        draw_legend(
+            &mut cv,
+            layer.scale,
+            title,
+            ui,
+            opts.discrete_labels.as_deref(),
+        );
+        return cv.img;
     }
     cv.img
 }
@@ -212,14 +230,20 @@ fn darken(c: [u8; 4]) -> Color {
     ]
 }
 
-fn draw_legend(cv: &mut Canvas, scale: ColorScale, title: &str, ui: f32) {
+fn draw_legend(
+    cv: &mut Canvas,
+    scale: ColorScale,
+    title: &str,
+    ui: f32,
+    labels: Option<&[String]>,
+) {
     let fs = 12.0 * ui;
     let small = 11.0 * ui;
     let pad = 8.0 * ui;
     let width = (300.0 * ui).max(cv.text_size(title, fs).0 + 2.0 * pad);
     let height = 60.0 * ui;
     let x = 12.0 * ui;
-    let y = cv.height() as f32 - height - 12.0 * ui;
+    let y = cv.height() as f32 - height - 8.0 * ui;
     cv.fill_rect(x, y, width, height, [255, 255, 255, 235]);
     cv.stroke_rect(x, y, width, height, 1.0, [120, 120, 120, 255]);
     cv.text(x + pad, y + pad * 0.6, title, fs, BLACK);
@@ -235,7 +259,9 @@ fn draw_legend(cv: &mut Canvas, scale: ColorScale, title: &str, ui: f32) {
             let cw = bar_w / n as f32;
             let [r, g, b] = scale.rgb(*v);
             cv.fill_rect(cx0, bar_y, cw, bar_h, [r, g, b, 255]);
-            let t = if i == n - 1 && n > 2 {
+            let t = if let Some(l) = labels.and_then(|l| l.get(i)) {
+                l.clone()
+            } else if i == n - 1 && n > 2 {
                 format!("{v:.0}+")
             } else {
                 format!("{v:.0}")
@@ -296,7 +322,8 @@ mod tests {
                 ..Default::default()
             },
         );
-        assert_eq!((img.width(), img.height()), (400, 200));
+        assert_eq!(img.width(), 400);
+        assert!(img.height() > 200, "legend strip below the plan");
         let strong = ColorScale::Metric(MetricKind::Rssi).rgb(-50.0);
         assert_eq!(&img.get_pixel(100, 20).0[..3], &strong);
         // No data: background stays.
