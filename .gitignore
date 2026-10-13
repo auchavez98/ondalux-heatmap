@@ -1,3 +1,4 @@
 /target
 *.lux.bak
 .claude/
+/dist

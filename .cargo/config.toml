@@ -1,0 +1,4 @@
+# Link the C runtime statically on Windows so ondalux.exe runs on machines
+# without the Visual C++ Redistributable (fully portable single file).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
