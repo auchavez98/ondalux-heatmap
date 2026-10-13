@@ -7,7 +7,9 @@
 pub mod ap;
 pub mod channel;
 pub mod geometry;
+pub mod grid;
 pub mod material;
+pub mod metrics;
 pub mod predict;
 pub mod propagation;
 pub mod units;
