@@ -11,5 +11,6 @@ pub mod grid;
 pub mod material;
 pub mod metrics;
 pub mod predict;
+pub mod project;
 pub mod propagation;
 pub mod units;
