@@ -127,5 +127,55 @@ fn bench(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench);
+fn bench_measured(c: &mut Criterion) {
+    use ondalux_core::interpolate::{InterpolationMethod, InterpolationSettings};
+    use ondalux_core::measured::{self, MeasuredSettings};
+    use ondalux_core::survey::{BssReading, Measurement, Security, Survey};
+
+    // 200 survey points over 100 × 100 m, 40 radios heard everywhere.
+    let mut survey = Survey::new("bench", "synthetic");
+    for i in 0..200u32 {
+        let p = Vec2::new((i % 20) as f32 * 5.0 + 2.5, (i / 20) as f32 * 10.0 + 5.0);
+        let readings = (0..40u32)
+            .map(|r| BssReading {
+                bssid: format!("00:00:00:00:{:02x}:00", r),
+                ssid: "Corp".into(),
+                rssi: Dbm(-40.0 - ((i * 7 + r * 13) % 50) as f32),
+                frequency_mhz: if r % 2 == 0 { 5180 } else { 2412 },
+                security: Security::Wpa2Personal,
+            })
+            .collect();
+        survey.measurements.push(Measurement {
+            id: i + 1,
+            position: p,
+            timestamp_ms: 0,
+            readings,
+        });
+    }
+    let grid = GridSpec::covering(SIZE_M, SIZE_M, 0.2);
+    for (name, method) in [
+        (
+            "measured_idw_250k_cells_200_points_40_radios",
+            InterpolationMethod::Idw,
+        ),
+        (
+            "measured_kriging_250k_cells_200_points_40_radios",
+            InterpolationMethod::Kriging,
+        ),
+    ] {
+        let settings = MeasuredSettings {
+            interpolation: InterpolationSettings {
+                method,
+                max_distance_m: 15.0,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        c.bench_function(name, |b| {
+            b.iter(|| measured::build(&survey, grid, &settings))
+        });
+    }
+}
+
+criterion_group!(benches, bench, bench_measured);
 criterion_main!(benches);

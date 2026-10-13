@@ -23,3 +23,6 @@ objc2-foundation = { version = "0.3", features = ["NSArray", "NSSet", "NSString"
 wl-nl80211 = "0.8"
 tokio = { version = "1", features = ["rt", "time"] }
 futures = "0.3"
+
+[dev-dependencies]
+ondalux-io = { path = "../ondalux-io" }

@@ -2733,6 +2733,7 @@ dependencies = [
  "objc2-core-wlan",
  "objc2-foundation 0.3.2",
  "ondalux-core",
+ "ondalux-io",
  "tokio",
  "windows-sys 0.60.2",
  "wl-nl80211",
