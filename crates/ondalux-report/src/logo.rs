@@ -170,10 +170,12 @@ mod tests {
     #[ignore]
     fn export_logo_png() {
         let dir = std::env::var("ONDALUX_LOGO_DIR").expect("set ONDALUX_LOGO_DIR");
-        let s = 512;
-        let img = image::RgbaImage::from_raw(s, s, rgba(s)).unwrap();
-        img.save(std::path::Path::new(&dir).join("logo.png"))
-            .unwrap();
+        let dir = std::path::Path::new(&dir);
+        for (s, name) in [(512, "logo.png"), (180, "apple-touch-icon.png"), (32, "favicon-32.png")] {
+            let img = image::RgbaImage::from_raw(s, s, rgba(s)).unwrap();
+            img.save(dir.join(name)).unwrap();
+        }
+        std::fs::write(dir.join("favicon.ico"), ico()).unwrap();
     }
 
     #[test]

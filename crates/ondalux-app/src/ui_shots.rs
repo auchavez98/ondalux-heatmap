@@ -15,7 +15,15 @@ fn harness(path: Option<PathBuf>) -> Harness<'static, OndaluxApp> {
     Harness::builder()
         .with_size(SIZE)
         .wgpu()
-        .build_eframe(move |cc| OndaluxApp::new(cc, path))
+        .build_eframe(move |cc| {
+            let mut app = OndaluxApp::new(cc, path);
+            // ONDALUX_LANG=en renders the English UI (for the website).
+            if let Ok(lang) = std::env::var("ONDALUX_LANG") {
+                crate::i18n::set_english(lang == "en");
+                app.status = None;
+            }
+            app
+        })
 }
 
 /// Steps the UI until the background heat map has arrived.
