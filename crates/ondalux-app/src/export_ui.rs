@@ -3,6 +3,8 @@
 
 use crate::app::OndaluxApp;
 use crate::heatmap::Source;
+use crate::i18n::t;
+use crate::tr;
 use eframe::egui;
 use ondalux_core::channel::Band;
 use ondalux_core::colormap::ColorScale;
@@ -70,7 +72,10 @@ pub fn export_png(app: &mut OndaluxApp) {
         return;
     };
     let Some(field) = app.heat.field.clone() else {
-        app.error("The heat map is still being computed; try again in a moment.");
+        app.error(t(
+            "El mapa de calor aún se está calculando; inténtalo en un momento.",
+            "The heat map is still being computed; try again in a moment.",
+        ));
         return;
     };
     let metric = app.heat.metric;
@@ -82,9 +87,12 @@ pub fn export_png(app: &mut OndaluxApp) {
         safe_name(band.label())
     );
     let Some(mut path) = rfd::FileDialog::new()
-        .set_title("Export heat map image")
+        .set_title(t(
+            "Exportar imagen del mapa de calor",
+            "Export heat map image",
+        ))
         .set_file_name(default_name)
-        .add_filter("PNG image", &["png"])
+        .add_filter(t("Imagen PNG", "PNG image"), &["png"])
         .save_file()
     else {
         return;
@@ -124,13 +132,18 @@ pub fn export_png(app: &mut OndaluxApp) {
         },
     );
     match img.save(&path) {
-        Ok(()) => app.info(format!(
+        Ok(()) => app.info(tr!(
+            "Guardado {} ({}×{} px).",
             "Saved {} ({}×{} px).",
             path.display(),
             img.width(),
             img.height()
         )),
-        Err(e) => app.error(format!("Could not save {}: {e}", path.display())),
+        Err(e) => app.error(tr!(
+            "No se pudo guardar {}: {e}",
+            "Could not save {}: {e}",
+            path.display()
+        )),
     }
 }
 
@@ -139,7 +152,7 @@ pub fn export_ap_csv(app: &mut OndaluxApp) {
         return;
     };
     let Some(path) = rfd::FileDialog::new()
-        .set_title("Export access points")
+        .set_title(t("Exportar puntos de acceso", "Export access points"))
         .set_file_name(format!("{}-aps.csv", safe_name(&doc.project.name)))
         .add_filter("CSV", &["csv"])
         .save_file()
@@ -152,12 +165,13 @@ pub fn export_ap_csv(app: &mut OndaluxApp) {
             ondalux_io::ap_csv::write_ap_csv(std::io::BufWriter::new(f), &doc.project.aps)
         });
     match result {
-        Ok(()) => app.info(format!(
+        Ok(()) => app.info(tr!(
+            "{} puntos de acceso exportados a {}.",
             "Exported {} access points to {}.",
             doc.project.aps.len(),
             path.display()
         )),
-        Err(e) => app.error(format!("Could not export: {e}")),
+        Err(e) => app.error(tr!("No se pudo exportar: {e}", "Could not export: {e}")),
     }
 }
 
@@ -171,8 +185,15 @@ pub fn poll(app: &mut OndaluxApp) {
     };
     app.export.job = None;
     match result {
-        Ok(kb) => app.info(format!("Report saved: {} ({kb} KB).", path.display())),
-        Err(e) => app.error(format!("Could not save the report: {e}")),
+        Ok(kb) => app.info(tr!(
+            "Reporte guardado: {} ({kb} KB).",
+            "Report saved: {} ({kb} KB).",
+            path.display()
+        )),
+        Err(e) => app.error(tr!(
+            "No se pudo guardar el reporte: {e}",
+            "Could not save the report: {e}"
+        )),
     }
 }
 
@@ -197,7 +218,7 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
 
     let mut open = true;
     let mut generate = false;
-    egui::Window::new("PDF report")
+    egui::Window::new(t("Reporte PDF", "PDF report"))
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
@@ -205,44 +226,46 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
             egui::Grid::new("report-opts")
                 .num_columns(2)
                 .show(ui, |ui| {
-                    ui.label("Language");
+                    ui.label(t("Idioma", "Language"));
                     ui.horizontal(|ui| {
                         ui.radio_value(&mut st.lang, Lang::Es, "Español");
                         ui.radio_value(&mut st.lang, Lang::En, "English");
                     });
                     ui.end_row();
-                    ui.label("Author");
+                    ui.label(t("Autor", "Author"));
                     ui.text_edit_singleline(&mut st.author);
                     ui.end_row();
-                    ui.label("Bands");
+                    ui.label(t("Bandas", "Bands"));
                     ui.horizontal(|ui| {
                         if st.bands.is_empty() {
-                            ui.weak("no AP has an enabled radio");
+                            ui.weak(t("ningún AP tiene una radio activa", "no AP has an enabled radio"));
                         }
                         for (b, on) in &mut st.bands {
                             ui.checkbox(on, b.label());
                         }
                     });
                     ui.end_row();
-                    ui.label("Survey");
+                    ui.label(t("Mediciones", "Survey"));
                     ui.add_enabled(
                         has_survey,
                         egui::Checkbox::new(
                             &mut st.include_survey,
-                            "Compare with the active survey",
+                            t("Comparar con la medición activa", "Compare with the active survey"),
                         ),
                     );
                     ui.end_row();
                 });
-            ui.weak(
+            ui.weak(t(
+                "Incluye un resumen, mapas de señal y cobertura por banda, zonas con mala cobertura, \
+                 recomendaciones y la tabla de APs.",
                 "Includes a summary, signal and coverage maps per band, areas with poor coverage, \
                  recommendations and the AP table.",
-            );
+            ));
             ui.horizontal(|ui| {
                 if st.busy() {
                     ui.spinner();
-                    ui.label("Generating…");
-                } else if ui.button("Save PDF…").clicked() {
+                    ui.label(t("Generando…", "Generating…"));
+                } else if ui.button(t("Guardar PDF…", "Save PDF…")).clicked() {
                     generate = true;
                 }
             });
@@ -256,7 +279,7 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
         return;
     };
     let Some(mut path) = rfd::FileDialog::new()
-        .set_title("Save report")
+        .set_title(t("Guardar reporte", "Save report"))
         .set_file_name(format!("{}-report.pdf", safe_name(&doc.project.name)))
         .add_filter("PDF", &["pdf"])
         .save_file()
@@ -280,7 +303,10 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
         ..Default::default()
     };
     if opts.bands.is_empty() && !app.export.bands.is_empty() {
-        app.error("Select at least one band.");
+        app.error(t(
+            "Selecciona al menos una banda.",
+            "Select at least one band.",
+        ));
         return;
     }
     let project = doc.project.clone();
@@ -300,6 +326,9 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
         });
     match spawned {
         Ok(_) => app.export.job = Some(rx),
-        Err(e) => app.error(format!("Could not start the report: {e}")),
+        Err(e) => app.error(tr!(
+            "No se pudo iniciar el reporte: {e}",
+            "Could not start the report: {e}"
+        )),
     }
 }

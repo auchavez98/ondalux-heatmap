@@ -31,14 +31,6 @@ pub enum Source {
 
 impl Source {
     pub const ALL: [Source; 3] = [Source::Predicted, Source::Measured, Source::Difference];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Source::Predicted => "Predicted",
-            Source::Measured => "Measured",
-            Source::Difference => "Measured − predicted",
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

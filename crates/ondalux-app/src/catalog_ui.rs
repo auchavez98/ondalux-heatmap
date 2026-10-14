@@ -2,8 +2,10 @@
 //! window (browse, search, custom models, import/export).
 
 use crate::app::OndaluxApp;
+use crate::i18n::t;
+use crate::tr;
 use eframe::egui::{self, DragValue};
-use ondalux_core::ap::ApId;
+
 use ondalux_core::catalog::{ApModel, Catalog, Origin, RadioSpec, TxPowerBasis};
 use ondalux_core::channel::{Band, ChannelWidth};
 use ondalux_io::user_catalog;
@@ -36,7 +38,13 @@ impl CatalogState {
         if let Some(p) = &path {
             match user_catalog::load(p) {
                 Ok(models) => catalog.merge_user(models),
-                Err(e) => error = Some(format!("Could not read {}: {e}", p.display())),
+                Err(e) => {
+                    error = Some(tr!(
+                        "No se pudo leer {}: {e}",
+                        "Could not read {}: {e}",
+                        p.display()
+                    ))
+                }
             }
         }
         (
@@ -51,7 +59,11 @@ impl CatalogState {
 
     fn save_user(&self) -> Result<(), String> {
         let Some(p) = &self.path else {
-            return Err("no configuration folder available to save custom models".into());
+            return Err(t(
+                "no hay carpeta de configuración para guardar modelos propios",
+                "no configuration folder available to save custom models",
+            )
+            .into());
         };
         user_catalog::save(p, &self.catalog.user_models()).map_err(|e| e.to_string())
     }
@@ -91,61 +103,15 @@ pub fn model_combo(
                 for (m, origin) in catalog.models_of(&vendor) {
                     let label = match origin {
                         Origin::BuiltIn => format!("  {}  ({})", m.model, m.standard),
-                        Origin::User => format!("  {}  ({}, custom)", m.model, m.standard),
+                        Origin::User => {
+                            format!("  {}  ({}, {})", m.model, m.standard, t("propio", "custom"))
+                        }
                     };
                     ui.selectable_value(selected, Some(key_of(m)), label);
                 }
             }
         });
     *selected != before
-}
-
-/// Model section of the AP inspector: shows the model and lets the user
-/// switch it, which replaces the radios with the model's (keeping channels).
-pub fn ap_model_editor(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
-    let Some(doc) = app.doc.as_mut() else {
-        return;
-    };
-    let Some(index) = doc.project.aps.iter().position(|a| a.id == id) else {
-        return;
-    };
-    let ap = &doc.project.aps[index];
-    let mut selected = app.catalog.catalog.find(&ap.vendor, &ap.model).map(key_of);
-    ui.horizontal(|ui| {
-        ui.label("Catalog model");
-        if model_combo(
-            ui,
-            "ap-model",
-            &app.catalog.catalog,
-            &mut selected,
-            "Custom / generic",
-        ) {
-            if let Some(model) = selected
-                .as_ref()
-                .and_then(|(v, m)| app.catalog.catalog.find(v, m))
-                .cloned()
-            {
-                doc.checkpoint();
-                model.apply_to(&mut doc.project.aps[index], index);
-            }
-        }
-    });
-    if let Some(m) = selected
-        .as_ref()
-        .and_then(|(v, m)| app.catalog.catalog.find(v, m))
-    {
-        ui.weak(format!(
-            "{} · {} · TX power basis: {}",
-            m.standard,
-            m.bands(),
-            m.tx_power_basis.label()
-        ));
-        if !m.notes.is_empty() {
-            ui.weak(&m.notes);
-        }
-        ui.hyperlink_to("Datasheet source", &m.source);
-        ui.weak("Radio values below were filled from the catalog; you can still edit them.");
-    }
 }
 
 fn new_draft() -> ApModel {
@@ -182,15 +148,16 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
     }
     let mut open = true;
     let mut status: Option<(String, bool)> = None;
-    egui::Window::new("AP catalog")
+    egui::Window::new(t("Catálogo de APs", "AP catalog"))
         .open(&mut open)
         .default_size([760.0, 520.0])
         .show(ctx, |ui| {
             let st = &mut app.catalog;
             ui.horizontal(|ui| {
-                ui.label("Search");
+                ui.label(t("Buscar", "Search"));
                 ui.text_edit_singleline(&mut st.search);
-                ui.weak(format!(
+                ui.weak(tr!(
+                    "{} modelos · {} fabricantes",
                     "{} models · {} vendors",
                     st.catalog.len(),
                     st.catalog.vendors().len()
@@ -232,7 +199,7 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
                     return;
                 }
                 let Some((v, mname)) = st.selected.clone() else {
-                    ui.weak("Select a model to see its datasheet values.");
+                    ui.weak(t("Elige un modelo para ver los valores de su hoja de datos.", "Select a model to see its datasheet values."));
                     return;
                 };
                 let Some(m) = st.catalog.find(&v, &mname).cloned() else {
@@ -247,12 +214,12 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
                 ui.heading(format!("{} {}", m.vendor, m.model));
                 ui.label(format!("{} · {}", m.standard, m.environment));
                 egui::Grid::new("spec-grid").striped(true).show(ui, |ui| {
-                    ui.strong("Band");
-                    ui.strong("Max TX");
-                    ui.strong("Design TX");
-                    ui.strong("Gain");
+                    ui.strong(t("Banda", "Band"));
+                    ui.strong(t("TX máx.", "Max TX"));
+                    ui.strong(t("TX diseño", "Design TX"));
+                    ui.strong(t("Ganancia", "Gain"));
                     ui.strong("MIMO");
-                    ui.strong("Max width");
+                    ui.strong(t("Ancho máx.", "Max width"));
                     ui.end_row();
                     for r in &m.radios {
                         ui.label(r.band.label());
@@ -264,30 +231,30 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
                         ui.end_row();
                     }
                 });
-                ui.weak(format!("Max TX basis: {}.", m.tx_power_basis.label()));
-                ui.weak("Design TX = conducted total used for predictions. Regulatory limits in your country may be lower.");
+                ui.weak(tr!("Base del TX máx.: {}.", "Max TX basis: {}.", m.tx_power_basis.label()));
+                ui.weak(t("TX diseño = potencia conducida total usada en la predicción. Los límites regulatorios de tu país pueden ser menores.", "Design TX = conducted total used for predictions. Regulatory limits in your country may be lower."));
                 if !m.notes.is_empty() {
                     ui.label(&m.notes);
                 }
-                ui.hyperlink_to("Source", &m.source);
+                ui.hyperlink_to(t("Fuente", "Source"), &m.source);
                 ui.add_space(6.0);
                 ui.horizontal_wrapped(|ui| {
                     let is_default = st.new_ap_model.as_ref() == Some(&key_of(&m));
                     if ui
-                        .add_enabled(!is_default, egui::Button::new("Use for new APs"))
+                        .add_enabled(!is_default, egui::Button::new(t("Usar para APs nuevos", "Use for new APs")))
                         .clicked()
                     {
                         st.new_ap_model = Some(key_of(&m));
                     }
-                    if ui.button("Edit as custom…").clicked() {
+                    if ui.button(t("Editar como propio…", "Edit as custom…")).clicked() {
                         let replaces = is_user.then(|| key_of(&m));
                         st.draft = Some((m.clone(), replaces));
                         st.draft_error = None;
                     }
-                    if is_user && ui.button("Delete custom").clicked() {
+                    if is_user && ui.button(t("Borrar modelo propio", "Delete custom")).clicked() {
                         st.catalog.remove_user(&m.vendor, &m.model);
                         status = Some(match st.save_user() {
-                            Ok(()) => (format!("Deleted custom model {m}."), false),
+                            Ok(()) => (tr!("Modelo propio {m} borrado.", "Deleted custom model {m}."), false),
                             Err(e) => (e, true),
                         });
                     }
@@ -295,18 +262,18 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
             });
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("New custom model…").clicked() {
+                if ui.button(t("Nuevo modelo propio…", "New custom model…")).clicked() {
                     st.draft = Some((new_draft(), None));
                     st.draft_error = None;
                 }
-                if ui.button("Import JSON…").clicked() {
+                if ui.button(t("Importar JSON…", "Import JSON…")).clicked() {
                     status = Some(import(st));
                 }
-                if ui.button("Export custom models…").clicked() {
+                if ui.button(t("Exportar modelos propios…", "Export custom models…")).clicked() {
                     status = export(st);
                 }
                 if let Some(p) = &st.path {
-                    ui.weak(format!("Custom models: {}", p.display()));
+                    ui.weak(tr!("Modelos propios: {}", "Custom models: {}", p.display()));
                 }
             });
         });
@@ -324,18 +291,18 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
     let Some((draft, replaces)) = st.draft.as_mut() else {
         return;
     };
-    ui.heading("Custom model");
+    ui.heading(t("Modelo propio", "Custom model"));
     egui::Grid::new("draft-grid").num_columns(2).show(ui, |ui| {
-        ui.label("Vendor");
+        ui.label(t("Fabricante", "Vendor"));
         ui.text_edit_singleline(&mut draft.vendor);
         ui.end_row();
-        ui.label("Model");
+        ui.label(t("Modelo", "Model"));
         ui.text_edit_singleline(&mut draft.model);
         ui.end_row();
-        ui.label("Standard");
+        ui.label(t("Estándar", "Standard"));
         ui.text_edit_singleline(&mut draft.standard);
         ui.end_row();
-        ui.label("Environment");
+        ui.label(t("Entorno", "Environment"));
         egui::ComboBox::from_id_salt("draft-env")
             .selected_text(draft.environment.clone())
             .show_ui(ui, |ui| {
@@ -344,7 +311,7 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
                 }
             });
         ui.end_row();
-        ui.label("TX power basis");
+        ui.label(t("Base de la potencia TX", "TX power basis"));
         egui::ComboBox::from_id_salt("draft-basis")
             .selected_text(draft.tx_power_basis.label())
             .show_ui(ui, |ui| {
@@ -358,10 +325,10 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
                 }
             });
         ui.end_row();
-        ui.label("Source URL");
+        ui.label(t("URL de la fuente", "Source URL"));
         ui.text_edit_singleline(&mut draft.source);
         ui.end_row();
-        ui.label("Notes");
+        ui.label(t("Notas", "Notes"));
         ui.text_edit_singleline(&mut draft.notes);
         ui.end_row();
     });
@@ -369,11 +336,11 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
     egui::Grid::new("draft-radios")
         .striped(true)
         .show(ui, |ui| {
-            ui.strong("Band");
-            ui.strong("Max TX (dBm)");
-            ui.strong("Gain (dBi)");
-            ui.strong("Streams");
-            ui.strong("Max width");
+            ui.strong(t("Banda", "Band"));
+            ui.strong(t("TX máx. (dBm)", "Max TX (dBm)"));
+            ui.strong(t("Ganancia (dBi)", "Gain (dBi)"));
+            ui.strong(t("Flujos", "Streams"));
+            ui.strong(t("Ancho máx.", "Max width"));
             ui.label("");
             ui.end_row();
             for (i, r) in draft.radios.iter_mut().enumerate() {
@@ -413,7 +380,7 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
                             }
                         });
                 });
-                if ui.small_button("Remove").clicked() {
+                if ui.small_button(t("Quitar", "Remove")).clicked() {
                     remove = Some(i);
                 }
                 ui.end_row();
@@ -422,7 +389,7 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
     if let Some(i) = remove {
         draft.radios.remove(i);
     }
-    if ui.button("Add radio").clicked() {
+    if ui.button(t("Añadir radio", "Add radio")).clicked() {
         draft.radios.push(RadioSpec {
             band: Band::G6,
             max_tx_power_dbm: 23.0,
@@ -437,7 +404,12 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
         ui.colored_label(ui.visuals().error_fg_color, e);
     }
     let (save, cancel) = ui
-        .horizontal(|ui| (ui.button("Save").clicked(), ui.button("Cancel").clicked()))
+        .horizontal(|ui| {
+            (
+                ui.button(t("Guardar", "Save")).clicked(),
+                ui.button(t("Cancelar", "Cancel")).clicked(),
+            )
+        })
         .inner;
     if cancel {
         st.draft = None;
@@ -456,7 +428,13 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
                 st.draft = None;
                 st.draft_error = None;
                 *status = Some(match st.save_user() {
-                    Ok(()) => (format!("Saved custom model {model}."), false),
+                    Ok(()) => (
+                        tr!(
+                            "Modelo propio {model} guardado.",
+                            "Saved custom model {model}."
+                        ),
+                        false,
+                    ),
                     Err(e) => (e, true),
                 });
             }
@@ -466,11 +444,14 @@ fn draft_editor(ui: &mut egui::Ui, st: &mut CatalogState, status: &mut Option<(S
 }
 fn import(st: &mut CatalogState) -> (String, bool) {
     let Some(path) = rfd::FileDialog::new()
-        .set_title("Import AP models")
+        .set_title(t("Importar modelos de AP", "Import AP models"))
         .add_filter("JSON", &["json"])
         .pick_file()
     else {
-        return ("Import cancelled.".into(), false);
+        return (
+            t("Importación cancelada.", "Import cancelled.").into(),
+            false,
+        );
     };
     let result = std::fs::read_to_string(&path)
         .map_err(|e| e.to_string())
@@ -481,31 +462,65 @@ fn import(st: &mut CatalogState) -> (String, bool) {
             st.catalog.merge_user(models);
             match st.save_user() {
                 Ok(()) => (
-                    format!("Imported {n} models from {}.", path.display()),
+                    tr!(
+                        "{n} modelos importados de {}.",
+                        "Imported {n} models from {}.",
+                        path.display()
+                    ),
                     false,
                 ),
                 Err(e) => (
-                    format!("Imported {n} models but could not save them: {e}"),
+                    tr!(
+                        "{n} modelos importados, pero no se pudieron guardar: {e}",
+                        "Imported {n} models but could not save them: {e}"
+                    ),
                     true,
                 ),
             }
         }
-        Err(e) => (format!("Could not import {}: {e}", path.display()), true),
+        Err(e) => (
+            tr!(
+                "No se pudo importar {}: {e}",
+                "Could not import {}: {e}",
+                path.display()
+            ),
+            true,
+        ),
     }
 }
 
 fn export(st: &CatalogState) -> Option<(String, bool)> {
     let models = st.catalog.user_models();
     if models.is_empty() {
-        return Some(("There are no custom models to export.".into(), true));
+        return Some((
+            t(
+                "No hay modelos propios para exportar.",
+                "There are no custom models to export.",
+            )
+            .into(),
+            true,
+        ));
     }
     let path = rfd::FileDialog::new()
-        .set_title("Export custom AP models")
+        .set_title(t(
+            "Exportar modelos de AP propios",
+            "Export custom AP models",
+        ))
         .set_file_name("ap-models.json")
         .add_filter("JSON", &["json"])
         .save_file()?;
     Some(match user_catalog::save(&path, &models) {
-        Ok(()) => (format!("Exported {} models.", models.len()), false),
-        Err(e) => (format!("Could not export: {e}"), true),
+        Ok(()) => (
+            tr!(
+                "{} modelos exportados.",
+                "Exported {} models.",
+                models.len()
+            ),
+            false,
+        ),
+        Err(e) => (
+            tr!("No se pudo exportar: {e}", "Could not export: {e}"),
+            true,
+        ),
     })
 }

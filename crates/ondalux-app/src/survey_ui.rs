@@ -2,6 +2,8 @@
 
 use crate::app::{OndaluxApp, Selection, Tool};
 use crate::heatmap::Source;
+use crate::i18n::t;
+use crate::style;
 use eframe::egui::{self, DragValue};
 use ondalux_core::geometry::Vec2;
 use ondalux_core::interpolate::InterpolationMethod;
@@ -70,8 +72,8 @@ impl SurveyState {
     pub fn native_name(&self) -> String {
         match (&self.native, &self.native_error) {
             (Some(s), _) => s.name().to_owned(),
-            (None, Some(e)) => format!("unavailable: {e}"),
-            (None, None) => "OS WiFi adapter".to_owned(),
+            (None, Some(e)) => format!("{}: {e}", t("no disponible", "unavailable")),
+            (None, None) => t("adaptador WiFi del sistema", "OS WiFi adapter").to_owned(),
         }
     }
 
@@ -83,7 +85,11 @@ impl SurveyState {
         ctx: &egui::Context,
     ) -> Result<(), String> {
         if self.job.is_some() {
-            return Err("A scan is already running; wait for it to finish.".into());
+            return Err(t(
+                "Ya hay un escaneo en curso; espera a que termine.",
+                "A scan is already running; wait for it to finish.",
+            )
+            .into());
         }
         let mut scanner: Box<dyn WifiScanner> = match self.scanner {
             ScannerChoice::Native => match self.native.take() {
@@ -157,7 +163,10 @@ pub fn poll(app: &mut OndaluxApp) {
     doc.checkpoint();
     let surveys = &mut doc.project.surveys;
     if surveys.is_empty() {
-        surveys.push(Survey::new("Survey 1", job.source.clone()));
+        surveys.push(Survey::new(
+            format!("{} 1", t("Medición", "Survey")),
+            job.source.clone(),
+        ));
         app.survey.active = 0;
     }
     let active = app.survey.active.min(surveys.len() - 1);
@@ -177,7 +186,9 @@ pub fn poll(app: &mut OndaluxApp) {
     });
     app.selection = Selection::Measurement(id);
     app.info(format!(
-        "Point {id}: {n} networks heard in {:.1} s.",
+        "{} {id}: {n} {} {:.1} s.",
+        t("Punto", "Point"),
+        t("redes escuchadas en", "networks heard in"),
         job.started.elapsed().as_secs_f32()
     ));
 }
@@ -189,7 +200,7 @@ pub fn active_survey(app: &OndaluxApp) -> Option<&Survey> {
 
 fn import_csv(app: &mut OndaluxApp) {
     let Some(path) = rfd::FileDialog::new()
-        .set_title("Import survey CSV")
+        .set_title(t("Importar mediciones (CSV)", "Import survey CSV"))
         .add_filter("CSV", &["csv", "txt"])
         .pick_file()
     else {
@@ -214,14 +225,27 @@ fn import_csv(app: &mut OndaluxApp) {
             let skipped = import.warnings.len();
             app.survey.csv_warnings = import.warnings;
             if skipped == 0 {
-                app.info(format!("Imported {points} points from {name}."));
+                app.info(format!(
+                    "{} {points} {} {name}.",
+                    t("Importados", "Imported"),
+                    t("puntos de", "points from")
+                ));
             } else {
                 app.error(format!(
-                    "Imported {points} points from {name}; {skipped} rows skipped (see Survey panel)."
+                    "{} {points} {} {name}; {skipped} {}",
+                    t("Importados", "Imported"),
+                    t("puntos de", "points from"),
+                    t(
+                        "filas omitidas (ver Mediciones).",
+                        "rows skipped (see Survey)."
+                    )
                 ));
             }
         }
-        Err(e) => app.error(format!("Could not import {name}: {e}")),
+        Err(e) => app.error(format!(
+            "{} {name}: {e}",
+            t("No se pudo importar", "Could not import")
+        )),
     }
 }
 
@@ -230,7 +254,7 @@ pub fn export_csv(app: &mut OndaluxApp) {
         return;
     };
     let Some(path) = rfd::FileDialog::new()
-        .set_title("Export survey CSV")
+        .set_title(t("Exportar mediciones (CSV)", "Export survey CSV"))
         .set_file_name(format!("{}.csv", survey.name))
         .add_filter("CSV", &["csv"])
         .save_file()
@@ -241,8 +265,15 @@ pub fn export_csv(app: &mut OndaluxApp) {
         .map_err(ondalux_io::IoError::from)
         .and_then(|f| write_survey_csv(std::io::BufWriter::new(f), &survey));
     match result {
-        Ok(()) => app.info(format!("Exported {}.", path.display())),
-        Err(e) => app.error(format!("Could not export: {e}")),
+        Ok(()) => app.info(format!(
+            "{} {}.",
+            t("Exportado", "Exported"),
+            path.display()
+        )),
+        Err(e) => app.error(format!(
+            "{}: {e}",
+            t("No se pudo exportar", "Could not export")
+        )),
     }
 }
 
@@ -250,7 +281,10 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     if app.doc.is_none() {
         return;
     }
-    ui.heading("Field survey");
+    ui.weak(t(
+        "Registra escaneos WiFi reales en el sitio para ver la cobertura medida y compararla con el diseño.",
+        "Record real WiFi scans on site to see the measured coverage and compare it with the design.",
+    ));
 
     // ---- survey selection ----
     let mut new_survey = false;
@@ -261,20 +295,25 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         if app.survey.active >= surveys.len() {
             app.survey.active = surveys.len().saturating_sub(1);
         }
+        style::section(ui, t("Medición activa", "Active survey"));
         ui.horizontal(|ui| {
             let current = surveys
                 .get(app.survey.active)
-                .map_or("(none)".to_owned(), |s| s.name.clone());
+                .map_or(t("(ninguna)", "(none)").to_owned(), |s| s.name.clone());
             egui::ComboBox::from_id_salt("active-survey")
                 .selected_text(current)
+                .width(150.0)
                 .show_ui(ui, |ui| {
                     for (i, s) in surveys.iter().enumerate() {
                         ui.selectable_value(&mut app.survey.active, i, &s.name);
                     }
                 });
-            new_survey = ui.button("New").clicked();
+            new_survey = ui.button(t("Nueva", "New")).clicked();
             delete = ui
-                .add_enabled(!surveys.is_empty(), egui::Button::new("Delete"))
+                .add_enabled(
+                    !surveys.is_empty(),
+                    egui::Button::new(t("Borrar", "Delete")),
+                )
                 .clicked();
         });
     }
@@ -284,7 +323,7 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         let n = doc.project.surveys.len() + 1;
         doc.project
             .surveys
-            .push(Survey::new(format!("Survey {n}"), ""));
+            .push(Survey::new(format!("{} {n}", t("Medición", "Survey")), ""));
         app.survey.active = n - 1;
     }
     if delete && app.survey.active < doc.project.surveys.len() {
@@ -294,66 +333,63 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         app.selection = Selection::None;
     }
     if let Some(s) = doc.project.surveys.get(app.survey.active) {
-        let mut name = s.name.clone();
-        ui.horizontal(|ui| {
-            ui.label("Name");
-            ui.text_edit_singleline(&mut name);
-        });
-        if name != s.name {
-            doc.checkpoint_coalesced("survey-name");
-            doc.project.surveys[app.survey.active].name = name;
-        }
-        let s = &doc.project.surveys[app.survey.active];
-        let bss = s.bss_summary();
+        let points = s.measurements.len();
+        let networks = s.bss_summary().len();
         ui.weak(format!(
-            "{} points · {} BSSIDs · source: {}",
-            s.measurements.len(),
-            bss.len(),
-            if s.source.is_empty() {
-                "—"
-            } else {
-                &s.source
-            }
+            "{points} {} · {networks} {}",
+            t("puntos", "points"),
+            t("redes (BSSID)", "networks (BSSID)")
         ));
     }
 
-    // ---- scanner ----
-    ui.separator();
-    ui.strong("Scanner");
-    let native_label = format!("This computer ({})", app.survey.native_name());
-    ui.radio_value(&mut app.survey.scanner, ScannerChoice::Native, native_label);
+    // ---- scanning ----
+    style::section(ui, t("Escanear", "Scan"));
+    ui.radio_value(
+        &mut app.survey.scanner,
+        ScannerChoice::Native,
+        t("WiFi de este equipo", "This computer's WiFi"),
+    )
+    .on_hover_text(app.survey.native_name());
     ui.radio_value(
         &mut app.survey.scanner,
         ScannerChoice::Simulated,
-        "Simulated from the prediction",
-    );
-    if app.survey.scanner == ScannerChoice::Simulated {
-        ui.colored_label(
-            ui.visuals().warn_fg_color,
-            "Simulated readings are generated from the design plus random fading. They are not real measurements.",
-        );
-    }
+        t("Simulado (demostración)", "Simulated (demo)"),
+    )
+    .on_hover_text(t(
+        "Genera lecturas a partir del diseño más variación aleatoria. No son mediciones reales.",
+        "Generates readings from the design plus random variation. They are not real measurements.",
+    ));
     if let Some(at) = app.survey.scanning_at() {
         ui.horizontal(|ui| {
             ui.spinner();
             ui.label(format!(
-                "Scanning at ({:.1}, {:.1}) m… stay still.",
-                at.x, at.y
+                "{} ({:.1}, {:.1}) m… {}",
+                t("Escaneando en", "Scanning at"),
+                at.x,
+                at.y,
+                t("no te muevas", "stay still")
             ));
         });
     } else if app.tool == Tool::Survey {
-        ui.weak("Click on the plan where you are standing to record a scan.");
-    } else if ui.button("Start surveying (S)").clicked() {
+        ui.colored_label(
+            style::ACCENT,
+            t(
+                "Haz clic en el plano donde estás parado.",
+                "Click on the plan where you are standing.",
+            ),
+        );
+    } else if style::primary_button(ui, t("Empezar a medir  (S)", "Start measuring  (S)")).clicked()
+    {
         app.set_tool(Tool::Survey);
     }
     ui.horizontal(|ui| {
-        if ui.button("Import CSV…").clicked() {
+        if ui.button(t("Importar CSV…", "Import CSV…")).clicked() {
             import_csv(app);
         }
         if ui
             .add_enabled(
                 active_survey(app).is_some(),
-                egui::Button::new("Export CSV…"),
+                egui::Button::new(t("Exportar CSV…", "Export CSV…")),
             )
             .clicked()
         {
@@ -362,8 +398,9 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     });
     if !app.survey.csv_warnings.is_empty() {
         egui::CollapsingHeader::new(format!(
-            "{} CSV rows skipped",
-            app.survey.csv_warnings.len()
+            "{} {}",
+            app.survey.csv_warnings.len(),
+            t("filas del CSV omitidas", "CSV rows skipped")
         ))
         .show(ui, |ui| {
             for w in app.survey.csv_warnings.iter().take(50) {
@@ -372,7 +409,60 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         });
     }
 
-    // ---- networks and interpolation ----
+    // ---- result ----
+    style::section(ui, t("Resultado", "Result"));
+    ui.horizontal_wrapped(|ui| {
+        for s in Source::ALL {
+            ui.selectable_value(&mut app.heat.source, s, crate::app::source_label(s));
+        }
+    });
+    match &app.heat.comparison {
+        Some(c) if !c.points.is_empty() => {
+            let verdict = if c.mean > 3.0 {
+                t(
+                    "La señal real es más fuerte que la predicha: el diseño es conservador.",
+                    "The real signal is stronger than predicted: the design is conservative.",
+                )
+            } else if c.mean < -3.0 {
+                t(
+                    "La señal real es más débil que la predicha: revisa paredes, materiales o la configuración de los APs.",
+                    "The real signal is weaker than predicted: check walls, materials or the AP settings.",
+                )
+            } else {
+                t(
+                    "La predicción coincide con lo medido (±3 dB en promedio).",
+                    "The prediction matches the measurements (±3 dB on average).",
+                )
+            };
+            ui.label(format!(
+                "{} {} {} ({}): {:+.1} dB {}, {} {:.1} dB.",
+                t("En", "At"),
+                c.points.len(),
+                t("puntos", "points"),
+                app.heat.band,
+                c.mean,
+                t("de diferencia media", "mean difference"),
+                t("error típico", "typical error"),
+                c.rmse
+            ));
+            ui.weak(verdict);
+        }
+        _ => {
+            ui.weak(t(
+                "Registra o importa mediciones en esta banda para comparar.",
+                "Record or import measurements in this band to compare.",
+            ));
+        }
+    }
+    if app.heat.source == Source::Difference {
+        ui.add(
+            egui::Slider::new(&mut app.heat.diff_threshold, 0.0..=15.0)
+                .text(t("ocultar |Δ| menor a (dB)", "hide |Δ| below (dB)"))
+                .step_by(0.5),
+        );
+    }
+
+    // ---- advanced ----
     let Some(doc) = app.doc.as_mut() else {
         return;
     };
@@ -384,123 +474,110 @@ pub fn panel(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         .get(app.survey.active)
         .map(|s| s.ssids())
         .unwrap_or_default();
-    ui.separator();
-    ui.strong("Networks");
-    let mut all = st.ssids.is_empty();
-    if ui.checkbox(&mut all, "All networks heard").changed() {
-        st.ssids = if all {
-            Vec::new()
-        } else {
-            ssids.first().cloned().into_iter().collect()
-        };
-    }
-    if !all {
-        egui::ScrollArea::vertical()
-            .id_salt("ssid-list")
-            .max_height(140.0)
-            .show(ui, |ui| {
-                for ssid in &ssids {
-                    let mut on = st.ssids.contains(ssid);
-                    let label = if ssid.is_empty() {
-                        "(hidden)"
-                    } else {
-                        ssid.as_str()
-                    };
-                    if ui.checkbox(&mut on, label).changed() {
-                        if on {
-                            st.ssids.push(ssid.clone());
-                        } else {
-                            st.ssids.retain(|s| s != ssid);
-                        }
-                    }
+    egui::CollapsingHeader::new(t("Opciones avanzadas", "Advanced options"))
+        .id_salt("survey-advanced")
+        .show(ui, |ui| {
+            if let Some(s) = doc.project.surveys.get(app.survey.active) {
+                let mut name = s.name.clone();
+                ui.horizontal(|ui| {
+                    ui.label(t("Nombre", "Name"));
+                    ui.text_edit_singleline(&mut name);
+                });
+                if name != s.name {
+                    doc.checkpoint_coalesced("survey-name");
+                    doc.project.surveys[app.survey.active].name = name;
                 }
+            }
+            ui.strong(t("Redes a incluir", "Networks to include"));
+            let mut all = st.ssids.is_empty();
+            if ui
+                .checkbox(&mut all, t("Todas las redes", "All networks"))
+                .changed()
+            {
+                st.ssids = if all {
+                    Vec::new()
+                } else {
+                    ssids.first().cloned().into_iter().collect()
+                };
+            }
+            if !all {
+                egui::ScrollArea::vertical()
+                    .id_salt("ssid-list")
+                    .max_height(140.0)
+                    .show(ui, |ui| {
+                        for ssid in &ssids {
+                            let mut on = st.ssids.contains(ssid);
+                            let label = if ssid.is_empty() {
+                                t("(oculta)", "(hidden)")
+                            } else {
+                                ssid.as_str()
+                            };
+                            if ui.checkbox(&mut on, label).changed() {
+                                if on {
+                                    st.ssids.push(ssid.clone());
+                                } else {
+                                    st.ssids.retain(|s| s != ssid);
+                                }
+                            }
+                        }
+                    });
+            }
+            ui.add_space(4.0);
+            ui.strong(t(
+                "Interpolación entre puntos",
+                "Interpolation between points",
+            ));
+            let ip = &mut st.interpolation;
+            ui.horizontal(|ui| {
+                ui.radio_value(&mut ip.method, InterpolationMethod::Idw, "IDW");
+                ui.radio_value(&mut ip.method, InterpolationMethod::Kriging, "Kriging");
             });
-    }
-    ui.separator();
-    ui.strong("Interpolation");
-    let ip = &mut st.interpolation;
-    ui.horizontal(|ui| {
-        ui.radio_value(&mut ip.method, InterpolationMethod::Idw, "IDW");
-        ui.radio_value(&mut ip.method, InterpolationMethod::Kriging, "Kriging");
-    });
-    egui::Grid::new("interp").num_columns(2).show(ui, |ui| {
-        if ip.method == InterpolationMethod::Idw {
-            ui.label("Power");
-            ui.add(
-                DragValue::new(&mut ip.idw_power)
-                    .range(1.0..=4.0)
-                    .speed(0.05),
-            );
-            ui.end_row();
-        }
-        ui.label("Neighbors");
-        ui.add(DragValue::new(&mut ip.neighbors).range(3..=32));
-        ui.end_row();
-        ui.label("Max distance");
-        ui.add(
-            DragValue::new(&mut ip.max_distance_m)
-                .range(1.0..=50.0)
-                .speed(0.1)
-                .suffix(" m"),
-        );
-        ui.end_row();
-        ui.label("Not heard =");
-        ui.add(
-            DragValue::new(&mut st.missing_rssi.0)
-                .range(-120.0..=-80.0)
-                .suffix(" dBm"),
-        );
-        ui.end_row();
-    });
-    if let Some(v) = &app.heat.variogram {
-        ui.weak(format!(
-            "Fitted variogram: nugget {:.1}, sill {:.1} dB², range {:.1} m",
-            v.nugget,
-            v.nugget + v.psill,
-            v.range
-        ));
-    }
+            egui::Grid::new("interp").num_columns(2).show(ui, |ui| {
+                if ip.method == InterpolationMethod::Idw {
+                    ui.label(t("Potencia IDW", "IDW power"));
+                    ui.add(
+                        DragValue::new(&mut ip.idw_power)
+                            .range(1.0..=4.0)
+                            .speed(0.05),
+                    );
+                    ui.end_row();
+                }
+                ui.label(t("Puntos vecinos", "Neighbors"));
+                ui.add(DragValue::new(&mut ip.neighbors).range(3..=32));
+                ui.end_row();
+                ui.label(t("Distancia máxima", "Max distance"));
+                ui.add(
+                    DragValue::new(&mut ip.max_distance_m)
+                        .range(1.0..=50.0)
+                        .speed(0.1)
+                        .suffix(" m"),
+                )
+                .on_hover_text(t(
+                    "Más lejos de cualquier punto medido no se muestra nada.",
+                    "Nothing is shown farther than this from every measured point.",
+                ));
+                ui.end_row();
+                ui.label(t("Valor si no se oye", "Value when not heard"));
+                ui.add(
+                    DragValue::new(&mut st.missing_rssi.0)
+                        .range(-120.0..=-80.0)
+                        .suffix(" dBm"),
+                );
+                ui.end_row();
+            });
+            if let Some(v) = &app.heat.variogram {
+                ui.weak(format!(
+                    "{}: nugget {:.1}, sill {:.1} dB², range {:.1} m",
+                    t("Variograma ajustado", "Fitted variogram"),
+                    v.nugget,
+                    v.nugget + v.psill,
+                    v.range
+                ));
+            }
+        });
     if st != orig {
         doc.checkpoint_coalesced("survey-settings");
         doc.project.survey_settings = st;
-    }
-
-    // ---- comparison ----
-    ui.separator();
-    ui.strong("Measured vs predicted");
-    match &app.heat.comparison {
-        Some(c) if !c.points.is_empty() => {
-            ui.label(format!(
-                "{} points ({}): mean {:+.1} dB, RMSE {:.1} dB",
-                c.points.len(),
-                app.heat.band,
-                c.mean,
-                c.rmse
-            ));
-            ui.weak(if c.mean > 3.0 {
-                "Measured signal is stronger than predicted: the model is pessimistic (walls or exponent too high)."
-            } else if c.mean < -3.0 {
-                "Measured signal is weaker than predicted: the model is optimistic (missing walls, losses too low, or AP settings differ)."
-            } else {
-                "On average the prediction matches the measurements within ±3 dB."
-            });
-        }
-        _ => {
-            ui.weak("Record or import measurements in this band to compare.");
-        }
-    }
-    ui.horizontal(|ui| {
-        ui.label("Show:");
-        for s in Source::ALL {
-            ui.selectable_value(&mut app.heat.source, s, s.label());
-        }
-    });
-    if app.heat.source == Source::Difference {
-        ui.add(
-            egui::Slider::new(&mut app.heat.diff_threshold, 0.0..=15.0)
-                .text("hide |Δ| below (dB)")
-                .step_by(0.5),
-        );
     }
 }
 
@@ -516,15 +593,8 @@ pub fn measurement_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: u32) {
         app.selection = Selection::None;
         return;
     };
-    ui.heading(format!("Survey point {id}"));
-    ui.label(format!(
-        "Position: x {:.2} m, y {:.2} m",
-        m.position.x, m.position.y
-    ));
-    if m.timestamp_ms > 0 {
-        let secs = m.timestamp_ms / 1000;
-        ui.weak(format!("Recorded at Unix time {secs}"));
-    }
+    ui.heading(format!("{} {id}", t("Punto medido", "Survey point")));
+    ui.weak(format!("x {:.2} m · y {:.2} m", m.position.x, m.position.y));
     if let Some(err) = app
         .heat
         .comparison
@@ -532,11 +602,20 @@ pub fn measurement_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: u32) {
         .and_then(|c| c.points.iter().find(|(pid, _)| *pid == id))
     {
         ui.label(format!(
-            "Measured − predicted ({}): {:+.1} dB",
-            app.heat.band, err.1
+            "{} ({}): {:+.1} dB",
+            t("Medido − predicho", "Measured − predicted"),
+            app.heat.band,
+            err.1
         ));
     }
-    ui.label(format!("{} networks heard:", m.readings.len()));
+    style::section(
+        ui,
+        &format!(
+            "{} {}",
+            m.readings.len(),
+            t("redes escuchadas", "networks heard")
+        ),
+    );
     let mut readings = m.readings.clone();
     readings.sort_by(|a, b| b.rssi.0.total_cmp(&a.rssi.0));
     egui::ScrollArea::vertical()
@@ -547,16 +626,16 @@ pub fn measurement_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: u32) {
                 .striped(true)
                 .num_columns(4)
                 .show(ui, |ui| {
-                    ui.strong("SSID");
+                    ui.strong(t("Red", "Network"));
                     ui.strong("dBm");
-                    ui.strong("Ch");
-                    ui.strong("Security");
+                    ui.strong(t("Canal", "Ch"));
+                    ui.strong(t("Seguridad", "Security"));
                     ui.end_row();
                     for r in &readings {
                         let ssid = if r.ssid.is_empty() {
-                            "(hidden)"
+                            t("(oculta)", "(hidden)")
                         } else {
-                            &r.ssid
+                            r.ssid.as_str()
                         };
                         ui.label(ssid).on_hover_text(&r.bssid);
                         ui.label(format!("{:.0}", r.rssi.0));
@@ -566,7 +645,14 @@ pub fn measurement_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: u32) {
                     }
                 });
         });
-    if ui.button("Delete point").clicked() {
+    ui.add_space(8.0);
+    if ui
+        .button(
+            egui::RichText::new(t("Eliminar punto", "Delete point"))
+                .color(egui::Color32::from_rgb(200, 60, 60)),
+        )
+        .clicked()
+    {
         doc.checkpoint();
         if let Some(s) = doc.project.surveys.get_mut(app.survey.active) {
             s.measurements.retain(|x| x.id != id);

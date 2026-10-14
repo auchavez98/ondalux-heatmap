@@ -2,6 +2,8 @@
 
 use crate::app::{OndaluxApp, Selection, Tool};
 use crate::heatmap::{self, Scale, Source};
+use crate::i18n::t;
+use crate::tr;
 use crate::view::View;
 use eframe::egui::{
     self, Align2, Color32, FontId, PointerButton, Pos2, Rect, Sense, Shape, Stroke, StrokeKind,
@@ -192,7 +194,10 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         painter.text(
             rect.center_top() + egui::vec2(0.0, 16.0),
             Align2::CENTER_TOP,
-            "Place access points with the AP tool (A) to see the heat map",
+            t(
+                "Coloca puntos de acceso con la herramienta AP (A) para ver el mapa de calor",
+                "Place access points with the AP tool (A) to see the heat map",
+            ),
             FontId::proportional(14.0),
             ui.visuals().weak_text_color(),
         );
@@ -223,14 +228,17 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
                 let text = match (field.value_at(c as usize, r as usize), field.scale) {
                     (Some(v), Scale::Difference) => format!("{v:+.1}"),
                     (Some(v), _) => format_value(kind, v),
-                    (None, _) => "no data".to_owned(),
+                    (None, _) => t("sin datos", "no data").to_owned(),
                 };
                 let prefix = match field.source {
                     Source::Predicted => "",
-                    Source::Measured => "measured ",
+                    Source::Measured => t("medido ", "measured "),
                     Source::Difference => "Δ ",
                 };
-                s.push_str(&format!("   {prefix}{}: {text}", kind.label()));
+                s.push_str(&format!(
+                    "   {prefix}{}: {text}",
+                    crate::app::metric_label(kind)
+                ));
             }
         }
         s
@@ -243,9 +251,9 @@ fn format_value(kind: MetricKind, v: f32) -> String {
             format!("{v:.1} {}", kind.unit())
         }
         MetricKind::Coverage => if v > 0.5 {
-            "meets requirements"
+            t("cumple requisitos", "meets requirements")
         } else {
-            "below requirements"
+            t("bajo requisitos", "below requirements")
         }
         .into(),
         _ => format!("{v:.0}"),
@@ -790,7 +798,11 @@ fn draw_measurements(painter: &egui::Painter, app: &OndaluxApp, xf: Xf, time: f6
         let orange = Color32::from_rgb(255, 170, 40);
         painter.circle_stroke(p, pulse, Stroke::new(2.0, orange));
         painter.circle_filled(p, 4.0, orange);
-        label_box(painter, p + egui::vec2(14.0, -8.0), "Scanning…".to_owned());
+        label_box(
+            painter,
+            p + egui::vec2(14.0, -8.0),
+            t("Escaneando…", "Scanning…").to_owned(),
+        );
     }
 }
 
@@ -817,19 +829,33 @@ fn draw_legend(
         StrokeKind::Inside,
     );
     let title = match scale {
-        Scale::Difference => "Measured − predicted (dB): red = weaker".to_owned(),
-        Scale::Metric(MetricKind::Coverage) => format!(
+        Scale::Difference => t(
+            "Medido − predicho (dB): rojo = más débil",
+            "Measured − predicted (dB): red = weaker",
+        )
+        .to_owned(),
+        Scale::Metric(MetricKind::Coverage) => tr!(
+            "Cobertura: ≥ {:.0} dBm y SNR ≥ {:.0} dB",
             "Coverage: ≥ {:.0} dBm and SNR ≥ {:.0} dB",
-            req.min_rssi.0, req.min_snr.0
+            req.min_rssi.0,
+            req.min_snr.0
         ),
-        Scale::Metric(MetricKind::ApCount) => format!("APs heard at ≥ {:.0} dBm", req.min_rssi.0),
+        Scale::Metric(MetricKind::ApCount) => tr!(
+            "APs que se oyen a ≥ {:.0} dBm",
+            "APs heard at ≥ {:.0} dBm",
+            req.min_rssi.0
+        ),
         Scale::Metric(MetricKind::ChannelOverlap) => {
-            format!("Overlapping radios above {:.0} dBm", req.cca_threshold.0)
+            tr!(
+                "Radios solapadas sobre {:.0} dBm",
+                "Overlapping radios above {:.0} dBm",
+                req.cca_threshold.0
+            )
         }
-        Scale::Metric(kind) => format!("{} ({})", kind.label(), kind.unit()),
+        Scale::Metric(kind) => format!("{} ({})", crate::app::metric_label(kind), kind.unit()),
     };
     let title = match source {
-        Source::Measured => format!("Measured · {title}"),
+        Source::Measured => tr!("Medido · {title}", "Measured · {title}"),
         _ => title,
     };
     painter.text(

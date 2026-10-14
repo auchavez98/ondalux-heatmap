@@ -9,8 +9,12 @@ mod catalog_ui;
 mod document;
 mod export_ui;
 mod heatmap;
+mod i18n;
 mod panels;
+mod style;
 mod survey_ui;
+#[cfg(test)]
+mod ui_shots;
 mod view;
 
 fn main() -> eframe::Result {
