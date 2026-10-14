@@ -13,7 +13,8 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.82"
-repository = ""
+repository = "https://github.com/auchavez98/ondalux-heatmap"
+homepage = "https://ondaluxheatmap.com"
 
 [workspace.dependencies]
 ondalux-core = { path = "crates/ondalux-core" }

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Support by e-mail
+    url: mailto:support@ondaluxheatmap.com
+    about: Questions that are not bugs or feature requests.
+  - name: WiFi design guide
+    url: https://ondaluxheatmap.com/guide/
+    about: How to plan a WiFi network with Ondalux Heatmap.

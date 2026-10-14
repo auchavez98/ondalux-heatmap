@@ -2,13 +2,19 @@
 
 # Ondalux Heatmap
 
-Open source desktop tool for WiFi network design with heat maps, written in
-Rust. Windows, macOS and Linux.
+Open-source desktop app for WiFi network design and site surveys with heat
+maps, written in Rust.
 
-**Status: Phases 1 (predictive design), 2 (field survey) and 3 (reports)
-complete.** See [what works](#status) below. Repository not published yet.
+**[Website](https://ondaluxheatmap.com)** ·
+**[Download for Windows](https://ondaluxheatmap.com/#download)** ·
+**[WiFi design guide](https://ondaluxheatmap.com/guide/)** ·
+[Contributing](CONTRIBUTING.md) · Support: support@ondaluxheatmap.com
 
-![Ondalux Heatmap predicting 5 GHz signal strength on a demo office](docs/images/heatmap-signal-5ghz.jpg)
+Windows builds are portable (a single `.exe`, no installer). macOS and
+Linux build from source; their WiFi scanning backends are not yet tested on
+real hardware. See [what works](#status) below.
+
+![Ondalux Heatmap: signal heat map with the access point inspector](docs/images/app.png)
 
 ## Status
 
