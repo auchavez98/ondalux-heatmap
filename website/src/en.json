@@ -1,7 +1,5 @@
 {
   "lang": "en",
-  "path": "/",
-  "home": "/",
   "meta": {
     "title": "Ondalux Heatmap — WiFi heat maps, designed and measured",
     "description": "Free, open-source desktop app to design WiFi networks on your floor plans: predictive heat maps, AP catalog, on-site surveys and professional PDF reports.",
@@ -11,7 +9,6 @@
     "code": "es",
     "short": "ES",
     "name": "Español",
-    "href": "/es/",
     "hint": "¿Prefieres leer en español?",
     "close": "Close"
   },
@@ -24,7 +21,9 @@
     "reports": "Reports",
     "faq": "FAQ",
     "download": "Download",
-    "menu": "Menu"
+    "menu": "Menu",
+    "guide": "Guide",
+    "oss": "Open source"
   },
   "hero": {
     "pill": "Free & open source · Windows",
@@ -38,25 +37,78 @@
     "badge2": "Updates in under 100 ms"
   },
   "stats": [
-    { "value": "105", "suffix": "", "label": "AP models in the catalog" },
-    { "value": "14", "suffix": "", "label": "vendors" },
-    { "value": "3", "suffix": "", "label": "bands: 2.4, 5 and 6 GHz" },
-    { "value": "6", "suffix": "", "label": "types of heat map" }
+    {
+      "value": "105",
+      "suffix": "",
+      "label": "AP models in the catalog"
+    },
+    {
+      "value": "14",
+      "suffix": "",
+      "label": "vendors"
+    },
+    {
+      "value": "3",
+      "suffix": "",
+      "label": "bands: 2.4, 5 and 6 GHz"
+    },
+    {
+      "value": "6",
+      "suffix": "",
+      "label": "types of heat map"
+    }
   ],
   "features": {
     "eyebrow": "Features",
     "title": "Everything you need to design great WiFi",
     "lead": "From the first floor plan to the final report, without switching tools.",
     "items": [
-      { "icon": "predict", "title": "Predictive design", "text": "Draw walls with real materials — drywall, concrete, glass, doors — and watch the coverage update instantly as you move access points." },
-      { "icon": "catalog", "title": "AP catalog", "text": "105 models from 14 vendors with radio values taken from official datasheets. Or enter your own access point data by hand." },
-      { "icon": "mount", "title": "Ceiling or wall mounting", "text": "Ceiling APs radiate all around; wall APs use a directional pattern you can aim right on the plan." },
-      { "icon": "walls", "title": "Automatic wall detection", "beta": true, "text": "Import a plan and get walls proposed from the PDF's vector lines or from the image. Review, pick materials, done." },
-      { "icon": "survey", "title": "On-site survey", "text": "Walk the site and record real WiFi scans with your laptop. See the measured heat map, interpolated with IDW or kriging." },
-      { "icon": "compare", "title": "Predicted vs. measured", "text": "A difference map and statistics show where reality beats or misses the prediction, so you can calibrate the model." },
-      { "icon": "metrics", "title": "Six heat maps", "text": "Signal strength, SNR, SINR, number of APs heard, channel overlap and requirements met — for every band." },
-      { "icon": "report", "title": "Professional reports", "text": "A modern PDF with the AP placement, every heat map, coverage gaps and recommendations. Plus PNG and CSV exports." },
-      { "icon": "portable", "title": "Portable and private", "text": "One file, no installer, no account. It works offline and your floor plans never leave your computer." }
+      {
+        "icon": "predict",
+        "title": "Predictive design",
+        "text": "Draw walls with real materials — drywall, concrete, glass, doors — and watch the coverage update instantly as you move access points."
+      },
+      {
+        "icon": "catalog",
+        "title": "AP catalog",
+        "text": "105 models from 14 vendors with radio values taken from official datasheets. Or enter your own access point data by hand."
+      },
+      {
+        "icon": "mount",
+        "title": "Ceiling or wall mounting",
+        "text": "Ceiling APs radiate all around; wall APs use a directional pattern you can aim right on the plan."
+      },
+      {
+        "icon": "walls",
+        "title": "Automatic wall detection",
+        "beta": true,
+        "text": "Import a plan and get walls proposed from the PDF's vector lines or from the image. Review, pick materials, done."
+      },
+      {
+        "icon": "survey",
+        "title": "On-site survey",
+        "text": "Walk the site and record real WiFi scans with your laptop. See the measured heat map, interpolated with IDW or kriging."
+      },
+      {
+        "icon": "compare",
+        "title": "Predicted vs. measured",
+        "text": "A difference map and statistics show where reality beats or misses the prediction, so you can calibrate the model."
+      },
+      {
+        "icon": "metrics",
+        "title": "Six heat maps",
+        "text": "Signal strength, SNR, SINR, number of APs heard, channel overlap and requirements met — for every band."
+      },
+      {
+        "icon": "report",
+        "title": "Professional reports",
+        "text": "A modern PDF with the AP placement, every heat map, coverage gaps and recommendations. Plus PNG and CSV exports."
+      },
+      {
+        "icon": "portable",
+        "title": "Portable and private",
+        "text": "One file, no installer, no account. It works offline and your floor plans never leave your computer."
+      }
     ]
   },
   "how": {
@@ -64,25 +116,77 @@
     "title": "From floor plan to report in six steps",
     "lead": "A guided workflow that keeps the next step in sight.",
     "steps": [
-      { "n": "1", "title": "Import the floor plan", "text": "PNG, JPG or PDF. Vector PDFs exported from CAD give the best results." },
-      { "n": "2", "title": "Calibrate the scale", "text": "Click two points of a known distance — a door, a dimension line — and type it." },
-      { "n": "3", "title": "Draw or detect walls", "text": "Pick a material for each wall, or let the beta wall detection propose them for you." },
-      { "n": "4", "title": "Place access points", "text": "Choose a model from the catalog, set channels and power, and check coverage live." },
-      { "n": "5", "title": "Survey on site", "text": "Optional: record real scans and compare them with the prediction." },
-      { "n": "6", "title": "Export the report", "text": "A PDF in English or Spanish, ready to send to your client." }
+      {
+        "n": "1",
+        "title": "Import the floor plan",
+        "text": "PNG, JPG or PDF. Vector PDFs exported from CAD give the best results."
+      },
+      {
+        "n": "2",
+        "title": "Calibrate the scale",
+        "text": "Click two points of a known distance — a door, a dimension line — and type it."
+      },
+      {
+        "n": "3",
+        "title": "Draw or detect walls",
+        "text": "Pick a material for each wall, or let the beta wall detection propose them for you."
+      },
+      {
+        "n": "4",
+        "title": "Place access points",
+        "text": "Choose a model from the catalog, set channels and power, and check coverage live."
+      },
+      {
+        "n": "5",
+        "title": "Survey on site",
+        "text": "Optional: record real scans and compare them with the prediction."
+      },
+      {
+        "n": "6",
+        "title": "Export the report",
+        "text": "A PDF in English or Spanish, ready to send to your client."
+      }
     ]
   },
   "screens": {
     "eyebrow": "Screenshots",
     "title": "A clean, modern interface",
     "items": [
-      { "name": "Design", "file": "03-ap-selected.png", "caption": "Signal heat map with the access point inspector: model, height, mounting, channels and power." },
-      { "name": "Wall mounting", "file": "07-ap-wall.png", "caption": "A wall-mounted AP aimed with the dial or by dragging the orange handle on the plan." },
-      { "name": "Wall detection", "file": "12-import-detect.png", "caption": "Walls proposed automatically from a PDF: thick walls in orange, thin walls in blue." },
-      { "name": "Survey", "file": "04-survey.png", "caption": "Survey panel: scan with your computer's WiFi, import or export CSV, compare with the design." },
-      { "name": "AP catalog", "file": "05-catalog.png", "caption": "105 access point models from 14 vendors, with their datasheet values and sources." },
-      { "name": "Light theme", "file": "09-light.png", "caption": "Light and dark themes, following your system or chosen with one click." },
-      { "name": "Start", "file": "01-welcome.png", "caption": "Start screen with recent projects and the workflow at a glance." }
+      {
+        "name": "Design",
+        "file": "03-ap-selected.png",
+        "caption": "Signal heat map with the access point inspector: model, height, mounting, channels and power."
+      },
+      {
+        "name": "Wall mounting",
+        "file": "07-ap-wall.png",
+        "caption": "A wall-mounted AP aimed with the dial or by dragging the orange handle on the plan."
+      },
+      {
+        "name": "Wall detection",
+        "file": "12-import-detect.png",
+        "caption": "Walls proposed automatically from a PDF: thick walls in orange, thin walls in blue."
+      },
+      {
+        "name": "Survey",
+        "file": "04-survey.png",
+        "caption": "Survey panel: scan with your computer's WiFi, import or export CSV, compare with the design."
+      },
+      {
+        "name": "AP catalog",
+        "file": "05-catalog.png",
+        "caption": "105 access point models from 14 vendors, with their datasheet values and sources."
+      },
+      {
+        "name": "Light theme",
+        "file": "09-light.png",
+        "caption": "Light and dark themes, following your system or chosen with one click."
+      },
+      {
+        "name": "Start",
+        "file": "01-welcome.png",
+        "caption": "Start screen with recent projects and the workflow at a glance."
+      }
     ]
   },
   "reports": {
@@ -116,17 +220,93 @@
     "eyebrow": "FAQ",
     "title": "Frequently asked questions",
     "items": [
-      { "q": "Is it really free?", "a": "Yes. Ondalux Heatmap is open source under the MIT or Apache-2.0 license, with no subscriptions, accounts or limits." },
-      { "q": "Do I need to install anything?", "a": "No. It is a single portable .exe: download it, double-click it and start working. You can run it from a USB drive." },
-      { "q": "Which floor plans can I import?", "a": "PNG, JPG and PDF (first page). Vector PDFs exported from CAD work best, especially for automatic wall detection." },
-      { "q": "How accurate is the prediction?", "a": "It uses a path loss model plus the loss of every wall crossed (2D, one floor), without reflections. It is a design estimate: survey the site to confirm and calibrate it." },
-      { "q": "Can I survey on site?", "a": "Yes, on Windows with the computer's built-in WiFi adapter. Scanning on macOS and Linux is still in development." },
-      { "q": "Are my floor plans uploaded anywhere?", "a": "No. Everything stays on your computer: there is no account, no cloud and no telemetry." },
-      { "q": "Which languages are supported?", "a": "The app and the reports are available in English and Spanish." }
+      {
+        "q": "Is it really free?",
+        "a": "Yes. Ondalux Heatmap is open source under the MIT or Apache-2.0 license, with no subscriptions, accounts or limits."
+      },
+      {
+        "q": "Do I need to install anything?",
+        "a": "No. It is a single portable .exe: download it, double-click it and start working. You can run it from a USB drive."
+      },
+      {
+        "q": "Which floor plans can I import?",
+        "a": "PNG, JPG and PDF (first page). Vector PDFs exported from CAD work best, especially for automatic wall detection."
+      },
+      {
+        "q": "How accurate is the prediction?",
+        "a": "It uses a path loss model plus the loss of every wall crossed (2D, one floor), without reflections. It is a design estimate: survey the site to confirm and calibrate it."
+      },
+      {
+        "q": "Can I survey on site?",
+        "a": "Yes, on Windows with the computer's built-in WiFi adapter. Scanning on macOS and Linux is still in development."
+      },
+      {
+        "q": "Are my floor plans uploaded anywhere?",
+        "a": "No. Everything stays on your computer: there is no account, no cloud and no telemetry."
+      },
+      {
+        "q": "Which languages are supported?",
+        "a": "The app and the reports are available in English and Spanish."
+      },
+      {
+        "q": "Where can I get help?",
+        "a": "Write to support@ondaluxheatmap.com with your question; attaching the .lux project or the floor plan helps a lot."
+      }
     ]
   },
   "footer": {
     "tagline": "WiFi network design and survey with heat maps.",
-    "license": "MIT / Apache-2.0"
-  }
+    "license": "MIT / Apache-2.0",
+    "privacy": "Privacy",
+    "cookies": "Cookie settings",
+    "links": "Site",
+    "support": "Support"
+  },
+  "routes": {
+    "home": "/",
+    "guide": "/guide/",
+    "privacy": "/privacy/",
+    "opensource": "/open-source/"
+  },
+  "pages": {
+    "home": {
+      "title": "Ondalux Heatmap — WiFi heat maps, designed and measured",
+      "description": "Free, open-source desktop app to design WiFi networks on your floor plans: predictive heat maps, AP catalog, on-site surveys and professional PDF reports."
+    },
+    "guide": {
+      "title": "How to design a WiFi network with a heat map — Ondalux Heatmap",
+      "description": "Step-by-step WiFi design guide: coverage requirements, wall attenuation by material, access point placement, channel planning and on-site validation."
+    },
+    "privacy": {
+      "title": "Privacy policy — Ondalux Heatmap",
+      "description": "What data the Ondalux Heatmap website and desktop app process, advertising cookies and your choices."
+    },
+    "opensource": {
+      "title": "Open source — Ondalux Heatmap",
+      "description": "Ondalux Heatmap is open source (MIT / Apache-2.0): how it is built, how to compile it, how to contribute and what comes next."
+    }
+  },
+  "support": "For questions, bug reports or business inquiries write to",
+  "crates": [
+    {
+      "name": "ondalux-core",
+      "text": "RF engine: path loss, wall ray casting, metrics, interpolation, wall detection and analysis."
+    },
+    {
+      "name": "ondalux-io",
+      "text": "The .lux project format, floor plan import (PNG, JPG, PDF) and CSV files."
+    },
+    {
+      "name": "ondalux-scan",
+      "text": "WiFi scanning on Windows (WLAN API), macOS (CoreWLAN) and Linux (nl80211)."
+    },
+    {
+      "name": "ondalux-report",
+      "text": "Heat map images and the PDF report."
+    },
+    {
+      "name": "ondalux-app",
+      "text": "The desktop application (egui)."
+    }
+  ]
 }

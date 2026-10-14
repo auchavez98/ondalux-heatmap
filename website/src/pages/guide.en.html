@@ -1,0 +1,123 @@
+{{> head}}
+  <main id="main">
+    <article class="article">
+      <header class="article__head wrap wrap--narrow">
+        <p class="eyebrow">Guide</p>
+        <h1>How to design a WiFi network with a heat map</h1>
+        <p class="article__lead">A practical, step-by-step guide to planning access points on a floor plan: requirements, walls, placement, channels and on-site validation. The examples use Ondalux Heatmap, but the principles apply to any WiFi design.</p>
+        <p class="article__meta">Reading time: about 10 minutes</p>
+      </header>
+
+      <div class="wrap wrap--narrow article__body">
+        <nav class="toc" aria-label="Contents">
+          <p>Contents</p>
+          <ol>
+            <li><a href="#requirements">Start from the requirements</a></li>
+            <li><a href="#plan">Prepare the floor plan</a></li>
+            <li><a href="#walls">Model the walls</a></li>
+            <li><a href="#placement">Place the access points</a></li>
+            <li><a href="#channels">Plan channels and power</a></li>
+            <li><a href="#maps">Read the heat maps</a></li>
+            <li><a href="#survey">Validate on site</a></li>
+            <li><a href="#report">Deliver the report</a></li>
+          </ol>
+        </nav>
+
+        {{{ads.guide_top}}}
+
+        <h2 id="requirements">1. Start from the requirements</h2>
+        <p>A WiFi design is only "good" relative to what the network must do. Before placing a single access point, decide what the clients need at every point of the coverage area. Two numbers drive most designs:</p>
+        <ul>
+          <li><strong>Minimum signal (RSSI)</strong> received from the best access point, in dBm. Values closer to 0 are stronger.</li>
+          <li><strong>Minimum signal-to-noise ratio (SNR)</strong>, in dB: how far the signal stands above the background noise.</li>
+        </ul>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Use</th><th>Minimum signal</th><th>Minimum SNR</th></tr></thead>
+            <tbody>
+              <tr><td>Voice and video calls, real-time apps</td><td>−67 dBm</td><td>25 dB</td></tr>
+              <tr><td>General data (web, email, office apps)</td><td>−72 dBm</td><td>20 dB</td></tr>
+              <tr><td>Basic coverage (low-density, IoT)</td><td>−77 dBm</td><td>15 dB</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>These are common industry targets, and Ondalux Heatmap offers them as presets under <em>Edit → Requirements</em>. If calls or video matter anywhere in the building, design the whole area for −67 dBm: it is much easier than fixing roaming problems later.</p>
+        <p>Also think about <strong>capacity</strong>: a meeting room with 40 laptops needs more airtime than a corridor. Coverage tells you where clients <em>can</em> connect; capacity tells you how well they work once connected. Dense areas often need an extra access point even when the signal is already strong.</p>
+
+        <h2 id="plan">2. Prepare the floor plan</h2>
+        <p>Use the most accurate plan you have. A vector PDF exported from CAD is ideal: lines are sharp and the walls can be detected automatically. A clean PNG or JPG works too; a phone photo of a printed plan is the last resort.</p>
+        <p>The most important step is <strong>calibrating the scale</strong>. Pick two points whose real distance you know — the width of a standard door, a dimension line, the length of a corridor — and enter the distance. Every prediction depends on it: an error of 20 % in the scale is an error of several dB in the signal.</p>
+
+        <h2 id="walls">3. Model the walls</h2>
+        <p>Walls are what make indoor WiFi interesting. Each wall a signal crosses takes away part of its power, and the loss depends on the material and on the frequency: higher bands lose more.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Material</th><th>2.4 GHz</th><th>5 GHz</th><th>6 GHz</th></tr></thead>
+            <tbody>
+              <tr><td>Office partition / cubicle</td><td>1 dB</td><td>2 dB</td><td>2 dB</td></tr>
+              <tr><td>Drywall</td><td>3 dB</td><td>4 dB</td><td>5 dB</td></tr>
+              <tr><td>Wood / wooden door</td><td>3–4 dB</td><td>4–6 dB</td><td>5–7 dB</td></tr>
+              <tr><td>Clear glass</td><td>3 dB</td><td>7 dB</td><td>8 dB</td></tr>
+              <tr><td>Brick</td><td>8 dB</td><td>12 dB</td><td>14 dB</td></tr>
+              <tr><td>Concrete block</td><td>9 dB</td><td>12 dB</td><td>14 dB</td></tr>
+              <tr><td>Concrete</td><td>12 dB</td><td>18 dB</td><td>21 dB</td></tr>
+              <tr><td>Metal door</td><td>15 dB</td><td>19 dB</td><td>21 dB</td></tr>
+              <tr><td>Low-E (coated) glass</td><td>18 dB</td><td>23 dB</td><td>26 dB</td></tr>
+              <tr><td>Metal / elevator shaft</td><td>25–30 dB</td><td>30–35 dB</td><td>32–38 dB</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>These are typical single-wall values used as defaults in Ondalux Heatmap. Real walls vary with thickness, moisture, rebar and coatings, so treat them as a starting point and adjust them after a site survey. Do not forget the "invisible" obstacles: elevator shafts, stairwells with fire doors, server rooms, mirrors and large aquariums.</p>
+        <p>Draw every wall that matters, with its material. If the plan is a vector PDF, the beta wall detection can propose the horizontal and vertical walls for you; review the proposal and draw diagonal or curved walls by hand.</p>
+
+        <h2 id="placement">4. Place the access points</h2>
+        <ul>
+          <li><strong>Ceiling mounting is the default.</strong> An access point on the ceiling, in the middle of the area it serves, radiates evenly around it and sees over furniture and people. Typical mounting heights are 2.5 to 4 m.</li>
+          <li><strong>Put access points where the clients are</strong>, not in closets, above metal ceilings or behind elevator shafts. Every wall between the AP and its clients costs signal.</li>
+          <li><strong>Use wall mounting deliberately.</strong> A wall-mounted access point sends most of its energy forward; aim it into the area it must cover and remember that the space behind the wall gets much less.</li>
+          <li><strong>Plan overlap for roaming.</strong> Where people move while on a call, aim for at least two access points heard above the minimum signal. The "Number of APs heard" map shows exactly where that happens.</li>
+          <li><strong>Start sparse and add.</strong> Place access points where the building needs them most, check the coverage map, then fill the gaps. It is easier to add an AP than to fix an over-dense design.</li>
+        </ul>
+
+        <h2 id="channels">5. Plan channels and power</h2>
+        <p>Two access points on the same channel that hear each other share the same airtime, even if they belong to the same network. A good channel plan keeps neighbors apart:</p>
+        <ul>
+          <li><strong>2.4 GHz:</strong> use only channels 1, 6 and 11 (where regulations allow other plans, follow the local rules) and 20 MHz width. Any other choice creates overlapping interference.</li>
+          <li><strong>5 GHz:</strong> there are many more channels. Use 20 or 40 MHz in dense designs so that neighboring APs can be on different channels; keep 80 MHz for low-density areas.</li>
+          <li><strong>6 GHz:</strong> with plenty of clean spectrum, wider channels (80 MHz or more) are practical, but the higher frequency loses more through walls.</li>
+          <li><strong>Do not max out the power.</strong> Phones and laptops transmit with less power than access points. If the AP is much louder than the client, the client hears the AP but the AP cannot hear the client. Moderate power also reduces interference between neighbors.</li>
+        </ul>
+        <p>The SINR map counts interference only from access points on the same channel or on channels that share spectrum. If two nearby APs share a channel, you will see a red area between them; move one of them to a free channel and it disappears.</p>
+
+        <h2 id="maps">6. Read the heat maps</h2>
+        <dl class="defs">
+          <dt>Signal strength</dt><dd>Power of the strongest access point at each point, in dBm. Compare it with your minimum signal.</dd>
+          <dt>SNR</dt><dd>Signal over noise. Low values mean slow or unstable connections even when the signal looks acceptable.</dd>
+          <dt>SINR</dt><dd>Like SNR, but also subtracting interference from access points on overlapping channels. It reveals bad channel plans.</dd>
+          <dt>Number of APs heard</dt><dd>How many access points are received above the minimum signal: 2 or more gives redundancy and smooth roaming.</dd>
+          <dt>Channel overlap</dt><dd>How many other radios on overlapping channels are heard above the clear-channel threshold; ideally 0 or 1.</dd>
+          <dt>Requirements met</dt><dd>Green where both the signal and the SNR targets are met, red where not; the gaps are numbered.</dd>
+        </dl>
+
+        <h2 id="survey">7. Validate on site</h2>
+        <p>A prediction is a model: it does not include reflections, furniture or people. Validate it with a <strong>site survey</strong> once the network is installed, or with a temporary access point before:</p>
+        <ul>
+          <li>Use the same laptop for the whole survey and keep it at the same height.</li>
+          <li>Stop at each point, click your position on the plan and wait for the scan to finish. Cover corners, corridors and the areas that matter most.</li>
+          <li>Compare the measured map with the prediction. If the real signal is consistently weaker behind certain walls, increase their loss; if it is stronger everywhere, the design is conservative.</li>
+        </ul>
+
+        <h2 id="report">8. Deliver the report</h2>
+        <p>Close the project with a report the client can understand: where the access points go, what coverage to expect in each band, which areas do not meet the requirements and what to do about them. Ondalux Heatmap generates it as a PDF, in English or Spanish, with the access point placement, every heat map and the recommendations.</p>
+
+        <div class="cta-box">
+          <h2>Try it on your own floor plan</h2>
+          <p>Ondalux Heatmap is free, open source and portable. No account, no installer.</p>
+          <a class="btn btn--primary btn--lg" href="/#download">Download for Windows</a>
+        </div>
+
+        {{{ads.guide_bottom}}}
+      </div>
+    </article>
+  </main>
+{{> footer}}

@@ -113,6 +113,22 @@
     select(tabs[0], false);
   }
 
+  // ---- Google AdSense: fill each ad slot; reopen the consent message ----
+  if ($("ins.adsbygoogle")) {
+    $$("ins.adsbygoogle").forEach(() => {
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (_) { /* blocked */ }
+    });
+  }
+  $$("[data-consent]").forEach((a) =>
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Google's consent management (Privacy & messaging in AdSense).
+      window.googlefc = window.googlefc || {};
+      window.googlefc.callbackQueue = window.googlefc.callbackQueue || [];
+      window.googlefc.callbackQueue.push(() => window.googlefc.showRevocationMessage());
+    }),
+  );
+
   // ---- language suggestion ----
   const hint = $(".lang-hint");
   try {

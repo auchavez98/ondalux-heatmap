@@ -1,7 +1,5 @@
 {
   "lang": "es",
-  "path": "/es/",
-  "home": "/es/",
   "meta": {
     "title": "Ondalux Heatmap — Mapas de calor WiFi, diseñados y medidos",
     "description": "App de escritorio gratuita y de código abierto para diseñar redes WiFi sobre tus planos: mapas de calor predictivos, catálogo de APs, mediciones en sitio y reportes PDF profesionales.",
@@ -11,7 +9,6 @@
     "code": "en",
     "short": "EN",
     "name": "English",
-    "href": "/",
     "hint": "Prefer to read in English?",
     "close": "Cerrar"
   },
@@ -24,7 +21,9 @@
     "reports": "Reportes",
     "faq": "Preguntas",
     "download": "Descargar",
-    "menu": "Menú"
+    "menu": "Menú",
+    "guide": "Guía",
+    "oss": "Código abierto"
   },
   "hero": {
     "pill": "Gratis y de código abierto · Windows",
@@ -38,25 +37,78 @@
     "badge2": "Se actualiza en menos de 100 ms"
   },
   "stats": [
-    { "value": "105", "suffix": "", "label": "modelos de AP en el catálogo" },
-    { "value": "14", "suffix": "", "label": "fabricantes" },
-    { "value": "3", "suffix": "", "label": "bandas: 2.4, 5 y 6 GHz" },
-    { "value": "6", "suffix": "", "label": "tipos de mapa de calor" }
+    {
+      "value": "105",
+      "suffix": "",
+      "label": "modelos de AP en el catálogo"
+    },
+    {
+      "value": "14",
+      "suffix": "",
+      "label": "fabricantes"
+    },
+    {
+      "value": "3",
+      "suffix": "",
+      "label": "bandas: 2.4, 5 y 6 GHz"
+    },
+    {
+      "value": "6",
+      "suffix": "",
+      "label": "tipos de mapa de calor"
+    }
   ],
   "features": {
     "eyebrow": "Funciones",
     "title": "Todo lo que necesitas para diseñar un buen WiFi",
     "lead": "Del primer plano al reporte final, sin cambiar de herramienta.",
     "items": [
-      { "icon": "predict", "title": "Diseño predictivo", "text": "Dibuja muros con materiales reales (tablaroca, concreto, vidrio, puertas) y mira cómo cambia la cobertura al instante cuando mueves los puntos de acceso." },
-      { "icon": "catalog", "title": "Catálogo de APs", "text": "105 modelos de 14 fabricantes con los valores de radio de sus fichas técnicas oficiales. O captura tus propios datos a mano." },
-      { "icon": "mount", "title": "Montaje en techo o pared", "text": "Los APs de techo irradian a su alrededor; los de pared usan un patrón direccional que puedes orientar sobre el plano." },
-      { "icon": "walls", "title": "Detección automática de muros", "beta": true, "text": "Importa un plano y obtén una propuesta de muros a partir de las líneas vectoriales del PDF o de la imagen. Revisa, elige materiales y listo." },
-      { "icon": "survey", "title": "Medición en sitio", "text": "Recorre el lugar y registra escaneos WiFi reales con tu laptop. Mira el mapa de calor medido, interpolado con IDW o kriging." },
-      { "icon": "compare", "title": "Predicho vs. medido", "text": "Un mapa de diferencias y estadísticas muestran dónde la realidad supera o queda debajo de la predicción, para calibrar el modelo." },
-      { "icon": "metrics", "title": "Seis mapas de calor", "text": "Intensidad de señal, SNR, SINR, número de APs que se escuchan, solapamiento de canales y cumplimiento de requisitos, en cada banda." },
-      { "icon": "report", "title": "Reportes profesionales", "text": "Un PDF moderno con el sembrado de APs, todos los mapas, zonas sin cobertura y recomendaciones. Además exporta PNG y CSV." },
-      { "icon": "portable", "title": "Portable y privado", "text": "Un solo archivo, sin instalador y sin cuenta. Funciona sin internet y tus planos nunca salen de tu computadora." }
+      {
+        "icon": "predict",
+        "title": "Diseño predictivo",
+        "text": "Dibuja muros con materiales reales (tablaroca, concreto, vidrio, puertas) y mira cómo cambia la cobertura al instante cuando mueves los puntos de acceso."
+      },
+      {
+        "icon": "catalog",
+        "title": "Catálogo de APs",
+        "text": "105 modelos de 14 fabricantes con los valores de radio de sus fichas técnicas oficiales. O captura tus propios datos a mano."
+      },
+      {
+        "icon": "mount",
+        "title": "Montaje en techo o pared",
+        "text": "Los APs de techo irradian a su alrededor; los de pared usan un patrón direccional que puedes orientar sobre el plano."
+      },
+      {
+        "icon": "walls",
+        "title": "Detección automática de muros",
+        "beta": true,
+        "text": "Importa un plano y obtén una propuesta de muros a partir de las líneas vectoriales del PDF o de la imagen. Revisa, elige materiales y listo."
+      },
+      {
+        "icon": "survey",
+        "title": "Medición en sitio",
+        "text": "Recorre el lugar y registra escaneos WiFi reales con tu laptop. Mira el mapa de calor medido, interpolado con IDW o kriging."
+      },
+      {
+        "icon": "compare",
+        "title": "Predicho vs. medido",
+        "text": "Un mapa de diferencias y estadísticas muestran dónde la realidad supera o queda debajo de la predicción, para calibrar el modelo."
+      },
+      {
+        "icon": "metrics",
+        "title": "Seis mapas de calor",
+        "text": "Intensidad de señal, SNR, SINR, número de APs que se escuchan, solapamiento de canales y cumplimiento de requisitos, en cada banda."
+      },
+      {
+        "icon": "report",
+        "title": "Reportes profesionales",
+        "text": "Un PDF moderno con el sembrado de APs, todos los mapas, zonas sin cobertura y recomendaciones. Además exporta PNG y CSV."
+      },
+      {
+        "icon": "portable",
+        "title": "Portable y privado",
+        "text": "Un solo archivo, sin instalador y sin cuenta. Funciona sin internet y tus planos nunca salen de tu computadora."
+      }
     ]
   },
   "how": {
@@ -64,25 +116,77 @@
     "title": "Del plano al reporte en seis pasos",
     "lead": "Un flujo guiado que siempre te muestra el siguiente paso.",
     "steps": [
-      { "n": "1", "title": "Importa el plano", "text": "PNG, JPG o PDF. Los PDF vectoriales exportados de CAD dan los mejores resultados." },
-      { "n": "2", "title": "Calibra la escala", "text": "Haz clic en dos puntos de distancia conocida (una puerta, una cota) y escríbela." },
-      { "n": "3", "title": "Dibuja o detecta muros", "text": "Elige el material de cada muro, o deja que la detección beta te los proponga." },
-      { "n": "4", "title": "Coloca los APs", "text": "Elige un modelo del catálogo, ajusta canales y potencia y revisa la cobertura en vivo." },
-      { "n": "5", "title": "Mide en sitio", "text": "Opcional: registra escaneos reales y compáralos con la predicción." },
-      { "n": "6", "title": "Exporta el reporte", "text": "Un PDF en español o inglés, listo para enviar a tu cliente." }
+      {
+        "n": "1",
+        "title": "Importa el plano",
+        "text": "PNG, JPG o PDF. Los PDF vectoriales exportados de CAD dan los mejores resultados."
+      },
+      {
+        "n": "2",
+        "title": "Calibra la escala",
+        "text": "Haz clic en dos puntos de distancia conocida (una puerta, una cota) y escríbela."
+      },
+      {
+        "n": "3",
+        "title": "Dibuja o detecta muros",
+        "text": "Elige el material de cada muro, o deja que la detección beta te los proponga."
+      },
+      {
+        "n": "4",
+        "title": "Coloca los APs",
+        "text": "Elige un modelo del catálogo, ajusta canales y potencia y revisa la cobertura en vivo."
+      },
+      {
+        "n": "5",
+        "title": "Mide en sitio",
+        "text": "Opcional: registra escaneos reales y compáralos con la predicción."
+      },
+      {
+        "n": "6",
+        "title": "Exporta el reporte",
+        "text": "Un PDF en español o inglés, listo para enviar a tu cliente."
+      }
     ]
   },
   "screens": {
     "eyebrow": "Capturas",
     "title": "Una interfaz limpia y moderna",
     "items": [
-      { "name": "Diseño", "file": "03-ap-selected.png", "caption": "Mapa de calor de señal con el inspector del punto de acceso: modelo, altura, montaje, canales y potencia." },
-      { "name": "AP en pared", "file": "07-ap-wall.png", "caption": "Un AP montado en pared, orientado con la rueda o arrastrando el punto naranja sobre el plano." },
-      { "name": "Detección de muros", "file": "12-import-detect.png", "caption": "Muros propuestos automáticamente desde un PDF: gruesos en naranja, delgados en azul." },
-      { "name": "Mediciones", "file": "04-survey.png", "caption": "Panel de mediciones: escanea con el WiFi de tu computadora, importa o exporta CSV y compara con el diseño." },
-      { "name": "Catálogo de APs", "file": "05-catalog.png", "caption": "105 modelos de puntos de acceso de 14 fabricantes, con los valores de su ficha técnica y su fuente." },
-      { "name": "Tema claro", "file": "09-light.png", "caption": "Temas claro y oscuro, según tu sistema o con un clic." },
-      { "name": "Inicio", "file": "01-welcome.png", "caption": "Pantalla de inicio con proyectos recientes y el flujo de trabajo de un vistazo." }
+      {
+        "name": "Diseño",
+        "file": "03-ap-selected.png",
+        "caption": "Mapa de calor de señal con el inspector del punto de acceso: modelo, altura, montaje, canales y potencia."
+      },
+      {
+        "name": "AP en pared",
+        "file": "07-ap-wall.png",
+        "caption": "Un AP montado en pared, orientado con la rueda o arrastrando el punto naranja sobre el plano."
+      },
+      {
+        "name": "Detección de muros",
+        "file": "12-import-detect.png",
+        "caption": "Muros propuestos automáticamente desde un PDF: gruesos en naranja, delgados en azul."
+      },
+      {
+        "name": "Mediciones",
+        "file": "04-survey.png",
+        "caption": "Panel de mediciones: escanea con el WiFi de tu computadora, importa o exporta CSV y compara con el diseño."
+      },
+      {
+        "name": "Catálogo de APs",
+        "file": "05-catalog.png",
+        "caption": "105 modelos de puntos de acceso de 14 fabricantes, con los valores de su ficha técnica y su fuente."
+      },
+      {
+        "name": "Tema claro",
+        "file": "09-light.png",
+        "caption": "Temas claro y oscuro, según tu sistema o con un clic."
+      },
+      {
+        "name": "Inicio",
+        "file": "01-welcome.png",
+        "caption": "Pantalla de inicio con proyectos recientes y el flujo de trabajo de un vistazo."
+      }
     ]
   },
   "reports": {
@@ -116,17 +220,93 @@
     "eyebrow": "Preguntas",
     "title": "Preguntas frecuentes",
     "items": [
-      { "q": "¿De verdad es gratis?", "a": "Sí. Ondalux Heatmap es de código abierto con licencia MIT o Apache-2.0, sin suscripciones, cuentas ni límites." },
-      { "q": "¿Tengo que instalar algo?", "a": "No. Es un solo .exe portable: descárgalo, ábrelo con doble clic y empieza a trabajar. Hasta puedes llevarlo en una USB." },
-      { "q": "¿Qué planos puedo importar?", "a": "PNG, JPG y PDF (primera página). Los PDF vectoriales exportados de CAD funcionan mejor, sobre todo para la detección automática de muros." },
-      { "q": "¿Qué tan precisa es la predicción?", "a": "Usa un modelo de pérdida de trayecto más la atenuación de cada muro atravesado (2D, un piso), sin reflexiones. Es una estimación de diseño: mide en sitio para confirmarla y calibrarla." },
-      { "q": "¿Puedo medir en sitio?", "a": "Sí, en Windows con el adaptador WiFi de la computadora. El escaneo en macOS y Linux todavía está en desarrollo." },
-      { "q": "¿Mis planos se suben a algún lado?", "a": "No. Todo se queda en tu computadora: no hay cuenta, ni nube, ni telemetría." },
-      { "q": "¿En qué idiomas está?", "a": "La app y los reportes están en español e inglés." }
+      {
+        "q": "¿De verdad es gratis?",
+        "a": "Sí. Ondalux Heatmap es de código abierto con licencia MIT o Apache-2.0, sin suscripciones, cuentas ni límites."
+      },
+      {
+        "q": "¿Tengo que instalar algo?",
+        "a": "No. Es un solo .exe portable: descárgalo, ábrelo con doble clic y empieza a trabajar. Hasta puedes llevarlo en una USB."
+      },
+      {
+        "q": "¿Qué planos puedo importar?",
+        "a": "PNG, JPG y PDF (primera página). Los PDF vectoriales exportados de CAD funcionan mejor, sobre todo para la detección automática de muros."
+      },
+      {
+        "q": "¿Qué tan precisa es la predicción?",
+        "a": "Usa un modelo de pérdida de trayecto más la atenuación de cada muro atravesado (2D, un piso), sin reflexiones. Es una estimación de diseño: mide en sitio para confirmarla y calibrarla."
+      },
+      {
+        "q": "¿Puedo medir en sitio?",
+        "a": "Sí, en Windows con el adaptador WiFi de la computadora. El escaneo en macOS y Linux todavía está en desarrollo."
+      },
+      {
+        "q": "¿Mis planos se suben a algún lado?",
+        "a": "No. Todo se queda en tu computadora: no hay cuenta, ni nube, ni telemetría."
+      },
+      {
+        "q": "¿En qué idiomas está?",
+        "a": "La app y los reportes están en español e inglés."
+      },
+      {
+        "q": "¿Dónde consigo ayuda?",
+        "a": "Escribe a support@ondaluxheatmap.com con tu duda; adjuntar el proyecto .lux o el plano ayuda mucho."
+      }
     ]
   },
   "footer": {
     "tagline": "Diseño y medición de redes WiFi con mapas de calor.",
-    "license": "MIT / Apache-2.0"
-  }
+    "license": "MIT / Apache-2.0",
+    "privacy": "Privacidad",
+    "cookies": "Preferencias de cookies",
+    "links": "Sitio",
+    "support": "Soporte"
+  },
+  "routes": {
+    "home": "/es/",
+    "guide": "/es/guia/",
+    "privacy": "/es/privacidad/",
+    "opensource": "/es/codigo-abierto/"
+  },
+  "pages": {
+    "home": {
+      "title": "Ondalux Heatmap — Mapas de calor WiFi, diseñados y medidos",
+      "description": "App de escritorio gratuita y de código abierto para diseñar redes WiFi sobre tus planos: mapas de calor predictivos, catálogo de APs, mediciones en sitio y reportes PDF profesionales."
+    },
+    "guide": {
+      "title": "Cómo diseñar una red WiFi con un mapa de calor — Ondalux Heatmap",
+      "description": "Guía paso a paso de diseño WiFi: requisitos de cobertura, atenuación de muros por material, ubicación de puntos de acceso, plan de canales y validación en sitio."
+    },
+    "privacy": {
+      "title": "Política de privacidad — Ondalux Heatmap",
+      "description": "Qué datos tratan el sitio y la app de escritorio Ondalux Heatmap, cookies de publicidad y tus opciones."
+    },
+    "opensource": {
+      "title": "Código abierto — Ondalux Heatmap",
+      "description": "Ondalux Heatmap es de código abierto (MIT / Apache-2.0): cómo está hecho, cómo compilarlo, cómo contribuir y lo que sigue."
+    }
+  },
+  "support": "Para dudas, reportes de errores o consultas comerciales escribe a",
+  "crates": [
+    {
+      "name": "ondalux-core",
+      "text": "Motor de RF: pérdida de trayecto, trazado de rayos por muros, métricas, interpolación, detección de muros y análisis."
+    },
+    {
+      "name": "ondalux-io",
+      "text": "El formato de proyecto .lux, la importación de planos (PNG, JPG, PDF) y los archivos CSV."
+    },
+    {
+      "name": "ondalux-scan",
+      "text": "Escaneo WiFi en Windows (WLAN API), macOS (CoreWLAN) y Linux (nl80211)."
+    },
+    {
+      "name": "ondalux-report",
+      "text": "Imágenes de mapas de calor y el reporte PDF."
+    },
+    {
+      "name": "ondalux-app",
+      "text": "La aplicación de escritorio (egui)."
+    }
+  ]
 }

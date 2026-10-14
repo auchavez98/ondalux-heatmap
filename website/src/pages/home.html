@@ -1,74 +1,4 @@
-<!doctype html>
-<html lang="{{lang}}">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{meta.title}}</title>
-  <meta name="description" content="{{meta.description}}">
-  <link rel="canonical" href="{{site}}{{path}}">
-  <link rel="alternate" hreflang="en" href="{{site}}/">
-  <link rel="alternate" hreflang="es" href="{{site}}/es/">
-  <link rel="alternate" hreflang="x-default" href="{{site}}/">
-  <meta name="theme-color" content="#0b0d12">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="{{meta.title}}">
-  <meta property="og:description" content="{{meta.description}}">
-  <meta property="og:url" content="{{site}}{{path}}">
-  <meta property="og:image" content="{{site}}/assets/shots/{{lang}}/03-ap-selected.png">
-  <meta property="og:locale" content="{{meta.locale}}">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32.png">
-  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/css/style.css?v={{build}}">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Ondalux Heatmap",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Windows 10, Windows 11",
-    "softwareVersion": "{{version}}",
-    "description": "{{meta.description}}",
-    "url": "{{site}}{{path}}",
-    "downloadUrl": "{{site}}/downloads/{{exe.name}}",
-    "image": "{{site}}/assets/shots/{{lang}}/03-ap-selected.png",
-    "license": "https://opensource.org/licenses/MIT",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-  }
-  </script>
-  <script defer src="/assets/js/main.js?v={{build}}"></script>
-</head>
-<body>
-  <a class="skip" href="#main">{{nav.skip}}</a>
-
-  <header class="nav" id="top">
-    <div class="wrap nav__inner">
-      <a class="brand" href="{{home}}" aria-label="Ondalux Heatmap">
-        <img src="/assets/img/logo.png" width="32" height="32" alt="">
-        <span>Ondalux <b>Heatmap</b></span>
-      </a>
-      <nav class="nav__links" aria-label="{{nav.label}}">
-        <a href="#features">{{nav.features}}</a>
-        <a href="#how">{{nav.how}}</a>
-        <a href="#screens">{{nav.screens}}</a>
-        <a href="#reports">{{nav.reports}}</a>
-        <a href="#faq">{{nav.faq}}</a>
-      </nav>
-      <div class="nav__actions">
-        <a class="lang" href="{{other.href}}" hreflang="{{other.code}}" lang="{{other.code}}" title="{{other.name}}">{{other.short}}</a>
-        <a class="btn btn--small btn--primary" href="#download">{{nav.download}}</a>
-        <button class="nav__toggle" aria-label="{{nav.menu}}" aria-expanded="false"><span></span><span></span></button>
-      </div>
-    </div>
-  </header>
-
-  <div class="lang-hint" hidden>
-    <span>{{other.hint}}</span>
-    <a href="{{other.href}}">{{other.name}}</a>
-    <button aria-label="{{other.close}}">×</button>
-  </div>
-
+{{> head}}
   <main id="main">
     <!-- ================= HERO ================= -->
     <section class="hero">
@@ -115,6 +45,8 @@
         {{/stats}}
       </div>
     </section>
+
+    {{{ads.home_top}}}
 
     <!-- ================= FEATURES ================= -->
     <section class="section" id="features">
@@ -180,6 +112,8 @@
       </div>
     </section>
 
+    {{{ads.home_middle}}}
+
     <!-- ================= REPORTS ================= -->
     <section class="section section--alt" id="reports">
       <div class="wrap split">
@@ -231,6 +165,8 @@
       </div>
     </section>
 
+    {{{ads.home_bottom}}}
+
     <!-- ================= FAQ ================= -->
     <section class="section section--alt" id="faq">
       <div class="wrap wrap--narrow">
@@ -249,16 +185,4 @@
       </div>
     </section>
   </main>
-
-  <footer class="footer">
-    <div class="wrap footer__inner">
-      <a class="brand" href="{{home}}">
-        <img src="/assets/img/logo.png" width="28" height="28" alt="">
-        <span>Ondalux <b>Heatmap</b></span>
-      </a>
-      <p>{{footer.tagline}}</p>
-      <p class="footer__small">© {{year}} Ondalux Heatmap · {{footer.license}} · <a href="{{other.href}}" hreflang="{{other.code}}">{{other.name}}</a></p>
-    </div>
-  </footer>
-</body>
-</html>
+{{> footer}}
