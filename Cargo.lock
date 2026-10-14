@@ -2824,7 +2824,6 @@ dependencies = [
  "eframe",
  "egui-phosphor",
  "egui_kittest",
- "image",
  "ondalux-core",
  "ondalux-io",
  "ondalux-report",
