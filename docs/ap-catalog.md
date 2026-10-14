@@ -37,7 +37,7 @@ be processed automatically. You can add them as custom models once you have thei
 |---|---|
 | `max_tx_power_dbm` | Maximum transmit power as published, per band |
 | `tx_power_basis` | What that figure is: `aggregate_conducted` (sum of all chains), `per_chain_conducted`, `vendor_max` (unqualified "max TX power") or `eirp` |
-| `antenna_gain_dbi` | Antenna gain per band. When the vendor publishes both a single-element peak and a combined/average pattern gain (Aruba, Huawei), the combined figure is used, since the engine models one omnidirectional radiator |
+| `antenna_gain_dbi` | Antenna gain per band. When the vendor publishes both a single-element peak and a combined/average pattern gain (Aruba, Huawei), the combined figure is used, since ceiling APs are modelled as one omnidirectional radiator |
 | `spatial_streams` | MIMO chains, e.g. 4 for 4x4:4 |
 | `max_width` | Widest channel the model supports on that band |
 

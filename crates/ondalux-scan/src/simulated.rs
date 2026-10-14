@@ -115,6 +115,8 @@ mod tests {
             position: Vec2::new(0.0, 0.0),
             height_m: 1.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: vec![
                 Radio {
                     channel: Channel::new(Band::G2_4, 6, ChannelWidth::Mhz20).unwrap(),

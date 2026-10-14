@@ -1,10 +1,10 @@
 //! Access point list as CSV: one row per radio.
 
 use crate::error::IoError;
-use ondalux_core::ap::AccessPoint;
+use ondalux_core::ap::{AccessPoint, Mount};
 use std::io::Write;
 
-pub const HEADER: [&str; 15] = [
+pub const HEADER: [&str; 17] = [
     "ap_id",
     "name",
     "vendor",
@@ -12,6 +12,8 @@ pub const HEADER: [&str; 15] = [
     "x_m",
     "y_m",
     "height_m",
+    "mount",
+    "orientation_deg",
     "radio",
     "band",
     "channel",
@@ -36,6 +38,14 @@ pub fn write_ap_csv<W: Write>(writer: W, aps: &[AccessPoint]) -> Result<(), IoEr
                 format!("{:.2}", ap.position.x),
                 format!("{:.2}", ap.position.y),
                 format!("{:.2}", ap.height_m),
+                match ap.mount {
+                    Mount::Ceiling => "ceiling".to_owned(),
+                    Mount::Wall => "wall".to_owned(),
+                },
+                match ap.mount {
+                    Mount::Ceiling => String::new(),
+                    Mount::Wall => format!("{:.0}", ap.orientation_deg),
+                },
                 (i + 1).to_string(),
                 r.channel.band.label().to_owned(),
                 r.channel.number.to_string(),
@@ -70,6 +80,8 @@ mod tests {
             position: Vec2::new(1.5, 2.25),
             height_m: 3.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: vec![
                 Radio {
                     channel: Channel::new(Band::G2_4, 6, ChannelWidth::Mhz20).unwrap(),
@@ -93,7 +105,7 @@ mod tests {
         assert_eq!(lines[0], HEADER.join(","));
         assert_eq!(
             lines[1],
-            "3,\"Lobby, east\",Ubiquiti,U6 Pro,1.50,2.25,3.00,1,2.4 GHz,6,20,17.0,4.0,21.0,true"
+            "3,\"Lobby, east\",Ubiquiti,U6 Pro,1.50,2.25,3.00,ceiling,,1,2.4 GHz,6,20,17.0,4.0,21.0,true"
         );
         assert!(lines[2].ends_with("5 GHz,36,80,20.0,6.0,26.0,false"));
     }

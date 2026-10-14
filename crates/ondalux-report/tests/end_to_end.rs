@@ -61,6 +61,8 @@ fn project_file() -> ProjectFile {
         position: Vec2::new(6.0, 6.0),
         height_m: 3.0,
         orientation_deg: 0.0,
+        mount: Default::default(),
+        pattern: Default::default(),
         radios: Vec::new(),
     };
     model.apply_to(&mut a, 0);
@@ -73,6 +75,8 @@ fn project_file() -> ProjectFile {
         position: Vec2::new(19.0, 6.0),
         height_m: 3.0,
         orientation_deg: 0.0,
+        mount: Default::default(),
+        pattern: Default::default(),
         radios: vec![Radio {
             channel: Channel::new(Band::G5, 149, ChannelWidth::Mhz40).unwrap(),
             tx_power: Dbm(17.0),

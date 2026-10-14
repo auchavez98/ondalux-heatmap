@@ -5,6 +5,7 @@ use crate::map::{render_map, GapOverlay, HeatLayer, MapOptions};
 use crate::pdfdoc::{Doc, MUTED, TEXT};
 use image::RgbaImage;
 use ondalux_core::analysis::{analyze_band, BandAnalysis, Finding, Severity, TARGET_COVERAGE};
+use ondalux_core::ap::Mount;
 use ondalux_core::channel::Band;
 use ondalux_core::colormap::{ColorScale, RSSI_CUTOFF};
 use ondalux_core::grid::{GridSpec, LayerCache};
@@ -590,7 +591,7 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
         l.t("Nombre", "Name").to_owned(),
         l.t("Modelo", "Model").to_owned(),
         l.t("Posición", "Position").to_owned(),
-        l.t("Altura", "Height").to_owned(),
+        l.t("Montaje", "Mounting").to_owned(),
         l.t(
             "Radios (canal/ancho, Tx + ganancia = EIRP)",
             "Radios (channel/width, Tx + gain = EIRP)",
@@ -631,12 +632,20 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
                     model
                 },
                 format!("{:.1}, {:.1} m", a.position.x, a.position.y),
-                format!("{:.1} m", a.height_m),
+                match a.mount {
+                    Mount::Ceiling => format!("{} {:.1} m", l.t("Techo", "Ceiling"), a.height_m),
+                    Mount::Wall => format!(
+                        "{} {:.1} m, {:.0}°",
+                        l.t("Pared", "Wall"),
+                        a.height_m,
+                        a.orientation_deg
+                    ),
+                },
                 radios,
             ]
         })
         .collect();
-    doc.table(&header, &rows, &[1.0, 1.4, 1.1, 0.7, 3.2]);
+    doc.table(&header, &rows, &[1.0, 1.4, 1.1, 1.0, 3.0]);
 
     // ---- method ----
     doc.heading(
@@ -644,8 +653,8 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
         13.0,
     );
     doc.paragraph(l.t(
-        "Predicción con pérdida de trayecto log-distance o de espacio libre más la atenuación de cada pared atravesada por la línea directa entre el AP y cada punto (modelo 2D de un piso). No se modelan reflexiones, difracción ni antenas direccionales. La interferencia considera canales solapados con su fracción de espectro. Los valores de potencia y ganancia de los modelos de catálogo provienen de las fichas de cada fabricante; los límites regulatorios locales pueden ser menores. Las mediciones de campo, si se incluyen, permiten calibrar el modelo.",
-        "Prediction with log-distance or free-space path loss plus the loss of every wall crossed by the straight path between the AP and each point (2D, single floor). Reflection, diffraction and directional antennas are not modelled. Interference accounts for overlapping channels by their spectral overlap. Power and gain of catalog models come from vendor datasheets; local regulatory limits may be lower. Field measurements, when included, allow calibrating the model.",
+        "Predicción con pérdida de trayecto log-distance o de espacio libre más la atenuación de cada pared atravesada por la línea directa entre el AP y cada punto (modelo 2D de un piso). No se modelan reflexiones ni difracción. Los APs en techo se consideran omnidireccionales; los APs en pared usan un patrón horizontal simplificado (apertura del haz y pérdida trasera) según su dirección. La interferencia considera canales solapados con su fracción de espectro. Los valores de potencia y ganancia de los modelos de catálogo provienen de las fichas de cada fabricante; los límites regulatorios locales pueden ser menores. Las mediciones de campo, si se incluyen, permiten calibrar el modelo.",
+        "Prediction with log-distance or free-space path loss plus the loss of every wall crossed by the straight path between the AP and each point (2D, single floor). Reflection and diffraction are not modelled. Ceiling APs are treated as omnidirectional; wall APs use a simplified horizontal pattern (beamwidth and front-to-back loss) along their pointing direction. Interference accounts for overlapping channels by their spectral overlap. Power and gain of catalog models come from vendor datasheets; local regulatory limits may be lower. Field measurements, when included, allow calibrating the model.",
     ));
     doc.finish()
 }
@@ -686,6 +695,8 @@ mod tests {
             position: Vec2::new(8.0, 10.0),
             height_m: 3.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: vec![
                 Radio {
                     channel: Channel::new(Band::G2_4, 3, ChannelWidth::Mhz20).unwrap(),

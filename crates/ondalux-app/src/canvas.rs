@@ -8,7 +8,7 @@ use crate::view::View;
 use eframe::egui::{
     self, Align2, Color32, FontId, PointerButton, Pos2, Rect, Sense, Shape, Stroke, StrokeKind,
 };
-use ondalux_core::ap::{AccessPoint, ApId, Radio};
+use ondalux_core::ap::{AccessPoint, ApId, Mount, Radio};
 use ondalux_core::channel::{Band, Channel, ChannelWidth};
 use ondalux_core::geometry::{Segment, Vec2 as WVec2};
 use ondalux_core::material::Wall;
@@ -22,10 +22,13 @@ const HANDLE_HIT: f32 = 8.0;
 const WALL_HIT: f32 = 6.0;
 const SNAP: f32 = 10.0;
 const POINT_HIT: f32 = 9.0;
+/// Distance in screen pixels from a wall AP to its rotation handle.
+const ROTATE_HANDLE: f32 = 38.0;
 
 #[derive(Debug, Clone, Copy)]
 enum Drag {
     Ap { id: ApId, offset: WVec2 },
+    Rotate { id: ApId },
     Measurement { id: u32, offset: WVec2 },
     WallEnd { index: usize, end_b: bool },
     Pan,
@@ -260,6 +263,25 @@ fn format_value(kind: MetricKind, v: f32) -> String {
     }
 }
 
+/// Screen position of the rotation handle of a wall-mounted AP.
+fn rotate_handle(ap: &AccessPoint, xf: Xf) -> Option<Pos2> {
+    (ap.mount == Mount::Wall).then(|| {
+        let d = ap.direction();
+        xf.to_screen(ap.position) + egui::vec2(d.x, d.y) * ROTATE_HANDLE
+    })
+}
+
+/// Plan angle (0 = right, clockwise on screen) from `center` to `p`, snapped
+/// to 15° steps when `snap` is set.
+fn angle_to(center: Pos2, p: Pos2, snap: bool) -> f32 {
+    let v = p - center;
+    let mut a = v.y.atan2(v.x).to_degrees();
+    if snap {
+        a = (a / 15.0).round() * 15.0;
+    }
+    a.rem_euclid(360.0)
+}
+
 fn hit_ap(project: &Project, xf: Xf, p: Pos2) -> Option<ApId> {
     project
         .aps
@@ -397,7 +419,19 @@ fn handle_tool(
                     Selection::Wall(i) => Some(i),
                     _ => None,
                 };
-                if let Some(id) = hit_ap(&doc.project, xf, p) {
+                let rotating = match app.selection {
+                    Selection::Ap(id) => doc
+                        .project
+                        .ap(id)
+                        .and_then(|a| rotate_handle(a, xf))
+                        .is_some_and(|h| h.distance(p) <= HANDLE_HIT + 3.0)
+                        .then_some(id),
+                    _ => None,
+                };
+                if let Some(id) = rotating {
+                    doc.checkpoint();
+                    app.canvas.drag = Some(Drag::Rotate { id });
+                } else if let Some(id) = hit_ap(&doc.project, xf, p) {
                     let pos = doc.project.ap(id).map(|a| a.position).unwrap_or_default();
                     let offset = pos - xf.to_m(p);
                     doc.checkpoint();
@@ -427,6 +461,18 @@ fn handle_tool(
             }
             if response.dragged_by(PointerButton::Primary) {
                 match app.canvas.drag {
+                    Some(Drag::Rotate { id }) => {
+                        if let Some(p) = pointer {
+                            let xf = Xf {
+                                view,
+                                plan: &doc.project.plan,
+                            };
+                            let center = doc.project.ap(id).map(|a| xf.to_screen(a.position));
+                            if let (Some(c), Some(ap)) = (center, doc.project.ap_mut(id)) {
+                                ap.orientation_deg = angle_to(c, p, shift);
+                            }
+                        }
+                    }
                     Some(Drag::Ap { id, offset }) => {
                         if let Some(p) = pointer {
                             let xf = Xf {
@@ -612,6 +658,8 @@ pub fn new_ap(project: &Project, position: WVec2) -> AccessPoint {
         position,
         height_m: 3.0,
         orientation_deg: 0.0,
+        mount: Default::default(),
+        pattern: Default::default(),
         radios: vec![
             radio(
                 Band::G2_4,
@@ -673,6 +721,9 @@ fn draw_aps(painter: &egui::Painter, project: &Project, xf: Xf, selection: Selec
         } else {
             Color32::from_gray(120)
         };
+        if ap.mount == Mount::Wall {
+            draw_wall_mount(painter, ap, p, fill, selected);
+        }
         if selected {
             painter.circle_stroke(p, 14.0, Stroke::new(3.0, Color32::from_rgb(80, 160, 255)));
         }
@@ -698,6 +749,47 @@ fn draw_aps(painter: &egui::Painter, project: &Project, xf: Xf, selection: Selec
         );
         painter.rect_filled(text_rect.expand(2.0), 3.0, Color32::from_black_alpha(170));
         painter.text(galley_pos, Align2::CENTER_TOP, label, font, Color32::WHITE);
+    }
+}
+
+/// Wall-mounted AP: the beam as a translucent fan, a bar for the wall behind
+/// it and, when selected, the rotation handle.
+fn draw_wall_mount(
+    painter: &egui::Painter,
+    ap: &AccessPoint,
+    p: Pos2,
+    fill: Color32,
+    selected: bool,
+) {
+    let d = ap.direction();
+    let dir = egui::vec2(d.x, d.y);
+    let normal = egui::vec2(-dir.y, dir.x);
+    // Fan of the half-power beam (drawn at most as a half disc).
+    let half = (ap.pattern.beamwidth_deg.min(180.0) / 2.0).to_radians();
+    let base = d.y.atan2(d.x);
+    let radius = ROTATE_HANDLE - 6.0;
+    let mut fan = vec![p];
+    for i in 0..=16 {
+        let a = base - half + 2.0 * half * i as f32 / 16.0;
+        fan.push(p + egui::vec2(a.cos(), a.sin()) * radius);
+    }
+    let alpha = if selected { 70 } else { 40 };
+    painter.add(Shape::convex_polygon(
+        fan,
+        Color32::from_rgba_unmultiplied(fill.r(), fill.g(), fill.b(), alpha),
+        Stroke::NONE,
+    ));
+    // The wall the AP hangs on.
+    let back = p - dir * 11.0;
+    painter.line_segment(
+        [back - normal * 11.0, back + normal * 11.0],
+        Stroke::new(4.0, Color32::from_gray(235)),
+    );
+    if selected {
+        let h = p + dir * ROTATE_HANDLE;
+        let accent = Color32::from_rgb(255, 170, 40);
+        painter.line_segment([p + dir * 10.0, h], Stroke::new(2.0, accent));
+        painter.circle(h, 6.0, accent, Stroke::new(1.5, Color32::WHITE));
     }
 }
 

@@ -47,7 +47,8 @@ impl Obstacles {
     }
 }
 
-/// Received signal from one radio at one point (omnidirectional antenna).
+/// Received signal from one radio at one point, including the AP's
+/// horizontal antenna pattern.
 pub fn rssi_at(
     ap: &AccessPoint,
     radio: &Radio,
@@ -63,7 +64,7 @@ pub fn rssi_at(
     let freq = radio.channel.range().center_mhz();
     let path = settings.model.path_loss(distance, freq, band);
     let walls = obstacles.loss_between(ap.position, point, band, scratch);
-    radio.eirp() + settings.receiver_gain - path - walls
+    radio.eirp() + settings.receiver_gain - path - walls - ap.pattern_loss(point)
 }
 
 #[cfg(test)]
@@ -84,6 +85,8 @@ mod tests {
             position: Vec2::new(x, y),
             height_m: 1.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: vec![Radio {
                 channel: Channel::new(band, ch, ChannelWidth::Mhz20).unwrap(),
                 tx_power: Dbm(20.0),

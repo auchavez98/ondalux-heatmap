@@ -72,6 +72,8 @@ meters × px_per_m.
   "position": { "x": 4.0, "y": 5.0 },
   "height_m": 2.8,
   "orientation_deg": 90.0,
+  "mount": "wall",
+  "pattern": { "beamwidth_deg": 180.0, "front_to_back_db": 10.0 },
   "radios": [
     {
       "channel": { "band": "6GHz", "number": 37, "width": "80" },
@@ -85,7 +87,10 @@ meters × px_per_m.
 
 `band` is `"2.4GHz"`, `"5GHz"` or `"6GHz"`. `width` is `"20"`, `"40"`,
 `"80"`, `"160"` or `"320"` (MHz). `tx_power` is in dBm, `antenna_gain` in dBi.
-`orientation_deg` is stored but not used by the engine yet (omni antennas only).
+`mount` is `"ceiling"` (default) or `"wall"`. `orientation_deg` is the pointing
+direction on the plan (0 = +x, 90 = +y, i.e. down on the plan) and, like
+`pattern`, only affects predictions for wall APs. Files without `mount` or
+`pattern` load as ceiling / omnidirectional.
 `vendor` is optional (empty for generic APs) and identifies the catalog model
 together with `model`.
 

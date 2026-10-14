@@ -17,7 +17,7 @@ complete.** See [what works](#status) below. Repository not published yet.
 | Draw walls with snapping; material library with editable dB per band (2.4/5/6 GHz) | ✅ |
 | Place / drag APs; radios with band, channel, width, Tx power, antenna gain; AP height | ✅ |
 | AP model catalog by vendor (105 models, 14 vendors, datasheet values with sources) + custom models | ✅ see [docs/ap-catalog.md](docs/ap-catalog.md) |
-| AP orientation / directional antennas | ⚠️ **STUB**: stored and editable, ignored by the engine (omni only) |
+| AP mounting (ceiling / wall) and pointing direction | ✅ wall APs use a simplified horizontal pattern; ceiling APs are omnidirectional |
 | RF engine: FSPL / log-distance, wall ray casting, RSSI, SNR, SINR (co- and adjacent-channel), AP count, channel overlap | ✅ |
 | Heat maps: signal, SNR, SINR, AP count, channel overlap, coverage requirement (configurable thresholds) | ✅ |
 | Save / open versioned `.lux` projects | ✅ |

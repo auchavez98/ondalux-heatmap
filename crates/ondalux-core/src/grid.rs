@@ -5,7 +5,7 @@
 //! recomputes that AP's layers; combined metrics are then re-aggregated
 //! (see [`crate::metrics`]).
 
-use crate::ap::{AccessPoint, ApId};
+use crate::ap::{AccessPoint, AntennaPattern, ApId};
 use crate::channel::Channel;
 use crate::geometry::Vec2;
 use crate::predict::{rssi_at, Obstacles};
@@ -63,6 +63,8 @@ pub struct RadioKey {
 struct Signature {
     position: Vec2,
     height_m: f32,
+    orientation_deg: f32,
+    pattern: AntennaPattern,
     channel: Channel,
     eirp: Dbm,
 }
@@ -139,6 +141,8 @@ impl LayerCache {
                 let sig = Signature {
                     position: ap.position,
                     height_m: ap.height_m,
+                    orientation_deg: ap.orientation_deg,
+                    pattern: ap.effective_pattern(),
                     channel: radio.channel,
                     eirp: radio.eirp(),
                 };
@@ -212,6 +216,8 @@ pub(crate) mod tests {
             position: Vec2::new(x, y),
             height_m: 3.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: vec![Radio {
                 channel: Channel::new(Band::G5, ch, ChannelWidth::Mhz20).unwrap(),
                 tx_power: Dbm(17.0),

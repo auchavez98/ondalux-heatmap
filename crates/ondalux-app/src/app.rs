@@ -777,19 +777,14 @@ impl OndaluxApp {
             }
             Tool::Wall => {
                 ui.label(t("Material", "Material"));
-                let current = doc
-                    .project
-                    .materials
-                    .get(self.wall_material)
-                    .map_or("—".to_owned(), |m| m.name.clone());
-                egui::ComboBox::from_id_salt("wall-material")
-                    .selected_text(current)
-                    .width(ui.available_width())
-                    .show_ui(ui, |ui| {
-                        for m in doc.project.materials.iter() {
-                            ui.selectable_value(&mut self.wall_material, m.id, &m.name);
-                        }
-                    });
+                let w = ui.available_width();
+                crate::panels::material_combo(
+                    ui,
+                    "wall-material",
+                    &doc.project.materials,
+                    &mut self.wall_material,
+                    w,
+                );
                 ui.weak(t(
                     "Clic para agregar puntos. Mayús = ángulos de 45°. Esc o doble clic termina la pared.",
                     "Click to add points. Shift = 45° angles. Esc or double-click ends the wall.",

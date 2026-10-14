@@ -33,6 +33,8 @@ fn aps() -> Vec<AccessPoint> {
             position: Vec2::new(x, y),
             height_m: 3.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: vec![Radio {
                 channel: Channel::new(Band::G5, ch, ChannelWidth::Mhz20).unwrap(),
                 tx_power: Dbm(17.0),

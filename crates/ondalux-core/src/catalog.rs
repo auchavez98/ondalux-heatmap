@@ -410,6 +410,8 @@ mod tests {
             position: Vec2::new(1.0, 2.0),
             height_m: 4.0,
             orientation_deg: 0.0,
+            mount: Default::default(),
+            pattern: Default::default(),
             radios: Vec::new(),
         };
         m.apply_to(&mut ap, 1);

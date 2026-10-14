@@ -5,10 +5,10 @@
 
 use crate::app::{OndaluxApp, Selection, Tool};
 use crate::catalog_ui;
-use crate::i18n::t;
+use crate::i18n::{self, t};
 use crate::style;
 use eframe::egui::{self, Color32, DragValue, RichText};
-use ondalux_core::ap::{ApId, Radio};
+use ondalux_core::ap::{AntennaPattern, ApId, Mount, Radio};
 use ondalux_core::channel::{Band, Channel, ChannelWidth, PerBand};
 use ondalux_core::material::MaterialLibrary;
 use ondalux_core::metrics::Requirements;
@@ -41,18 +41,13 @@ fn wall_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, i: usize) {
     let mut wall = orig.clone();
     egui::Grid::new("wall-grid").num_columns(2).show(ui, |ui| {
         ui.label(t("Material", "Material"));
-        let name = doc
-            .project
-            .materials
-            .get(wall.material)
-            .map_or("—".to_owned(), |m| m.name.clone());
-        egui::ComboBox::from_id_salt("wall-mat")
-            .selected_text(name)
-            .show_ui(ui, |ui| {
-                for m in doc.project.materials.iter() {
-                    ui.selectable_value(&mut wall.material, m.id, &m.name);
-                }
-            });
+        material_combo(
+            ui,
+            "wall-mat",
+            &doc.project.materials,
+            &mut wall.material,
+            170.0,
+        );
         ui.end_row();
         ui.label(t("Largo", "Length"));
         ui.label(format!("{:.2} m", wall.segment.length()));
@@ -267,6 +262,70 @@ fn project_steps(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     }
 }
 
+/// Round dial showing where a wall AP points on the plan; click or drag to
+/// aim it (15° steps, the number field next to it allows any angle).
+fn direction_dial(ui: &mut egui::Ui, deg: &mut f32) {
+    let size = 58.0;
+    let (rect, response) =
+        ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::click_and_drag());
+    if response.clicked() || response.dragged() {
+        if let Some(p) = response.interact_pointer_pos() {
+            let v = p - rect.center();
+            if v.length() > 4.0 {
+                let a = (v.y.atan2(v.x).to_degrees() / 15.0).round() * 15.0;
+                *deg = a.rem_euclid(360.0);
+            }
+        }
+    }
+    let painter = ui.painter_at(rect.expand(1.0));
+    let c = rect.center();
+    let r = size / 2.0 - 2.0;
+    let v = ui.visuals();
+    painter.circle(
+        c,
+        r,
+        v.extreme_bg_color,
+        egui::Stroke::new(1.0, v.widgets.inactive.bg_stroke.color.gamma_multiply(2.0)),
+    );
+    for i in 0..8 {
+        let a = (i as f32 * 45.0).to_radians();
+        let d = egui::vec2(a.cos(), a.sin());
+        let inner = if i % 2 == 0 { r - 6.0 } else { r - 3.0 };
+        painter.line_segment(
+            [c + d * inner, c + d * r],
+            egui::Stroke::new(1.0, v.weak_text_color()),
+        );
+    }
+    let a = deg.to_radians();
+    let d = egui::vec2(a.cos(), a.sin());
+    let tip = c + d * (r - 5.0);
+    painter.line_segment([c, tip], egui::Stroke::new(3.0, style::ACCENT));
+    painter.circle_filled(tip, 4.5, style::ACCENT);
+    painter.circle_filled(c, 3.0, v.text_color());
+    response
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text(t(
+            "Haz clic o arrastra para elegir hacia dónde apunta. También puedes girarlo en el plano con el punto naranja.",
+            "Click or drag to aim it. You can also rotate it on the plan with the orange handle.",
+        ));
+}
+
+/// Plain-language direction on the plan (screen up = "arriba").
+fn direction_name(deg: f32) -> &'static str {
+    const NAMES: [(&str, &str); 8] = [
+        ("→ Derecha", "→ Right"),
+        ("↘ Abajo a la derecha", "↘ Down-right"),
+        ("↓ Abajo", "↓ Down"),
+        ("↙ Abajo a la izquierda", "↙ Down-left"),
+        ("← Izquierda", "← Left"),
+        ("↖ Arriba a la izquierda", "↖ Up-left"),
+        ("↑ Arriba", "↑ Up"),
+        ("↗ Arriba a la derecha", "↗ Up-right"),
+    ];
+    let i = ((deg.rem_euclid(360.0) + 22.5) / 45.0) as usize % 8;
+    t(NAMES[i].0, NAMES[i].1)
+}
+
 fn ap_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
     let Some(doc) = app.doc.as_mut() else {
         return;
@@ -317,6 +376,58 @@ fn ap_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
                 "Mounting height above the floor.",
             ));
             ui.end_row();
+            ui.label(t("Montaje", "Mounting"));
+            ui.horizontal(|ui| {
+                for (m, label) in [
+                    (Mount::Ceiling, t("Techo", "Ceiling")),
+                    (Mount::Wall, t("Pared", "Wall")),
+                ] {
+                    if ui
+                        .add(egui::Button::new(label).selected(ap.mount == m))
+                        .clicked()
+                        && ap.mount != m
+                    {
+                        ap.set_mount(m);
+                    }
+                }
+            });
+            ui.end_row();
+            if ap.mount == Mount::Wall {
+                ui.label(t("Apunta hacia", "Points to"));
+                ui.horizontal(|ui| {
+                    direction_dial(ui, &mut ap.orientation_deg);
+                    ui.vertical(|ui| {
+                        ui.label(direction_name(ap.orientation_deg));
+                        ui.add(
+                            DragValue::new(&mut ap.orientation_deg)
+                                .range(0.0..=359.0)
+                                .speed(1.0)
+                                .suffix("°"),
+                        );
+                    });
+                });
+                ui.end_row();
+                ui.label(t("Antena", "Antenna"));
+                let presets = [
+                    (AntennaPattern::WALL, t("Pared (180°)", "Wall (180°)")),
+                    (
+                        AntennaPattern::DIRECTIONAL,
+                        t("Direccional (65°)", "Directional (65°)"),
+                    ),
+                ];
+                let current = presets
+                    .iter()
+                    .find(|(p, _)| *p == ap.pattern)
+                    .map_or(t("Personalizada", "Custom"), |(_, l)| *l);
+                egui::ComboBox::from_id_salt("ap-antenna")
+                    .selected_text(current)
+                    .show_ui(ui, |ui| {
+                        for (p, l) in presets {
+                            ui.selectable_value(&mut ap.pattern, p, l);
+                        }
+                    });
+                ui.end_row();
+            }
         });
 
     style::section(ui, t("Radios", "Radios"));
@@ -344,17 +455,32 @@ fn ap_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
                     );
                 });
                 ui.end_row();
-                ui.label(t("Orientación", "Orientation"));
-                ui.add(
-                    DragValue::new(&mut ap.orientation_deg)
-                        .range(0.0..=359.0)
-                        .suffix("°"),
-                )
-                .on_hover_text(t(
-                    "Aún no se usa: el motor modela antenas omnidireccionales.",
-                    "Not used yet: the engine models omnidirectional antennas.",
-                ));
-                ui.end_row();
+                if ap.mount == Mount::Wall {
+                    ui.label(t("Apertura del haz", "Beamwidth"));
+                    ui.add(
+                        DragValue::new(&mut ap.pattern.beamwidth_deg)
+                            .range(20.0..=360.0)
+                            .speed(1.0)
+                            .suffix("°"),
+                    )
+                    .on_hover_text(t(
+                        "Ángulo en el que la señal cae menos de 3 dB.",
+                        "Angle within which the signal drops less than 3 dB.",
+                    ));
+                    ui.end_row();
+                    ui.label(t("Pérdida trasera", "Front-to-back"));
+                    ui.add(
+                        DragValue::new(&mut ap.pattern.front_to_back_db)
+                            .range(0.0..=40.0)
+                            .speed(0.5)
+                            .suffix(" dB"),
+                    )
+                    .on_hover_text(t(
+                        "Cuánto menos radia hacia atrás (hacia la pared).",
+                        "How much less it radiates backwards (into the wall).",
+                    ));
+                    ui.end_row();
+                }
             });
             let mut remove = None;
             for (i, radio) in ap.radios.iter_mut().enumerate() {
@@ -610,11 +736,18 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
                 for id in ids {
                     let in_use = doc.project.material_in_use(id);
                     let Some(m) = lib.get_mut(id) else { continue };
-                    ui.add(
-                        egui::TextEdit::singleline(&mut m.name)
-                            .id_salt(("material-name", id.0))
-                            .desired_width(120.0),
-                    );
+                    // Built-in names are shown translated; typing stores the new name.
+                    let mut name = i18n::material_name(&m.name).to_owned();
+                    if ui
+                        .add(
+                            egui::TextEdit::singleline(&mut name)
+                                .id_salt(("material-name", id.0))
+                                .desired_width(150.0),
+                        )
+                        .changed()
+                    {
+                        m.name = name;
+                    }
                     let mut c = Color32::from_rgba_unmultiplied(m.color[0], m.color[1], m.color[2], m.color[3]);
                     if ui.color_edit_button_srgba(&mut c).changed() {
                         m.color = c.to_srgba_unmultiplied();
@@ -769,4 +902,41 @@ pub fn settings_window(app: &mut OndaluxApp, ctx: &egui::Context) {
         doc.project.grid_cell_m = cell;
     }
     app.show_settings = open;
+}
+
+/// Material picker: color swatch, translated name and the loss per band.
+pub fn material_combo(
+    ui: &mut egui::Ui,
+    id_salt: &str,
+    lib: &MaterialLibrary,
+    selected: &mut ondalux_core::material::MaterialId,
+    width: f32,
+) {
+    fn swatch(ui: &mut egui::Ui, color: [u8; 4]) {
+        let (r, _) = ui.allocate_exact_size(egui::vec2(14.0, 14.0), egui::Sense::hover());
+        let c = Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3]);
+        ui.painter().rect_filled(r, 3.0, c);
+    }
+    let current = lib.get(*selected);
+    egui::ComboBox::from_id_salt(id_salt)
+        .width(width)
+        .selected_text(current.map_or("—", |m| i18n::material_name(&m.name)))
+        .height(420.0)
+        .show_ui(ui, |ui| {
+            for m in lib.iter() {
+                ui.horizontal(|ui| {
+                    swatch(ui, m.color);
+                    let a = m.attenuation;
+                    ui.selectable_value(selected, m.id, i18n::material_name(&m.name))
+                        .on_hover_text(format!(
+                            "{}: {:.0} / {:.0} / {:.0} dB (2.4 / 5 / 6 GHz)",
+                            t("Pérdida", "Loss"),
+                            a.g2_4.0,
+                            a.g5.0,
+                            a.g6.0
+                        ));
+                    ui.weak(format!("{:.0} dB", a.g5.0));
+                });
+            }
+        });
 }

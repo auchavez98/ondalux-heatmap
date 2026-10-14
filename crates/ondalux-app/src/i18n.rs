@@ -35,6 +35,34 @@ pub fn set_english(on: bool) {
     ENGLISH.store(on, Ordering::Relaxed);
 }
 
+/// English names of the built-in materials and their Spanish display names.
+const MATERIALS: [(&str, &str); 12] = [
+    ("Drywall", "Tablaroca / yeso"),
+    ("Wood", "Madera"),
+    ("Glass", "Vidrio"),
+    ("Brick", "Ladrillo"),
+    ("Concrete", "Concreto"),
+    ("Metal", "Metal"),
+    ("Concrete block", "Block de concreto"),
+    ("Low-E glass", "Vidrio Low-E (térmico)"),
+    ("Wood door", "Puerta de madera"),
+    ("Metal door", "Puerta metálica"),
+    ("Elevator shaft", "Cubo de elevador"),
+    ("Cubicle partition", "Mampara de oficina"),
+];
+
+/// Display name of a material: built-in names follow the UI language,
+/// names typed by the user are shown as they are.
+pub fn material_name(name: &str) -> &str {
+    if is_english() {
+        return name;
+    }
+    MATERIALS
+        .iter()
+        .find(|(en, _)| *en == name)
+        .map_or(name, |(_, es)| es)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ThemeChoice {
@@ -84,8 +112,11 @@ mod tests {
     fn switches_language() {
         set_english(false);
         assert_eq!(t("Abrir", "Open"), "Abrir");
+        assert_eq!(material_name("Concrete"), "Concreto");
+        assert_eq!(material_name("Muro especial"), "Muro especial");
         set_english(true);
         assert_eq!(t("Abrir", "Open"), "Open");
+        assert_eq!(material_name("Concrete"), "Concrete");
         set_english(false);
     }
 

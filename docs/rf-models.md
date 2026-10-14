@@ -9,14 +9,15 @@ from public RF propagation theory and the IEEE 802.11 channel plan.
 For one radio at one point:
 
 ```
-RSSI = EIRP + G_rx − PL(d, f) − Σ L_wall(band)
+RSSI = EIRP + G_rx − PL(d, f) − Σ L_wall(band) − A(φ)
 EIRP = P_tx + G_tx
 ```
 
 | Term | Meaning | Where it comes from |
 |---|---|---|
 | `P_tx` | Conducted transmit power (dBm) | AP radio settings |
-| `G_tx` | AP antenna gain (dBi), **omnidirectional** | AP radio settings |
+| `G_tx` | AP antenna gain (dBi) in its main direction | AP radio settings |
+| `A(φ)` | Horizontal pattern loss, φ = angle off the pointing direction | AP mounting (below) |
 | `G_rx` | Client antenna gain (dBi), default 0 | Prediction settings |
 | `PL(d, f)` | Path loss over the 3D distance `d` | Section 2 |
 | `L_wall` | Loss of each wall crossed by the straight AP→point path | Section 3 |
@@ -27,6 +28,22 @@ singularity at `d = 0`.
 
 The frequency `f` is the center of the occupied channel (for bonded 40/80/160
 MHz channels, the center of the whole block).
+
+### Mounting and antenna pattern
+
+Ceiling APs (the default) are treated as omnidirectional: `A(φ) = 0` and
+the pointing direction is ignored. Wall APs use a simplified horizontal
+pattern along their pointing direction, the parabolic main-lobe
+approximation of 3GPP TR 38.901:
+
+```
+A(φ) = min(12 · (φ / θ3dB)², A_fb)
+```
+
+`θ3dB` is the half-power beamwidth and `A_fb` the front-to-back loss. Presets:
+wall AP 180° / 10 dB (the wall side is attenuated), directional panel
+65° / 20 dB; both are editable per AP. Side lobes and the vertical pattern are
+not modelled.
 
 ## 2. Path loss
 
@@ -139,7 +156,9 @@ secondary above for channels 1–7 and below otherwise. The overlapping
 - **No reflection, diffraction or multipath.** Corridors acting as
   waveguides and signal bending around corners are not predicted, so
   shadowed areas behind thick walls are pessimistic.
-- **Omnidirectional antennas only.** The AP orientation is stored but unused.
+- **Simplified antenna patterns.** Ceiling APs are omnidirectional; wall
+  APs use a horizontal main-lobe approximation without side lobes or a
+  vertical pattern (no downtilt).
 - **No clutter model** besides the path loss exponent (furniture, people,
   shelving).
 - **Wall loss ignores incidence angle and thickness.**
