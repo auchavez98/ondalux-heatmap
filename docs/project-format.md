@@ -6,6 +6,7 @@ A `.lux` file is a standard ZIP archive. Any unzip tool can open it.
 |---|---|---|
 | `project.json` | deflate | Header + project model (UTF-8 JSON) |
 | `floorplan.png` / `floorplan.jpg` | stored | Original floor plan image bytes (optional) |
+| `floorplan-source.pdf` | deflated | Original PDF the plan was imported from (optional), used for wall detection |
 
 Why ZIP instead of compressed JSON: the floor plan image is already compressed
 and can be large, so it is stored as-is next to a human-readable JSON file.

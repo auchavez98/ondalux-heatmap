@@ -17,6 +17,7 @@ mod survey_ui;
 #[cfg(test)]
 mod ui_shots;
 mod view;
+mod walls_ui;
 
 fn main() -> eframe::Result {
     let path = std::env::args_os().nth(1).map(std::path::PathBuf::from);

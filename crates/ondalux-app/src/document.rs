@@ -16,6 +16,8 @@ const COALESCE: Duration = Duration::from_millis(1500);
 pub struct Document {
     pub project: Project,
     pub plan_image: Option<PlanImage>,
+    /// Original PDF of the plan, if it came from one.
+    pub plan_source: Option<Vec<u8>>,
     pub path: Option<PathBuf>,
     pub dirty: bool,
     undo: Vec<Project>,
@@ -28,6 +30,7 @@ impl Document {
         Self {
             project,
             plan_image,
+            plan_source: None,
             path,
             dirty: false,
             undo: Vec::new(),
@@ -37,13 +40,16 @@ impl Document {
     }
 
     pub fn from_file(file: ProjectFile, path: PathBuf) -> Self {
-        Self::new(file.project, file.plan_image, Some(path))
+        let mut doc = Self::new(file.project, file.plan_image, Some(path));
+        doc.plan_source = file.plan_source;
+        doc
     }
 
     pub fn to_file(&self) -> ProjectFile {
         ProjectFile {
             project: self.project.clone(),
             plan_image: self.plan_image.clone(),
+            plan_source: self.plan_source.clone(),
         }
     }
 

@@ -7,7 +7,8 @@ pub mod plan_image;
 pub mod project_file;
 pub mod survey_csv;
 pub mod user_catalog;
+pub mod walls;
 
 pub use error::IoError;
-pub use plan_image::{decode_plan, import_plan, DecodedPlan};
+pub use plan_image::{decode_plan, import_plan, DecodedPlan, ImportedPlan};
 pub use project_file::{PlanImage, ProjectFile};

@@ -92,6 +92,35 @@ fn ui_shots() {
     h.run_steps(6);
     save(&mut h, &dir, "09-light");
 
+    // Wall detection proposal over the demo plan (dark theme again).
+    h.ctx.set_theme(eframe::egui::ThemePreference::Dark);
+    h.state_mut().selection = Selection::None;
+    let ctx = h.ctx.clone();
+    crate::walls_ui::start(h.state_mut(), &ctx);
+    for _ in 0..200 {
+        h.run_steps(2);
+        if !h.state().walls.preview.is_empty() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    h.run_steps(4);
+    save(&mut h, &dir, "11-detect-walls");
+
+    // Importing a plan proposes walls right away.
+    if let Some(plan) = std::env::var("ONDALUX_PLAN").ok().map(PathBuf::from) {
+        let mut h = harness(Some(plan));
+        for _ in 0..300 {
+            h.run_steps(2);
+            if !h.state().walls.preview.is_empty() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        h.run_steps(6);
+        save(&mut h, &dir, "12-import-detect");
+    }
+
     let mut h = harness(None);
     h.ctx.set_theme(eframe::egui::ThemePreference::Light);
     h.run_steps(6);

@@ -155,6 +155,7 @@ pub struct OndaluxApp {
     pub right_tab: RightTab,
     pub catalog: CatalogState,
     pub export: ExportState,
+    pub walls: crate::walls_ui::WallDetectState,
     pub show_materials: bool,
     pub show_settings: bool,
     show_about: bool,
@@ -209,6 +210,7 @@ impl OndaluxApp {
             right_tab: RightTab::Inspector,
             catalog,
             export: ExportState::default(),
+            walls: Default::default(),
             show_materials: false,
             show_settings: false,
             show_about: false,
@@ -297,10 +299,12 @@ impl OndaluxApp {
             let plan = d.plan_image.as_ref()?;
             match decode_plan(plan) {
                 Ok(img) => {
-                    let image = egui::ColorImage::from_rgba_unmultiplied(
-                        [img.width as usize, img.height as usize],
-                        &img.rgba,
-                    );
+                    // Only the on-screen copy is reduced if the GPU cannot
+                    // hold it; the plan keeps its full resolution.
+                    let max_side = ctx.input(|i| i.max_texture_side);
+                    let (w, h, rgba) =
+                        fit_texture(img.width as usize, img.height as usize, img.rgba, max_side);
+                    let image = egui::ColorImage::from_rgba_unmultiplied([w, h], &rgba);
                     Some(ctx.load_texture("floor-plan", image, TextureOptions::LINEAR))
                 }
                 Err(e) => {
@@ -317,6 +321,7 @@ impl OndaluxApp {
         });
         self.doc = doc;
         self.selection = Selection::None;
+        self.walls = Default::default();
         self.canvas = CanvasState::default();
         self.heat.texture = None;
         self.heat.field = None;
@@ -344,14 +349,21 @@ impl OndaluxApp {
 
     fn import_plan_path(&mut self, ctx: &egui::Context, path: PathBuf) {
         match import_plan(&path) {
-            Ok((plan, decoded)) => {
+            Ok(ondalux_io::ImportedPlan {
+                image: plan,
+                decoded,
+                source_pdf,
+            }) => {
                 let name = path
                     .file_stem()
                     .map_or_else(|| "Untitled".into(), |s| s.to_string_lossy().into_owned());
                 let project = Project::new(name, decoded.width, decoded.height);
                 let mut doc = Document::new(project, Some(plan), None);
+                doc.plan_source = source_pdf;
                 doc.dirty = true;
                 self.set_document(ctx, Some(doc));
+                // Propose walls right away; the user reviews them.
+                crate::walls_ui::start(self, ctx);
                 self.tool = Tool::Calibrate;
                 self.info(t("Plano importado. Calibra la escala: haz clic en dos puntos de distancia conocida.", "Floor plan imported. Calibrate the scale: click two points a known distance apart."));
             }
@@ -842,6 +854,19 @@ impl OndaluxApp {
                     self.show_materials = true;
                 }
                 if ui
+                    .add_enabled(
+                        has_doc,
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::MAGIC_WAND,
+                            t("Detectar muros del plano…", "Detect walls from the plan…")
+                        )),
+                    )
+                    .clicked()
+                {
+                    crate::walls_ui::start(self, &ctx);
+                }
+                if ui
                     .button(format!(
                         "{}  {}",
                         icon::BOOK_OPEN,
@@ -951,6 +976,7 @@ impl OndaluxApp {
         }
         ui.spacing_mut().item_spacing.y = 8.0;
         ui.add_space(10.0);
+        let mut detect = false;
         let Some(doc) = self.doc.as_ref() else {
             return;
         };
@@ -1000,6 +1026,16 @@ impl OndaluxApp {
                     {
                         self.show_materials = true;
                     }
+                    detect = ui
+                        .button(format!(
+                            "{}  {}",
+                            icon::MAGIC_WAND,
+                            t(
+                                "Detectar muros automáticamente…",
+                                "Detect walls automatically…"
+                            )
+                        ))
+                        .clicked();
                 }
                 Tool::Ap => {
                     ui.label(
@@ -1078,6 +1114,14 @@ impl OndaluxApp {
             }
         });
 
+        if detect {
+            let ctx = ui.ctx().clone();
+            crate::walls_ui::start(self, &ctx);
+            return;
+        }
+        let Some(doc) = self.doc.as_ref() else {
+            return;
+        };
         // Project summary.
         let coverage = self.heat.field.as_ref().and_then(|f| f.coverage);
         let p2 = &doc.project;
@@ -1462,6 +1506,7 @@ impl OndaluxApp {
         panels::settings_window(self, ctx);
         catalog_ui::window(self, ctx);
         export_ui::report_window(self, ctx);
+        crate::walls_ui::window(self, ctx);
     }
 }
 
@@ -1484,6 +1529,7 @@ impl eframe::App for OndaluxApp {
         self.poll_heatmap(&ctx);
         survey_ui::poll(self);
         export_ui::poll(self);
+        crate::walls_ui::poll(self, &ctx);
 
         let p = style::palette(ui);
         let side = |fill| {
@@ -1995,4 +2041,35 @@ fn recent_row(ui: &mut egui::Ui, name: &str, folder: &str) -> egui::Response {
         p.muted,
     );
     response
+}
+
+/// Shrinks an RGBA image by an integer box filter until both sides fit in
+/// `max_side` (the GPU texture limit).
+fn fit_texture(w: usize, h: usize, rgba: Vec<u8>, max_side: usize) -> (usize, usize, Vec<u8>) {
+    let f = w.max(h).div_ceil(max_side.max(1));
+    if f <= 1 {
+        return (w, h, rgba);
+    }
+    let (nw, nh) = (w / f, h / f);
+    let mut out = vec![0u8; nw * nh * 4];
+    for y in 0..nh {
+        for x in 0..nw {
+            let mut acc = [0u32; 4];
+            for yy in y * f..y * f + f {
+                let row = yy * w;
+                for xx in x * f..x * f + f {
+                    let i = (row + xx) * 4;
+                    for c in 0..4 {
+                        acc[c] += rgba[i + c] as u32;
+                    }
+                }
+            }
+            let n = (f * f) as u32;
+            let o = (y * nw + x) * 4;
+            for c in 0..4 {
+                out[o + c] = (acc[c] / n) as u8;
+            }
+        }
+    }
+    (nw, nh, out)
 }

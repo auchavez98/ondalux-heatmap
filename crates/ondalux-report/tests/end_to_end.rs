@@ -90,6 +90,7 @@ fn project_file() -> ProjectFile {
             extension: "png".into(),
             bytes: png.into_inner(),
         }),
+        plan_source: None,
     }
 }
 

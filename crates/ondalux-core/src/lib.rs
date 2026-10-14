@@ -20,3 +20,4 @@ pub mod project;
 pub mod propagation;
 pub mod survey;
 pub mod units;
+pub mod walldetect;

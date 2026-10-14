@@ -220,6 +220,7 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     }
 
     draw_walls(&painter, project, xf, app.selection);
+    crate::walls_ui::draw_preview(app, &painter);
     draw_aps(&painter, project, xf, app.selection, app.heat.band);
     draw_measurements(&painter, app, xf, ui.input(|i| i.time));
     draw_tool_overlay(app, &painter, xf, pointer, shift);

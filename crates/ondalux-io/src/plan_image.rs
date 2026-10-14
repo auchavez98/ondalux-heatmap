@@ -16,8 +16,19 @@ pub struct DecodedPlan {
     pub rgba: Vec<u8>,
 }
 
+/// A floor plan read from disk.
+#[derive(Debug)]
+pub struct ImportedPlan {
+    pub image: PlanImage,
+    pub decoded: DecodedPlan,
+    /// The original file when it was a PDF (its line art is used to
+    /// detect walls).
+    pub source_pdf: Option<Vec<u8>>,
+}
+
 /// Reads a floor plan file and checks that it decodes.
-pub fn import_plan(path: &Path) -> Result<(PlanImage, DecodedPlan), IoError> {
+pub fn import_plan(path: &Path) -> Result<ImportedPlan, IoError> {
+    let mut source_pdf = None;
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
@@ -29,10 +40,15 @@ pub fn import_plan(path: &Path) -> Result<(PlanImage, DecodedPlan), IoError> {
             bytes: std::fs::read(path)?,
         },
         // Only the first page is used; the plan is stored as PNG.
-        "pdf" => PlanImage {
-            extension: "png".to_owned(),
-            bytes: crate::pdf::rasterize_first_page(std::fs::read(path)?)?.png,
-        },
+        "pdf" => {
+            let bytes = std::fs::read(path)?;
+            let png = crate::pdf::rasterize_first_page(bytes.clone())?.png;
+            source_pdf = Some(bytes);
+            PlanImage {
+                extension: "png".to_owned(),
+                bytes: png,
+            }
+        }
         other => {
             return Err(IoError::Unsupported(format!(
                 "floor plan format {other:?} (use PNG, JPEG or PDF)"
@@ -40,7 +56,11 @@ pub fn import_plan(path: &Path) -> Result<(PlanImage, DecodedPlan), IoError> {
         }
     };
     let decoded = decode_plan(&plan)?;
-    Ok((plan, decoded))
+    Ok(ImportedPlan {
+        image: plan,
+        decoded,
+        source_pdf,
+    })
 }
 
 pub fn decode_plan(plan: &PlanImage) -> Result<DecodedPlan, IoError> {
@@ -94,7 +114,11 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("plan.pdf");
         std::fs::write(&path, crate::pdf::tests::sample_pdf()).unwrap();
-        let (plan, decoded) = import_plan(&path).unwrap();
+        let ImportedPlan {
+            image: plan,
+            decoded,
+            ..
+        } = import_plan(&path).unwrap();
         assert_eq!(plan.extension, "png");
         assert_eq!(decoded.width, 2 * decoded.height);
         std::fs::remove_dir_all(&dir).unwrap();

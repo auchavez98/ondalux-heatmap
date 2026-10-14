@@ -123,6 +123,7 @@ fn main() {
             extension: "png".into(),
             bytes: png.into_inner(),
         }),
+        plan_source: None,
     };
     file.save(&out).expect("save project");
     println!("wrote {}", out.display());

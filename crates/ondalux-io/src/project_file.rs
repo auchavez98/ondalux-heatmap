@@ -21,6 +21,8 @@ pub const LEGACY_EXTENSION: &str = "hcraft";
 
 const PROJECT_ENTRY: &str = "project.json";
 const PLAN_PREFIX: &str = "floorplan.";
+/// Original PDF of the plan (optional; its line art feeds wall detection).
+const PLAN_SOURCE_ENTRY: &str = "floorplan-source.pdf";
 
 /// Floor plan image as stored in the project (original encoded bytes).
 #[derive(Debug, Clone, PartialEq)]
@@ -34,6 +36,8 @@ pub struct PlanImage {
 pub struct ProjectFile {
     pub project: Project,
     pub plan_image: Option<PlanImage>,
+    /// Original PDF of the plan, kept for wall detection (optional).
+    pub plan_source: Option<Vec<u8>>,
 }
 
 #[derive(Serialize)]
@@ -88,6 +92,10 @@ impl ProjectFile {
             zip.start_file(format!("{PLAN_PREFIX}{}", img.extension), stored)?;
             zip.write_all(&img.bytes)?;
         }
+        if let Some(pdf) = &self.plan_source {
+            zip.start_file(PLAN_SOURCE_ENTRY, deflate)?;
+            zip.write_all(pdf)?;
+        }
         zip.finish()?;
         Ok(())
     }
@@ -130,9 +138,18 @@ impl ProjectFile {
             }
             None => None,
         };
+        let plan_source = match zip.by_name(PLAN_SOURCE_ENTRY) {
+            Ok(mut entry) => {
+                let mut bytes = Vec::new();
+                entry.read_to_end(&mut bytes)?;
+                Some(bytes)
+            }
+            Err(_) => None,
+        };
         Ok(Self {
             project,
             plan_image,
+            plan_source,
         })
     }
 }
@@ -182,6 +199,7 @@ mod tests {
                 extension: "png".into(),
                 bytes: vec![0x89, b'P', b'N', b'G', 1, 2, 3],
             }),
+            plan_source: Some(b"%PDF-1.4 test".to_vec()),
         }
     }
 
