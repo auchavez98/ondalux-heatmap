@@ -1,0 +1,49 @@
+<p>Un diseño predictivo te dice qué <em>debería</em> hacer la red. Una medición en sitio te dice qué hace en realidad. Los muros nunca son exactamente del material que supusiste, llegan los muebles y alguien instala un punto de acceso al revés. Medir es la forma de enterarte antes que tus usuarios.</p>
+
+<h2>Tres tipos de medición</h2>
+<ul>
+  <li><strong>Medición pasiva.</strong> El equipo solo escucha las señales (beacons) que transmite cada punto de acceso y registra la intensidad de cada red en cada punto. Muestra cobertura, señal y vecinos en el mismo canal. Es la más común y la que realiza Ondalux Heatmap.</li>
+  <li><strong>Medición activa.</strong> El equipo se mantiene conectado a la red mientras caminas y mide el rendimiento real: velocidad, latencia, pérdida de paquetes y roaming entre puntos de acceso. Responde "¿funciona?" en lugar de "¿hay señal?".</li>
+  <li><strong>Medición previa a la instalación ("AP en un tripié").</strong> Antes de instalar, se coloca un punto de acceso temporal donde indica el diseño y se mide. Es la mejor forma de validar un diseño en un edificio con muros desconocidos.</li>
+</ul>
+
+<h2>Qué necesitas</h2>
+<ul>
+  <li><strong>Un plano calibrado.</strong> La escala tiene que estar bien, o cada punto que registres quedará en el lugar equivocado.</li>
+  <li><strong>Una sola laptop para toda la medición.</strong> Adaptadores WiFi distintos reportan niveles diferentes para la misma red; diferencias de 5 dB o más son comunes. Nunca mezcles equipos en una misma medición.</li>
+  <li><strong>Tiempo.</strong> Cada escaneo tarda un par de segundos y vas a registrar decenas de puntos. Planea la ruta antes de empezar.</li>
+</ul>
+
+<h2>Cómo recorrer el sitio</h2>
+<ol>
+  <li><strong>Planea una ruta</strong> que cubra cada cuarto que te importa, los pasillos que los conectan y las orillas del área de cobertura. Las esquinas y los cuartos detrás de muros gruesos importan más que las zonas abiertas cerca de los puntos de acceso.</li>
+  <li><strong>Detente en cada punto.</strong> Haz clic en tu posición exacta en el plano y quédate quieto hasta que termine el escaneo. Moverte mientras escanea reparte el resultado en varios metros.</li>
+  <li><strong>Sostén la laptop siempre igual.</strong> Mantenla a la misma altura (de escritorio o de pecho) y en la misma orientación. Tu cuerpo bloquea parte de la señal, así que sé constante.</li>
+  <li><strong>Separa los puntos</strong> unos metros en los cuartos y a lo largo de los pasillos, y más juntos donde la señal cambia rápido (detrás de muros, cerca de puertas).</li>
+  <li><strong>Mide en condiciones normales.</strong> Puertas abiertas o cerradas como suelen estar; para una medición de validación, hazla cuando ya estén los muebles.</li>
+</ol>
+
+<h2>Cómo leer los resultados</h2>
+<p>Entre los puntos que registraste, la señal se estima por interpolación. Ondalux Heatmap ofrece dos métodos: <strong>IDW</strong> (ponderación por distancia inversa), sencillo y predecible, y <strong>kriging</strong>, que aprende de los datos qué tan rápido cambia la señal con la distancia. Las zonas lejos de cualquier punto se dejan en blanco a propósito: un mapa medido no debe inventar valores donde nadie midió.</p>
+<p>Revisa los mismos requisitos que en el diseño: señal y SNR mínimas donde trabajan los usuarios, traslape donde se mueven y cuántas redes en el mismo canal se escuchan.</p>
+
+<h2>Comparar con la predicción</h2>
+<p>El paso más útil es comparar el mapa medido con el diseño predictivo. El mapa de diferencias muestra <em>medido menos predicho</em> en cada punto:</p>
+<ul>
+  <li><strong>Negativo de forma constante detrás de ciertos muros:</strong> esos muros pierden más de lo supuesto. Aumenta su atenuación.</li>
+  <li><strong>Negativo solo cerca de un punto de acceso:</strong> revisa ese punto de acceso: potencia, canal, montaje o un problema de cable.</li>
+  <li><strong>Positivo en todas partes:</strong> la predicción es conservadora, así que el diseño tiene margen.</li>
+</ul>
+<p>Tras unas cuantas correcciones, el modelo coincide con el edificio, y los cambios futuros (mover o agregar puntos de acceso) se pueden predecir con mucha más confianza.</p>
+
+<h2>Errores comunes</h2>
+<ul>
+  <li>No calibrar la escala del plano antes de empezar.</li>
+  <li>Cambiar de laptop a la mitad, o medir con un teléfono y comparar con una laptop.</li>
+  <li>Caminar mientras corre el escaneo.</li>
+  <li>Medir solo las zonas abiertas y saltarse los cuartos donde los usuarios realmente se quejan.</li>
+  <li>Juzgar la red por una sola banda cuando los clientes usan otra.</li>
+</ul>
+
+<h2>Medir con Ondalux Heatmap</h2>
+<p>Abre el panel de <em>Mediciones</em>, elige el adaptador WiFi de tu computadora, pulsa <em>Empezar a medir</em> y haz clic en tu posición en cada parada. También puedes importar y exportar los puntos medidos en CSV. Por ahora el escaneo funciona en Windows; el soporte para macOS y Linux está en desarrollo.</p>

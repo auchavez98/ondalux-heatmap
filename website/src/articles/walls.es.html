@@ -1,0 +1,52 @@
+<p>En interiores, rara vez es la distancia lo que acaba con la señal WiFi: son los muros. Un solo muro de concreto puede quitar tanta señal como decenas de metros de espacio abierto, y por eso dos cuartos a la misma distancia de un punto de acceso pueden tener coberturas completamente distintas. Saber más o menos cuánto absorbe cada material es la diferencia entre un diseño que funciona y uno que solo se ve bien en papel.</p>
+
+<h2>Decibeles en un minuto</h2>
+<p>La pérdida de un muro se expresa en decibeles (dB). Cada 3 dB la potencia se reduce a la mitad, y cada 10 dB se divide entre diez. Un muro que cuesta 12 dB deja pasar más o menos una dieciseisava parte de la señal. Como las pérdidas se suman, un camino que cruza dos muros así pierde 24 dB: menos de 1/250 de la potencia.</p>
+
+<h2>Valores típicos</h2>
+<p>Son pérdidas típicas de una señal que cruza un muro una vez, más o menos de frente. Son los valores por defecto de Ondalux Heatmap y coinciden con estudios de medición publicados y guías de diseño de fabricantes.</p>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Material</th><th>2.4 GHz</th><th>5 GHz</th><th>6 GHz</th></tr></thead>
+    <tbody>
+      <tr><td>Mampara de oficina</td><td>1 dB</td><td>2 dB</td><td>2 dB</td></tr>
+      <tr><td>Tablaroca / yeso</td><td>3 dB</td><td>4 dB</td><td>5 dB</td></tr>
+      <tr><td>Puerta de madera</td><td>3 dB</td><td>4 dB</td><td>5 dB</td></tr>
+      <tr><td>Vidrio claro</td><td>3 dB</td><td>7 dB</td><td>8 dB</td></tr>
+      <tr><td>Muro de madera</td><td>4 dB</td><td>6 dB</td><td>7 dB</td></tr>
+      <tr><td>Ladrillo</td><td>8 dB</td><td>12 dB</td><td>14 dB</td></tr>
+      <tr><td>Block de concreto</td><td>9 dB</td><td>12 dB</td><td>14 dB</td></tr>
+      <tr><td>Concreto</td><td>12 dB</td><td>18 dB</td><td>21 dB</td></tr>
+      <tr><td>Puerta metálica</td><td>15 dB</td><td>19 dB</td><td>21 dB</td></tr>
+      <tr><td>Vidrio Low-E (térmico)</td><td>18 dB</td><td>23 dB</td><td>26 dB</td></tr>
+      <tr><td>Muro metálico</td><td>25 dB</td><td>30 dB</td><td>32 dB</td></tr>
+      <tr><td>Cubo de elevador</td><td>30 dB</td><td>35 dB</td><td>38 dB</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Destacan dos patrones. Primero, <strong>la pérdida aumenta con la frecuencia</strong>: el mismo muro cuesta más en 5 GHz que en 2.4 GHz, y más todavía en 6 GHz. Segundo, <strong>el metal y el vidrio con recubrimiento están en otra liga</strong>: reflejan la mayor parte de la energía en lugar de dejarla pasar.</p>
+
+<h2>Por qué los muros reales no coinciden con la tabla</h2>
+<ul>
+  <li><strong>Grosor y densidad.</strong> Un muro de carga de concreto de 30 cm no es una división de 10 cm, aunque ambos sean "de concreto".</li>
+  <li><strong>Varilla.</strong> La malla de acero dentro del concreto funciona como una pantalla metálica parcial, sobre todo en 2.4 GHz.</li>
+  <li><strong>Humedad.</strong> El agua absorbe energía de RF; el concreto fresco y los muros húmedos pierden más que los secos.</li>
+  <li><strong>Recubrimientos y aislantes.</strong> Los aislantes con lámina de aluminio, las pinturas metálicas y los recubrimientos de baja emisividad de las ventanas pueden sumar 10 a 20 dB a un muro "fácil".</li>
+  <li><strong>Ángulo.</strong> Una señal que cruza un muro de lado recorre más material que una que lo cruza de frente, así que pierde más.</li>
+  <li><strong>Lo que hay detrás.</strong> Anaqueles llenos de mercancía, archiveros, espejos y tanques de agua grandes se comportan como muros propios.</li>
+</ul>
+
+<h2>Los obstáculos que se olvidan</h2>
+<p>Cubos de elevador, escaleras con puertas cortafuego, cuartos de servidores y eléctricos, cocinas (electrodomésticos metálicos y cámaras frías), baños con azulejo y vestíbulos con vidrio recubierto. Dibújalos en el plano como muros con el material correcto: muchas veces son la razón de que una zona "cubierta" no lo esté.</p>
+
+<h2>Cómo medir un muro tú mismo</h2>
+<p>Si un muro importa para tu diseño, una medición rápida vale más que cualquier tabla:</p>
+<ol>
+  <li>Coloca un punto de acceso (o el hotspot de un teléfono) en una posición fija, a unos metros del muro.</li>
+  <li>Con una laptop, lee la señal en un punto justo delante del muro y luego, a la misma distancia del AP, justo detrás. Promedia varias lecturas en cada punto: las lecturas WiFi varían unos cuantos dB.</li>
+  <li>La diferencia entre ambos promedios, menos la distancia extra (casi siempre despreciable si los puntos están cerca), es la pérdida del muro en esa banda.</li>
+</ol>
+<p>Repite en cada banda que vayas a usar. Después edita el material en Ondalux Heatmap (<em>Editar → Materiales de pared</em>) para que todos los muros de ese tipo usen el valor medido.</p>
+
+<h2>Calibrar con una medición en sitio</h2>
+<p>Una forma más rápida de corregir todos los muros a la vez es medir el edificio y comparar el mapa medido con la predicción. Si la señal real es consistentemente más débil detrás de cierto tipo de muro, aumenta su pérdida; si es más fuerte en todas partes, la predicción es conservadora y el diseño tiene margen. El mapa de diferencias de Ondalux Heatmap muestra exactamente dónde no coinciden la predicción y la realidad.</p>

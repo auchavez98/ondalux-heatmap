@@ -71,7 +71,10 @@ function adSlot(name, lang) {
   if (!adsEnabled || !slot) return "";
   return `<aside class="ad wrap" aria-label="${adLabel[lang]}">${label}<ins class="adsbygoogle" style="display:block" data-ad-client="${client}" data-ad-slot="${slot}" data-ad-format="auto" data-full-width-responsive="true"></ins></aside>`;
 }
-const slotNames = ["home_top", "home_middle", "home_bottom", "guide_top", "guide_bottom", "oss_middle"];
+const slotNames = [
+  "home_top", "home_middle", "home_bottom", "guide_top", "guide_bottom", "oss_middle",
+  "articles_middle", "article_top", "article_bottom",
+];
 if (adsEnabled) {
   // https://support.google.com/adsense/answer/12171612
   writeFileSync(join(pub, "ads.txt"), `google.com, ${client.replace(/^ca-/, "")}, DIRECT, f08c47fec0942fa0\n`);
@@ -138,34 +141,94 @@ const langs = ["en", "es"];
 const strings = Object.fromEntries(
   langs.map((l) => [l, JSON.parse(readFileSync(join(src, `${l}.json`), "utf8"))]),
 );
-const pageKeys = ["home", "guide", "privacy", "opensource"];
 const build = Date.now().toString(36);
 const year = new Date().getFullYear();
 const today = new Date().toISOString().slice(0, 10);
 const contact = config.contact || "";
 
+// Articles: src/articles.json lists them; the body of each is in
+// src/articles/<key>.<lang>.html.
+const articles = JSON.parse(readFileSync(join(src, "articles.json"), "utf8"));
+const articleRoute = (a, lang) => `${strings[lang].routes.articles}${a.slug[lang]}/`;
+const dateText = (iso, lang) =>
+  new Intl.DateTimeFormat(lang === "en" ? "en-US" : "es-MX", { dateStyle: "long", timeZone: "UTC" }).format(
+    new Date(`${iso}T00:00:00Z`),
+  );
+
+// Every page: key, template, route per language and per-page context.
+const corePages = ["home", "guide", "privacy", "opensource", "articles"];
+const pages = [
+  ...corePages.map((key) => ({
+    key,
+    nav: key === "guide" ? "articles" : key,
+    template: key,
+    route: (lang) => strings[lang].routes[key],
+    meta: (lang) => strings[lang].pages[key],
+    lastmod: today,
+  })),
+  ...articles.map((a) => ({
+    key: `article-${a.key}`,
+    nav: "articles",
+    template: "article",
+    route: (lang) => articleRoute(a, lang),
+    meta: (lang) => ({ title: `${a.title[lang]} — Ondalux Heatmap`, description: a.description[lang] }),
+    article: a,
+    lastmod: a.date,
+  })),
+];
+const navKeys = ["home", "articles", "opensource", "privacy"];
+
+const postsFor = (lang, except) =>
+  articles
+    .filter((a) => a.key !== except)
+    .map((a) => ({
+      href: articleRoute(a, lang),
+      tag: a.tag[lang],
+      title: a.title[lang],
+      description: a.description[lang],
+      minutes: a.minutes,
+      dateText: dateText(a.date, lang),
+    }));
+
+const publisher = { "@type": "Organization", name: "Ondalux Heatmap", logo: `${domain}/assets/img/logo.png` };
+
 for (const lang of langs) {
   const s = strings[lang];
   const otherLang = lang === "en" ? "es" : "en";
   for (const f of s.features.items) f.icon = icons[f.icon] || f.icon;
-  for (const key of pageKeys) {
-    const tplFile = [join(src, "pages", `${key}.${lang}.html`), join(src, "pages", `${key}.html`)].find(existsSync);
-    const path = s.routes[key];
+  for (const p of pages) {
+    const tplFile = [join(src, "pages", `${p.template}.${lang}.html`), join(src, "pages", `${p.template}.html`)].find(
+      existsSync,
+    );
+    const path = p.route(lang);
+    const meta = p.meta(lang);
     const page = {
-      key,
+      key: p.key,
       path,
-      title: s.pages[key].title,
-      description: s.pages[key].description,
-      en: strings.en.routes[key],
-      es: strings.es.routes[key],
-      other: strings[otherLang].routes[key],
+      title: meta.title,
+      description: meta.description,
+      en: p.route("en"),
+      es: p.route("es"),
+      other: p.route(otherLang),
     };
     const ads = Object.fromEntries(slotNames.map((n) => [n, adSlot(n, lang)]));
-    const current = Object.fromEntries(pageKeys.map((k) => [k, k === key ? ' aria-current="page"' : ""]));
+    const current = Object.fromEntries(navKeys.map((k) => [k, k === p.nav ? ' aria-current="page"' : ""]));
+    let article = null;
+    if (p.article) {
+      const a = p.article;
+      article = {
+        title: a.title[lang],
+        description: a.description[lang],
+        tag: a.tag[lang],
+        minutes: a.minutes,
+        dateText: dateText(a.date, lang),
+        body: readFileSync(join(src, "articles", `${a.key}.${lang}.html`), "utf8"),
+      };
+    }
+    const ld = (obj) => `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", ...obj })}</script>`;
     const jsonld =
-      key === "home"
-        ? `<script type="application/ld+json">${JSON.stringify({
-            "@context": "https://schema.org",
+      p.key === "home"
+        ? ld({
             "@type": "SoftwareApplication",
             name: "Ondalux Heatmap",
             applicationCategory: "BusinessApplication",
@@ -177,17 +240,18 @@ for (const lang of langs) {
             image: `${domain}/assets/shots/${lang}/03-ap-selected.png`,
             license: "https://opensource.org/licenses/MIT",
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-          })}</script>`
-        : key === "guide"
-          ? `<script type="application/ld+json">${JSON.stringify({
-              "@context": "https://schema.org",
+          })
+        : p.key === "guide" || p.article
+          ? ld({
               "@type": "TechArticle",
-              headline: page.title,
+              headline: p.article ? p.article.title[lang] : page.title,
               description: page.description,
               inLanguage: lang,
+              datePublished: p.article ? p.article.date : undefined,
               url: domain + path,
-              publisher: { "@type": "Organization", name: "Ondalux Heatmap", logo: `${domain}/assets/img/logo.png` },
-            })}</script>`
+              author: publisher,
+              publisher,
+            })
           : "";
     const contactHtml = contact
       ? lang === "en"
@@ -216,6 +280,10 @@ for (const lang of langs) {
       ads,
       current,
       jsonld,
+      article,
+      posts: postsFor(lang, null),
+      latest: postsFor(lang, null).slice(0, 3),
+      related: p.article ? postsFor(lang, p.article.key).slice(0, 3) : [],
     };
     const html = render(readFileSync(tplFile, "utf8"), ctx);
     const out = join(pub, ...path.split("/").filter(Boolean), "index.html");
@@ -231,12 +299,12 @@ writeFileSync(
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${langs
   .flatMap((lang) =>
-    pageKeys.map(
-      (key) => `  <url>
-    <loc>${domain}${strings[lang].routes[key]}</loc>
-    <lastmod>${today}</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="${domain}${strings.en.routes[key]}"/>
-    <xhtml:link rel="alternate" hreflang="es" href="${domain}${strings.es.routes[key]}"/>
+    pages.map(
+      (p) => `  <url>
+    <loc>${domain}${p.route(lang)}</loc>
+    <lastmod>${p.lastmod}</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="${domain}${p.route("en")}"/>
+    <xhtml:link rel="alternate" hreflang="es" href="${domain}${p.route("es")}"/>
   </url>`,
     ),
   )

@@ -23,7 +23,9 @@
     "download": "Descargar",
     "menu": "Menú",
     "guide": "Guía",
-    "oss": "Código abierto"
+    "oss": "Código abierto",
+    "learn": "Aprende",
+    "articles": "Artículos"
   },
   "hero": {
     "pill": "Gratis y de código abierto · Windows",
@@ -266,7 +268,8 @@
     "home": "/es/",
     "guide": "/es/guia/",
     "privacy": "/es/privacidad/",
-    "opensource": "/es/codigo-abierto/"
+    "opensource": "/es/codigo-abierto/",
+    "articles": "/es/articulos/"
   },
   "pages": {
     "home": {
@@ -284,6 +287,10 @@
     "opensource": {
       "title": "Código abierto — Ondalux Heatmap",
       "description": "Ondalux Heatmap es de código abierto (MIT / Apache-2.0): cómo está hecho, cómo compilarlo, cómo contribuir y lo que sigue."
+    },
+    "articles": {
+      "title": "Artículos de diseño WiFi — Ondalux Heatmap",
+      "description": "Artículos prácticos de diseño WiFi: plan de canales, atenuación de muros, mediciones en sitio y ubicación de puntos de acceso."
     }
   },
   "support": "Para dudas, reportes de errores o consultas comerciales escribe a",
@@ -308,5 +315,22 @@
       "name": "ondalux-app",
       "text": "La aplicación de escritorio (egui)."
     }
-  ]
+  ],
+  "articlesUi": {
+    "eyebrow": "Aprende",
+    "title": "Diseño WiFi, <span class=\"grad\">explicado.</span>",
+    "lead": "Artículos prácticos para planear, medir y corregir redes WiFi: desde el plan de canales hasta los muros que se comen tu señal.",
+    "guideTag": "Guía completa",
+    "guideText": "Requisitos, muros, ubicación, canales, mapas de calor y validación en sitio: todo el proceso en un solo lugar.",
+    "read": "Leer la guía",
+    "back": "← Todos los artículos",
+    "minutes": "min de lectura",
+    "related": "Sigue leyendo",
+    "ctaTitle": "Pruébalo con tu propio plano",
+    "ctaText": "Ondalux Heatmap es gratis, de código abierto y portable. Sin cuenta y sin instalador.",
+    "guideTitle": "Cómo diseñar una red WiFi con un mapa de calor",
+    "latest": "Del blog",
+    "latestTitle": "Aprende diseño WiFi",
+    "all": "Todos los artículos"
+  }
 }

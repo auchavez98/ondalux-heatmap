@@ -1,0 +1,56 @@
+<p>Two access points on the same channel that can hear each other do not add capacity: they take turns. WiFi is a shared medium, and every radio on a channel has to wait while any other radio it hears is transmitting. A good channel plan is the cheapest performance upgrade a network can get, and it costs nothing but a few minutes of thinking.</p>
+
+<h2>Co-channel and adjacent-channel interference</h2>
+<p><strong>Co-channel interference</strong> happens when nearby radios use the same channel. They are polite to each other — they defer and wait — so the result is not errors but lost airtime: each cell gets a share of the time instead of all of it.</p>
+<p><strong>Adjacent-channel interference</strong> happens when channels partially overlap. Here the radios do not coordinate; one simply looks like noise to the other, which causes errors and retransmissions. It is the worse of the two, and it is almost always the result of picking channels that overlap.</p>
+<p>The goal of a channel plan is simple: radios that hear each other well should be on channels that do not overlap at all, and when you have to reuse a channel, reuse it as far away as possible.</p>
+
+<h2>2.4 GHz: use 1, 6 and 11</h2>
+<p>The 2.4 GHz band is narrow. Its channels are only 5 MHz apart, but each transmission is about 20 MHz wide, so neighboring channel numbers overlap heavily. In the Americas only three channels do not overlap: <strong>1, 6 and 11</strong>. Some regions that allow channels 12 and 13 use a four-channel plan (1, 5, 9, 13) for 20 MHz OFDM devices; follow your local rules.</p>
+<ul>
+  <li>Always use <strong>20 MHz</strong> width at 2.4 GHz. A 40 MHz channel takes two of the three usable channels and almost guarantees overlap.</li>
+  <li>Never use channels like 3 or 8 "to avoid the neighbors": you will overlap two plans instead of sharing one.</li>
+  <li>In dense designs, consider turning off the 2.4 GHz radio on some access points. Three channels are rarely enough when access points are close together.</li>
+</ul>
+
+<h2>5 GHz: more channels, more choices</h2>
+<p>The 5 GHz band has many more channels, grouped in sub-bands. In the United States there are about 25 non-overlapping 20 MHz channels; the exact list depends on the country.</p>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Sub-band</th><th>Channels (20 MHz)</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>UNII-1</td><td>36, 40, 44, 48</td><td>Available almost everywhere</td></tr>
+      <tr><td>UNII-2A</td><td>52, 56, 60, 64</td><td>DFS (radar detection)</td></tr>
+      <tr><td>UNII-2C</td><td>100 – 144</td><td>DFS; some channels restricted in some regions</td></tr>
+      <tr><td>UNII-3</td><td>149, 153, 157, 161, 165</td><td>Not available in every country</td></tr>
+    </tbody>
+  </table>
+</div>
+<p><strong>Channel width is the main trade-off.</strong> Bonding channels into 40, 80 or 160 MHz increases the peak speed of a single client, but divides the number of independent channels by two, four or eight. With 25 channels at 20 MHz you have about 12 at 40 MHz and only 6 at 80 MHz.</p>
+<ul>
+  <li><strong>Dense designs</strong> (offices, schools, hotels): 20 or 40 MHz, so neighboring access points can all be on different channels.</li>
+  <li><strong>Low density</strong> (homes, small offices with few APs): 80 MHz is reasonable.</li>
+  <li><strong>160 MHz</strong> only makes sense when there are very few access points and almost no neighbors.</li>
+</ul>
+
+<h3>What DFS means</h3>
+<p>Channels in the UNII-2 sub-bands are shared with radar systems. Access points using them must listen for radar before transmitting and must leave the channel if radar appears (Dynamic Frequency Selection). In practice that means a short wait when the AP starts on a DFS channel and an occasional channel change. DFS channels are valuable — they double the number of usable channels — but avoid them near airports or weather radars, and keep critical access points on non-DFS channels.</p>
+
+<h2>6 GHz: wide and clean</h2>
+<p>The 6 GHz band, used by Wi-Fi 6E and Wi-Fi 7 devices, is the cleanest spectrum WiFi has had in decades: no legacy devices and, where the full band is allowed, up to 1200 MHz of spectrum. That makes 80 MHz channels practical even in dense designs, and 160 or 320 MHz possible with few access points.</p>
+<ul>
+  <li>How much of the band is available depends on the country: some allow the full band, others only the lower part. Check your regulator.</li>
+  <li>Only newer devices can use it, and it requires WPA3 security.</li>
+  <li>The higher frequency loses more signal through walls, so 6 GHz coverage is usually smaller than 5 GHz from the same access point.</li>
+</ul>
+
+<h2>Transmit power is part of the channel plan</h2>
+<p>Turning the power up makes every cell bigger — and makes every access point hear more of its neighbors on the same channel. Two more reasons to keep it moderate:</p>
+<ul>
+  <li><strong>Clients are quieter than access points.</strong> Phones and laptops transmit with less power than most APs. If the AP is much louder than its clients, a client can hear the AP but the AP cannot hear the client, and the connection is poor even with "full bars".</li>
+  <li><strong>Roaming works better.</strong> Smaller cells make clients move to the nearest access point instead of clinging to a distant one.</li>
+</ul>
+<p>A common starting point is to set 5 GHz radios near typical client power and 2.4 GHz radios a few dB lower, then adjust using the coverage map.</p>
+
+<h2>Checking the plan in Ondalux Heatmap</h2>
+<p>Two maps tell you if a channel plan works. <strong>SINR</strong> shows where interference from overlapping channels lowers the quality of the signal: a red area between two access points usually means they share a channel. <strong>Channel overlap</strong> counts how many other radios on overlapping channels are heard above the clear-channel threshold; aim for 0 or 1 across the area. Change a channel in the access point inspector and both maps update immediately.</p>

@@ -1,0 +1,52 @@
+<p>Indoors, distance is rarely what kills a WiFi signal. Walls are. A single concrete wall can take away as much signal as tens of meters of open space, which is why two rooms at the same distance from an access point can have completely different coverage. Knowing roughly how much each material absorbs is the difference between a design that works and one that only looks good on paper.</p>
+
+<h2>Decibels in one minute</h2>
+<p>Wall loss is expressed in decibels (dB). Every 3 dB halves the power, and every 10 dB divides it by ten. A wall that costs 12 dB lets through about one sixteenth of the signal. Because the losses add up, a path through two such walls loses 24 dB — less than 1/250 of the power.</p>
+
+<h2>Typical values</h2>
+<p>These are typical losses for a signal crossing a wall once, roughly perpendicular to it. They are the defaults used in Ondalux Heatmap and are consistent with published measurement studies and vendor design guides.</p>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Material</th><th>2.4 GHz</th><th>5 GHz</th><th>6 GHz</th></tr></thead>
+    <tbody>
+      <tr><td>Office partition / cubicle</td><td>1 dB</td><td>2 dB</td><td>2 dB</td></tr>
+      <tr><td>Drywall (plasterboard)</td><td>3 dB</td><td>4 dB</td><td>5 dB</td></tr>
+      <tr><td>Wooden door</td><td>3 dB</td><td>4 dB</td><td>5 dB</td></tr>
+      <tr><td>Clear glass</td><td>3 dB</td><td>7 dB</td><td>8 dB</td></tr>
+      <tr><td>Wood wall</td><td>4 dB</td><td>6 dB</td><td>7 dB</td></tr>
+      <tr><td>Brick</td><td>8 dB</td><td>12 dB</td><td>14 dB</td></tr>
+      <tr><td>Concrete block</td><td>9 dB</td><td>12 dB</td><td>14 dB</td></tr>
+      <tr><td>Concrete</td><td>12 dB</td><td>18 dB</td><td>21 dB</td></tr>
+      <tr><td>Metal door</td><td>15 dB</td><td>19 dB</td><td>21 dB</td></tr>
+      <tr><td>Low-E (coated) glass</td><td>18 dB</td><td>23 dB</td><td>26 dB</td></tr>
+      <tr><td>Metal wall</td><td>25 dB</td><td>30 dB</td><td>32 dB</td></tr>
+      <tr><td>Elevator shaft</td><td>30 dB</td><td>35 dB</td><td>38 dB</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Two patterns stand out. First, <strong>loss grows with frequency</strong>: the same wall costs more at 5 GHz than at 2.4 GHz, and more again at 6 GHz. Second, <strong>metal and coated glass are in a different league</strong>: they reflect most of the energy instead of letting it through.</p>
+
+<h2>Why real walls differ from the table</h2>
+<ul>
+  <li><strong>Thickness and density.</strong> A 30 cm load-bearing concrete wall is not a 10 cm partition, even if both are "concrete".</li>
+  <li><strong>Reinforcement.</strong> Rebar mesh inside concrete acts like a partial metal screen, especially at 2.4 GHz.</li>
+  <li><strong>Moisture.</strong> Water absorbs RF energy; fresh concrete and wet walls lose more than dry ones.</li>
+  <li><strong>Coatings and insulation.</strong> Foil-backed insulation, metallic paint and low-emissivity window coatings can add 10–20 dB to an otherwise "easy" wall.</li>
+  <li><strong>Angle.</strong> A signal crossing a wall at a shallow angle travels through more material than one crossing it straight on, so the loss is higher.</li>
+  <li><strong>What is behind the wall.</strong> Shelving full of stock, filing cabinets, mirrors and large water tanks behave like walls of their own.</li>
+</ul>
+
+<h2>The obstacles people forget</h2>
+<p>Elevator shafts, stairwells with fire doors, server and electrical rooms, kitchens (metal appliances and cold rooms), bathrooms with tiled walls, and atriums with coated glass. Draw them on the plan as walls with the right material; they are often the reason a "covered" area is not.</p>
+
+<h2>How to measure a wall yourself</h2>
+<p>If a wall matters to your design, a quick measurement beats any table:</p>
+<ol>
+  <li>Place an access point (or a phone hotspot) at a fixed position, a few meters from the wall.</li>
+  <li>With a laptop, read the signal at a point just in front of the wall, then at the same distance from the AP just behind it. Average several readings at each point: WiFi readings fluctuate by a few dB.</li>
+  <li>The difference between the two averages, minus the extra distance (usually negligible if the points are close), is the loss of the wall at that band.</li>
+</ol>
+<p>Repeat for each band you plan to use. Then edit the material in Ondalux Heatmap (<em>Edit → Wall materials</em>) so every wall of that type uses the measured value.</p>
+
+<h2>Calibrating with a site survey</h2>
+<p>A faster way to correct all the walls at once is to survey the building and compare the measured map with the prediction. If the real signal is consistently weaker behind a certain type of wall, raise its loss; if it is stronger everywhere, the prediction is conservative and the design has margin. The difference map in Ondalux Heatmap shows exactly where the prediction and reality disagree.</p>

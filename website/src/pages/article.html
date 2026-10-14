@@ -1,0 +1,40 @@
+{{> head}}
+  <main id="main">
+    <article class="article">
+      <header class="article__head wrap wrap--narrow">
+        <p class="crumbs"><a href="{{routes.articles}}">{{articlesUi.back}}</a></p>
+        <p class="eyebrow">{{article.tag}}</p>
+        <h1>{{article.title}}</h1>
+        <p class="article__lead">{{article.description}}</p>
+        <p class="article__meta">{{article.dateText}} · {{article.minutes}} {{articlesUi.minutes}}</p>
+      </header>
+
+      <div class="wrap wrap--narrow article__body">
+        {{{ads.article_top}}}
+
+        {{{article.body}}}
+
+        <div class="cta-box">
+          <h2>{{articlesUi.ctaTitle}}</h2>
+          <p>{{articlesUi.ctaText}}</p>
+          <a class="btn btn--primary btn--lg" href="{{home}}#download">{{hero.cta}}</a>
+        </div>
+
+        {{{ads.article_bottom}}}
+
+        <section class="related">
+          <h2>{{articlesUi.related}}</h2>
+          <div class="post-grid post-grid--small">
+            {{#related}}
+            <a class="post" href="{{href}}">
+              <span class="tag">{{tag}}</span>
+              <h3>{{title}}</h3>
+              <p>{{description}}</p>
+            </a>
+            {{/related}}
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+{{> footer}}

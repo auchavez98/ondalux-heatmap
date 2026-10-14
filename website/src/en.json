@@ -23,7 +23,9 @@
     "download": "Download",
     "menu": "Menu",
     "guide": "Guide",
-    "oss": "Open source"
+    "oss": "Open source",
+    "learn": "Learn",
+    "articles": "Articles"
   },
   "hero": {
     "pill": "Free & open source · Windows",
@@ -266,7 +268,8 @@
     "home": "/",
     "guide": "/guide/",
     "privacy": "/privacy/",
-    "opensource": "/open-source/"
+    "opensource": "/open-source/",
+    "articles": "/articles/"
   },
   "pages": {
     "home": {
@@ -284,6 +287,10 @@
     "opensource": {
       "title": "Open source — Ondalux Heatmap",
       "description": "Ondalux Heatmap is open source (MIT / Apache-2.0): how it is built, how to compile it, how to contribute and what comes next."
+    },
+    "articles": {
+      "title": "Articles on WiFi design — Ondalux Heatmap",
+      "description": "Practical articles on WiFi design: channel planning, wall attenuation, site surveys and access point placement."
     }
   },
   "support": "For questions, bug reports or business inquiries write to",
@@ -308,5 +315,22 @@
       "name": "ondalux-app",
       "text": "The desktop application (egui)."
     }
-  ]
+  ],
+  "articlesUi": {
+    "eyebrow": "Learn",
+    "title": "WiFi design, <span class=\"grad\">explained.</span>",
+    "lead": "Practical articles about planning, measuring and fixing WiFi networks — from channel plans to the walls that eat your signal.",
+    "guideTag": "Complete guide",
+    "guideText": "Requirements, walls, placement, channels, heat maps and on-site validation: the whole process in one place.",
+    "read": "Read the guide",
+    "back": "← All articles",
+    "minutes": "min read",
+    "related": "Keep reading",
+    "ctaTitle": "Try it on your own floor plan",
+    "ctaText": "Ondalux Heatmap is free, open source and portable. No account, no installer.",
+    "guideTitle": "How to design a WiFi network with a heat map",
+    "latest": "From the blog",
+    "latestTitle": "Learn WiFi design",
+    "all": "All articles"
+  }
 }

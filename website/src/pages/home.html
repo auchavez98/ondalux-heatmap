@@ -165,6 +165,26 @@
       </div>
     </section>
 
+    <!-- ================= LATEST ARTICLES ================= -->
+    <section class="section section--tight">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <p class="eyebrow">{{articlesUi.latest}}</p>
+          <h2>{{articlesUi.latestTitle}}</h2>
+        </header>
+        <div class="post-grid post-grid--small">
+          {{#latest}}
+          <a class="post reveal" href="{{href}}">
+            <span class="tag">{{tag}}</span>
+            <h3>{{title}}</h3>
+            <p>{{description}}</p>
+          </a>
+          {{/latest}}
+        </div>
+        <p class="note reveal"><a href="{{routes.articles}}">{{articlesUi.all}} →</a></p>
+      </div>
+    </section>
+
     {{{ads.home_bottom}}}
 
     <!-- ================= FAQ ================= -->
