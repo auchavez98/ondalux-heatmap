@@ -2,7 +2,7 @@
 //! detected walls as a preview over the plan, and adds them on request.
 
 use crate::app::OndaluxApp;
-use crate::i18n::t;
+use crate::i18n::{t, UiPrefs};
 use crate::style::{self, icon};
 use crate::tr;
 use eframe::egui::{self, Color32, Stroke};
@@ -232,6 +232,15 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
         .show(ctx, |ui| {
             let p = style::palette(ui);
             let st = &mut app.walls;
+            let prefs = &mut app.prefs;
+            ui.horizontal(|ui| {
+                beta_badge(ui);
+                ui.label(
+                    egui::RichText::new(t("Función en prueba", "Feature in testing"))
+                        .size(12.0)
+                        .color(p.muted),
+                );
+            });
             ui.set_width(320.0);
             if let Some(e) = &st.error {
                 ui.colored_label(p.danger, tr!("No se pudo leer el plano: {e}", "Could not read the plan: {e}"));
@@ -307,6 +316,7 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
                     t("Reemplazar los muros que ya existen", "Replace the existing walls"),
                 );
             }
+            auto_detect_checkbox(ui, prefs);
             ui.add_space(4.0);
             ui.label(
                 egui::RichText::new(t(
@@ -345,4 +355,37 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
         app.walls.open = false;
         app.walls.preview.clear();
     }
+}
+
+/// "BETA" pill next to a feature name.
+pub fn beta_badge(ui: &mut egui::Ui) {
+    let p = style::palette(ui);
+    style::badge(ui, "BETA", p.warning).on_hover_text(t(
+        "Función en prueba: los resultados pueden necesitar correcciones a mano.",
+        "Feature in testing: results may need manual corrections.",
+    ));
+}
+
+/// Checkbox for the beta option "detect walls when importing a plan";
+/// saves the preference when it changes.
+pub fn auto_detect_checkbox(ui: &mut egui::Ui, prefs: &mut UiPrefs) {
+    ui.horizontal(|ui| {
+        let changed = ui
+            .checkbox(
+                &mut prefs.auto_detect_walls,
+                t(
+                    "Detectar muros automáticamente al importar un plano",
+                    "Detect walls automatically when importing a plan",
+                ),
+            )
+            .on_hover_text(t(
+                "Al importar un plano se propone el trazado de muros para que lo revises antes de agregarlo. Función beta: solo detecta muros horizontales y verticales.",
+                "When a plan is imported, walls are proposed for you to review before adding them. Beta feature: only horizontal and vertical walls are detected.",
+            ))
+            .changed();
+        beta_badge(ui);
+        if changed {
+            prefs.save();
+        }
+    });
 }

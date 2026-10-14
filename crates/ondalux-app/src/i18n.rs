@@ -79,6 +79,9 @@ pub struct UiPrefs {
     pub theme: ThemeChoice,
     /// Recently opened or saved projects, newest first.
     pub recent: Vec<std::path::PathBuf>,
+    /// Beta: propose walls automatically when a floor plan is imported.
+    /// Off unless the user turns it on.
+    pub auto_detect_walls: bool,
 }
 
 fn prefs_path() -> Option<std::path::PathBuf> {
@@ -136,6 +139,7 @@ mod tests {
             english: true,
             theme: ThemeChoice::Light,
             recent: vec!["a.lux".into()],
+            auto_detect_walls: true,
         };
         let s = serde_json::to_string(&p).unwrap();
         assert_eq!(serde_json::from_str::<UiPrefs>(&s).unwrap(), p);

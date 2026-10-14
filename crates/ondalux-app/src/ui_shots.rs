@@ -110,6 +110,10 @@ fn ui_shots() {
     // Importing a plan proposes walls right away.
     if let Some(plan) = std::env::var("ONDALUX_PLAN").ok().map(PathBuf::from) {
         let mut h = harness(Some(plan));
+        if !h.state().walls.open {
+            let ctx = h.ctx.clone();
+            crate::walls_ui::start(h.state_mut(), &ctx);
+        }
         for _ in 0..300 {
             h.run_steps(2);
             if !h.state().walls.preview.is_empty() {

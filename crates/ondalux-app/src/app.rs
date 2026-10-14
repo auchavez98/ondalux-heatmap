@@ -362,8 +362,10 @@ impl OndaluxApp {
                 doc.plan_source = source_pdf;
                 doc.dirty = true;
                 self.set_document(ctx, Some(doc));
-                // Propose walls right away; the user reviews them.
-                crate::walls_ui::start(self, ctx);
+                // Beta, opt-in: propose walls right away for review.
+                if self.prefs.auto_detect_walls {
+                    crate::walls_ui::start(self, ctx);
+                }
                 self.tool = Tool::Calibrate;
                 self.info(t("Plano importado. Calibra la escala: haz clic en dos puntos de distancia conocida.", "Floor plan imported. Calibrate the scale: click two points a known distance apart."));
             }
@@ -859,7 +861,10 @@ impl OndaluxApp {
                         egui::Button::new(format!(
                             "{}  {}",
                             icon::MAGIC_WAND,
-                            t("Detectar muros del plano…", "Detect walls from the plan…")
+                            t(
+                                "Detectar muros del plano (beta)…",
+                                "Detect walls from the plan (beta)…"
+                            )
                         )),
                     )
                     .clicked()
@@ -1030,10 +1035,7 @@ impl OndaluxApp {
                         .button(format!(
                             "{}  {}",
                             icon::MAGIC_WAND,
-                            t(
-                                "Detectar muros automáticamente…",
-                                "Detect walls automatically…"
-                            )
+                            t("Detectar muros (beta)…", "Detect walls (beta)…")
                         ))
                         .clicked();
                 }
@@ -1728,6 +1730,12 @@ fn welcome(app: &mut OndaluxApp, ui: &mut egui::Ui) {
                     ) {
                         app.guarded(&ctx, Pending::Open);
                     }
+                });
+            });
+            ui.add_space(10.0);
+            ui.allocate_ui(egui::vec2(width, 0.0), |ui| {
+                ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
+                    crate::walls_ui::auto_detect_checkbox(ui, &mut app.prefs);
                 });
             });
 

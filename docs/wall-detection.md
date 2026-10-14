@@ -1,10 +1,12 @@
 # Automatic wall detection
 
-When a floor plan is imported, Ondalux proposes walls automatically. The
-proposal is shown over the plan (orange = thick walls, blue = thin walls).
+**Beta feature.** With the option "Detect walls automatically when importing
+a plan" checked (welcome screen or the detection window; off by default,
+saved in `<config>/ondalux/ui.json`), Ondalux proposes walls as soon as a
+floor plan is imported. The proposal is shown over the plan (orange = thick walls, blue = thin walls).
 The user picks a material for each group, adjusts the sensitivity and
-accepts or cancels. It is also available any time from **Edit → Detect
-walls from the plan…** or the Walls tool card.
+accepts or cancels. It is also available any time, checked or not, from
+**Edit → Detect walls from the plan (beta)…** or the Walls tool card.
 
 Detection is classical image processing (no machine learning, no extra
 runtime). Code: `ondalux-core/src/walldetect.rs` (algorithm) and
