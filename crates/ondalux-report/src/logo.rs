@@ -165,7 +165,7 @@ mod tests {
     }
 
     /// Writes `logo.png` (512 px) into `$ONDALUX_LOGO_DIR`, for the docs:
-    /// `ONDALUX_LOGO_DIR=docs cargo test -p ondalux-app export_logo -- --ignored`
+    /// `ONDALUX_LOGO_DIR=docs cargo test -p ondalux-report export_logo -- --ignored`
     #[test]
     #[ignore]
     fn export_logo_png() {

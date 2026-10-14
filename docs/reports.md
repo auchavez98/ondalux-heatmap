@@ -20,18 +20,23 @@ cargo run --release -p ondalux-report --example report -- project.lux out_dir es
 Options: language (Spanish or English), author, bands, and comparison with
 the active survey.
 
-1. **Summary**: date, plan size and scale, number of APs and walls,
+Every page but the cover has a header with the Ondalux logo and the report
+title, and a footer with the project, date and page number.
+
+1. **Cover**: logo, project name, date and author, KPI tiles (coverage per
+   band, APs, walls, analysed area) and the **access point placement**: the
+   floor plan with only the APs and their names.
+2. **Project data**: plan size and scale, number of APs and walls,
    coverage requirements, propagation model, and a table per band with
    coverage, number of coverage gaps and overlap.
-2. **One section per band**:
-   - signal strength map;
-   - coverage map against the requirements, with gaps tinted red and
-     numbered;
-   - table of areas with poor coverage (area, center, best signal);
-   - recommendations.
-3. **Access point table**: model, position, height, and each radio's
+3. **One section per band**: KPI tiles, then **every heat map**, each in a
+   card with a one-line explanation: signal strength, SNR, SINR, number of
+   APs heard, channel overlap, and requirements met (gaps tinted red and
+   numbered); table of areas with poor coverage; recommendations as
+   colored callouts by severity.
+4. **Access point inventory**: model, position, mounting, and each radio's
    channel/width and Tx + gain = EIRP.
-4. **Method and limitations**.
+5. **Method and limitations**.
 
 The PDF uses the standard Helvetica fonts (nothing embedded) with WinAnsi
 encoding, so Spanish text works. Maps are embedded as lossless images.

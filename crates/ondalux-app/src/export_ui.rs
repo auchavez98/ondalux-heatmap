@@ -256,10 +256,12 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
                     ui.end_row();
                 });
             ui.weak(t(
-                "Incluye un resumen, mapas de señal y cobertura por banda, zonas con mala cobertura, \
-                 recomendaciones y la tabla de APs.",
-                "Includes a summary, signal and coverage maps per band, areas with poor coverage, \
-                 recommendations and the AP table.",
+                "Incluye portada con el sembrado de APs, resumen, todos los mapas por banda (señal, \
+                 SNR, SINR, APs, solapamiento y cobertura), zonas con mala cobertura, \
+                 recomendaciones e inventario de APs.",
+                "Includes a cover with the AP placement, a summary, every map per band (signal, \
+                 SNR, SINR, APs, overlap and coverage), areas with poor coverage, \
+                 recommendations and the AP inventory.",
             ));
             ui.horizontal(|ui| {
                 if st.busy() {

@@ -31,12 +31,11 @@ fn main() {
     let start = std::time::Instant::now();
     for r in compute_bands(project, plan.as_ref(), &bands_in_use(project), lang, 1400) {
         let tag = r.band.label().replace([' ', '.'], "");
-        r.signal_map
-            .save(out.join(format!("signal-{tag}.png")))
-            .expect("write PNG");
-        r.coverage_map
-            .save(out.join(format!("coverage-{tag}.png")))
-            .expect("write PNG");
+        for (kind, img) in &r.maps {
+            let name = format!("{kind:?}").to_lowercase();
+            img.save(out.join(format!("{name}-{tag}.png")))
+                .expect("write PNG");
+        }
         println!(
             "{}: coverage {:.1} %, {} gaps, {} findings",
             r.band,

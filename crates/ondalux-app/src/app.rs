@@ -246,7 +246,7 @@ impl OndaluxApp {
                 let size = 192;
                 let image = egui::ColorImage::from_rgba_unmultiplied(
                     [size as usize, size as usize],
-                    &crate::logo::rgba(size),
+                    &ondalux_report::logo::rgba(size),
                 );
                 ctx.load_texture("ondalux-logo", image, egui::TextureOptions::LINEAR)
             })

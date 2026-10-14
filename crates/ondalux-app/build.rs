@@ -1,12 +1,12 @@
 //! Embeds the logo as the Windows executable icon (Explorer, desktop
-//! shortcuts, taskbar). The icon is generated from `src/logo.rs`.
+//! shortcuts, taskbar). The icon is generated from `ondalux-report/src/logo.rs`.
 
-#[path = "src/logo.rs"]
+#[path = "../ondalux-report/src/logo.rs"]
 #[allow(dead_code)]
 mod logo;
 
 fn main() {
-    println!("cargo:rerun-if-changed=src/logo.rs");
+    println!("cargo:rerun-if-changed=../ondalux-report/src/logo.rs");
     println!("cargo:rerun-if-changed=build.rs");
     #[cfg(windows)]
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {

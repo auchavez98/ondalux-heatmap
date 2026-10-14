@@ -1,5 +1,6 @@
 //! Ondalux Heatmap reports: heat map images (PNG) and PDF reports.
 
+pub mod logo;
 pub mod map;
 pub mod pdfdoc;
 pub mod raster;
