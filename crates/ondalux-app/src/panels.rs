@@ -6,7 +6,7 @@
 use crate::app::{OndaluxApp, Selection, Tool};
 use crate::catalog_ui;
 use crate::i18n::{self, t};
-use crate::style;
+use crate::style::{self, icon};
 use crate::tr;
 use eframe::egui::{self, Color32, DragValue, RichText};
 use ondalux_core::ap::{AntennaPattern, ApId, Mount, Radio};
@@ -17,9 +17,21 @@ use ondalux_core::project::Calibration;
 use ondalux_core::propagation::{PathLossModel, PropagationSettings};
 use ondalux_core::units::{Db, Dbm};
 
-const OK: Color32 = Color32::from_rgb(34, 160, 90);
-const TODO: Color32 = Color32::from_rgb(150, 150, 150);
-const WARN: Color32 = Color32::from_rgb(220, 140, 30);
+/// Inspector heading: an icon in an accent tile and the title.
+pub fn inspector_title(ui: &mut egui::Ui, glyph: &str, title: &str) {
+    let p = style::palette(ui);
+    ui.horizontal(|ui| {
+        egui::Frame::new()
+            .fill(p.accent_soft)
+            .corner_radius(8)
+            .inner_margin(egui::Margin::symmetric(7, 4))
+            .show(ui, |ui| {
+                ui.label(RichText::new(glyph).size(17.0).color(p.accent));
+            });
+        ui.label(style::bold(title).size(18.0));
+    });
+    ui.add_space(4.0);
+}
 
 pub fn inspector(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     match app.selection {
@@ -38,7 +50,7 @@ fn wall_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, i: usize) {
         app.selection = Selection::None;
         return;
     };
-    ui.heading(t("Pared", "Wall"));
+    inspector_title(ui, icon::WALL, t("Pared", "Wall"));
     let mut wall = orig.clone();
     egui::Grid::new("wall-grid").num_columns(2).show(ui, |ui| {
         ui.label(t("Material", "Material"));
@@ -71,11 +83,11 @@ fn wall_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, i: usize) {
         doc.project.walls[i] = wall;
     }
     ui.add_space(10.0);
-    if ui
-        .button(
-            RichText::new(t("Eliminar pared", "Delete wall")).color(Color32::from_rgb(200, 60, 60)),
-        )
-        .clicked()
+    if style::danger_button(
+        ui,
+        &format!("{}  {}", icon::TRASH, t("Eliminar pared", "Delete wall")),
+    )
+    .clicked()
     {
         app.delete_selection();
     }
@@ -90,23 +102,25 @@ fn step(
     action: Option<&str>,
 ) -> bool {
     let mut clicked = false;
+    let p = style::palette(ui);
     egui::Frame::new()
-        .inner_margin(egui::Margin::symmetric(6, 5))
-        .corner_radius(6)
-        .fill(ui.visuals().faint_bg_color)
+        .inner_margin(egui::Margin::symmetric(10, 8))
+        .corner_radius(10)
+        .fill(p.surface)
+        .stroke(egui::Stroke::new(1.0, p.border))
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             ui.horizontal(|ui| {
-                ui.label(RichText::new(mark.0).strong().size(16.0).color(mark.1));
+                ui.label(RichText::new(mark.0).size(20.0).color(mark.1));
                 // Button first (right-aligned) so the text wraps in the space left.
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if let Some(a) = action {
                         clicked = ui.button(a).clicked();
                     }
                     ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
-                        ui.label(RichText::new(title).strong());
+                        ui.label(style::bold(title));
                         if !detail.is_empty() {
-                            ui.label(RichText::new(detail).small().weak());
+                            ui.label(RichText::new(detail).size(12.0).color(p.muted));
                         }
                     });
                 });
@@ -138,9 +152,12 @@ fn project_steps(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let coverage = app.heat.field.as_ref().and_then(|f| f.coverage);
     let req = p.requirements;
 
+    let pal = style::palette(ui);
     style::section(ui, t("Pasos", "Steps"));
-    let done = ("✔", OK);
-    let todo = ("○", TODO);
+    ui.spacing_mut().item_spacing.y = 6.0;
+    let done = (icon::CHECK_CIRCLE, pal.success);
+    let todo = (icon::CIRCLE_DASHED, pal.muted);
+    let warn = (icon::WARNING_CIRCLE, pal.warning);
     step(
         ui,
         done,
@@ -150,7 +167,7 @@ fn project_steps(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     );
     if step(
         ui,
-        if calibrated { done } else { ("!", WARN) },
+        if calibrated { done } else { warn },
         t("Escala calibrada", "Scale calibrated"),
         if calibrated {
             t("Las medidas son reales.", "Distances are real.")
@@ -190,7 +207,7 @@ fn project_steps(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     }
     let (cov_mark, cov_detail) = match coverage {
         Some(c) if aps > 0 => (
-            if c >= 0.95 { done } else { ("!", WARN) },
+            if c >= 0.95 { done } else { warn },
             format!(
                 "{:.0} % {} {:.0} dBm / SNR {:.0} dB ({})",
                 c * 100.0,
@@ -250,7 +267,12 @@ fn project_steps(app: &mut OndaluxApp, ui: &mut egui::Ui) {
             if ui
                 .selectable_label(
                     false,
-                    format!("📡  {}{model}   ch {}", ap.name, channels.join("/")),
+                    format!(
+                        "{}  {}{model}   ch {}",
+                        icon::BROADCAST,
+                        ap.name,
+                        channels.join("/")
+                    ),
                 )
                 .clicked()
             {
@@ -336,7 +358,7 @@ fn ap_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
         return;
     };
     let orig = doc.project.aps[index].clone();
-    ui.heading(t("Punto de acceso", "Access point"));
+    inspector_title(ui, icon::BROADCAST, t("Punto de acceso", "Access point"));
 
     // Catalog model: picking one fills the radios.
     let catalog = &app.catalog.catalog;
@@ -515,12 +537,15 @@ fn ap_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
         });
 
     ui.add_space(10.0);
-    if ui
-        .button(
-            RichText::new(t("Eliminar punto de acceso", "Delete access point"))
-                .color(Color32::from_rgb(200, 60, 60)),
-        )
-        .clicked()
+    if style::danger_button(
+        ui,
+        &format!(
+            "{}  {}",
+            icon::TRASH,
+            t("Eliminar punto de acceso", "Delete access point")
+        ),
+    )
+    .clicked()
     {
         delete = true;
     }
@@ -549,8 +574,12 @@ fn ap_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: ApId) {
 
 /// Everyday radio settings: on/off, channel, width and power.
 fn radio_card(ui: &mut egui::Ui, radio: &mut Radio) {
-    egui::Frame::group(ui.style())
-        .inner_margin(8.0)
+    let p = style::palette(ui);
+    egui::Frame::new()
+        .fill(p.surface)
+        .stroke(egui::Stroke::new(1.0, p.border))
+        .corner_radius(10)
+        .inner_margin(10.0)
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             ui.checkbox(

@@ -1096,6 +1096,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui-phosphor"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f4299551488dddaa8f757727e1eb4ffdaf277ffe6e30b413403468f5ecf4634"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "egui-wgpu"
 version = "0.36.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2813,6 +2822,7 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "eframe",
+ "egui-phosphor",
  "egui_kittest",
  "image",
  "ondalux-core",

@@ -593,7 +593,11 @@ pub fn measurement_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: u32) {
         app.selection = Selection::None;
         return;
     };
-    ui.heading(format!("{} {id}", t("Punto medido", "Survey point")));
+    crate::panels::inspector_title(
+        ui,
+        style::icon::MAP_PIN,
+        &format!("{} {id}", t("Punto medido", "Survey point")),
+    );
     ui.weak(format!("x {:.2} m · y {:.2} m", m.position.x, m.position.y));
     if let Some(err) = app
         .heat
@@ -646,12 +650,15 @@ pub fn measurement_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, id: u32) {
                 });
         });
     ui.add_space(8.0);
-    if ui
-        .button(
-            egui::RichText::new(t("Eliminar punto", "Delete point"))
-                .color(egui::Color32::from_rgb(200, 60, 60)),
-        )
-        .clicked()
+    if style::danger_button(
+        ui,
+        &format!(
+            "{}  {}",
+            style::icon::TRASH,
+            t("Eliminar punto", "Delete point")
+        ),
+    )
+    .clicked()
     {
         doc.checkpoint();
         if let Some(s) = doc.project.surveys.get_mut(app.survey.active) {

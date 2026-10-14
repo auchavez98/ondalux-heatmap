@@ -7,7 +7,7 @@ use crate::export_ui::{self, ExportState};
 use crate::heatmap::{self, Comparison, Field, Source, Worker};
 use crate::i18n::{self, t, ThemeChoice, UiPrefs};
 use crate::panels;
-use crate::style;
+use crate::style::{self, icon};
 use crate::survey_ui::{self, SurveyState};
 use crate::tr;
 use crate::view::View;
@@ -54,11 +54,11 @@ impl Tool {
 
     pub fn icon(self) -> &'static str {
         match self {
-            Tool::Select => "↖",
-            Tool::Wall => "✏",
-            Tool::Ap => "📡",
-            Tool::Calibrate => "↔",
-            Tool::Survey => "📶",
+            Tool::Select => icon::CURSOR,
+            Tool::Wall => icon::WALL,
+            Tool::Ap => icon::BROADCAST,
+            Tool::Calibrate => icon::RULER,
+            Tool::Survey => icon::CELL_SIGNAL_HIGH,
         }
     }
 
@@ -170,13 +170,14 @@ pub struct OndaluxApp {
 }
 
 /// How long status bar messages stay visible.
-const STATUS_TTL: Duration = Duration::from_secs(8);
+const STATUS_TTL: Duration = Duration::from_secs(6);
 
 impl OndaluxApp {
     /// `path` (from the command line) may be a project or a floor plan image.
     pub fn new(cc: &eframe::CreationContext<'_>, path: Option<PathBuf>) -> Self {
         let prefs = UiPrefs::load();
         i18n::set_english(prefs.english);
+        style::install_fonts(&cc.egui_ctx);
         style::apply(&cc.egui_ctx, prefs.theme);
         let (catalog, catalog_error) = CatalogState::load();
         let mut app = Self {
@@ -383,6 +384,7 @@ impl OndaluxApp {
         match ProjectFile::load(&path) {
             Ok(file) => {
                 self.set_document(ctx, Some(Document::from_file(file, path.clone())));
+                self.prefs.remember(&path);
                 self.info(tr!("Abierto {}", "Opened {}", file_name(&path)));
             }
             Err(e) => self.error(tr!(
@@ -425,6 +427,7 @@ impl OndaluxApp {
             Ok(()) => {
                 doc.path = Some(path.clone());
                 doc.dirty = false;
+                self.prefs.remember(&path);
                 self.info(tr!("Guardado {}", "Saved {}", file_name(&path)));
             }
             Err(e) => self.error(tr!(
@@ -559,18 +562,107 @@ impl OndaluxApp {
         }
     }
 
+    /// Top bar: logo and project name, menus, and quick actions.
+    fn header(&mut self, ui: &mut egui::Ui) {
+        let ctx = ui.ctx().clone();
+        let p = style::palette(ui);
+        let logo = self.logo_texture(&ctx);
+        ui.horizontal(|ui| {
+            ui.set_min_height(36.0);
+            ui.add(egui::Image::new(&logo).fit_to_exact_size(egui::vec2(24.0, 24.0)));
+            ui.label(style::bold("Ondalux").size(16.0));
+            if let Some(doc) = &self.doc {
+                ui.label(egui::RichText::new("/").color(p.border).size(16.0));
+                ui.label(egui::RichText::new(doc.title()).color(p.muted));
+            }
+            ui.add_space(10.0);
+            self.menu_bar(ui);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if self.doc.is_some() {
+                    let dirty = self.is_dirty();
+                    let text = format!("{}  {}", icon::FLOPPY_DISK, t("Guardar", "Save"));
+                    let button = if dirty {
+                        egui::Button::new(style::bold(text).color(egui::Color32::WHITE))
+                            .fill(p.accent)
+                            .stroke(egui::Stroke::NONE)
+                    } else {
+                        egui::Button::new(text)
+                    };
+                    if ui
+                        .add(button.corner_radius(8))
+                        .on_hover_text(if dirty {
+                            t(
+                                "Hay cambios sin guardar (Ctrl+S)",
+                                "Unsaved changes (Ctrl+S)",
+                            )
+                        } else {
+                            t("Todo guardado (Ctrl+S)", "Everything saved (Ctrl+S)")
+                        })
+                        .clicked()
+                    {
+                        self.save(false);
+                    }
+                    let (can_undo, can_redo) = self
+                        .doc
+                        .as_ref()
+                        .map_or((false, false), |d| (d.can_undo(), d.can_redo()));
+                    ui.add_enabled_ui(can_redo, |ui| {
+                        if style::icon_button(
+                            ui,
+                            icon::ARROW_U_UP_RIGHT,
+                            t("Rehacer (Ctrl+Y)", "Redo (Ctrl+Y)"),
+                        )
+                        .clicked()
+                        {
+                            self.redo();
+                        }
+                    });
+                    ui.add_enabled_ui(can_undo, |ui| {
+                        if style::icon_button(
+                            ui,
+                            icon::ARROW_U_UP_LEFT,
+                            t("Deshacer (Ctrl+Z)", "Undo (Ctrl+Z)"),
+                        )
+                        .clicked()
+                        {
+                            self.undo();
+                        }
+                    });
+                    ui.add_space(4.0);
+                }
+                let dark = ui.visuals().dark_mode;
+                let (glyph, tip) = if dark {
+                    (icon::SUN, t("Tema claro", "Light theme"))
+                } else {
+                    (icon::MOON, t("Tema oscuro", "Dark theme"))
+                };
+                if style::icon_button(ui, glyph, tip).clicked() {
+                    self.prefs.theme = if dark {
+                        ThemeChoice::Light
+                    } else {
+                        ThemeChoice::Dark
+                    };
+                    style::apply(&ctx, self.prefs.theme);
+                    self.prefs.save();
+                }
+            });
+        });
+    }
+
     fn menu_bar(&mut self, ui: &mut egui::Ui) {
         let ctx = ui.ctx().clone();
         let short = |m: Modifiers, k: Key| ctx.format_shortcut(&KeyboardShortcut::new(m, k));
         let has_doc = self.doc.is_some();
-        let logo = self.logo_texture(ui.ctx());
         egui::MenuBar::new().ui(ui, |ui| {
-            ui.add(egui::Image::new(&logo).fit_to_exact_size(egui::vec2(18.0, 18.0)));
             ui.menu_button(t("Archivo", "File"), |ui| {
                 if ui
                     .add(
-                        egui::Button::new(t("Nuevo desde plano…", "New from floor plan…"))
-                            .shortcut_text(short(Modifiers::COMMAND, Key::N)),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::FILE_PLUS,
+                            t("Nuevo desde plano…", "New from floor plan…")
+                        ))
+                        .shortcut_text(short(Modifiers::COMMAND, Key::N)),
                     )
                     .clicked()
                 {
@@ -578,8 +670,12 @@ impl OndaluxApp {
                 }
                 if ui
                     .add(
-                        egui::Button::new(t("Abrir…", "Open…"))
-                            .shortcut_text(short(Modifiers::COMMAND, Key::O)),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::FOLDER_OPEN,
+                            t("Abrir…", "Open…")
+                        ))
+                        .shortcut_text(short(Modifiers::COMMAND, Key::O)),
                     )
                     .clicked()
                 {
@@ -589,8 +685,12 @@ impl OndaluxApp {
                 if ui
                     .add_enabled(
                         has_doc,
-                        egui::Button::new(t("Guardar", "Save"))
-                            .shortcut_text(short(Modifiers::COMMAND, Key::S)),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::FLOPPY_DISK,
+                            t("Guardar", "Save")
+                        ))
+                        .shortcut_text(short(Modifiers::COMMAND, Key::S)),
                     )
                     .clicked()
                 {
@@ -599,8 +699,12 @@ impl OndaluxApp {
                 if ui
                     .add_enabled(
                         has_doc,
-                        egui::Button::new(t("Guardar como…", "Save as…"))
-                            .shortcut_text(short(Modifiers::COMMAND | Modifiers::SHIFT, Key::S)),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::COPY,
+                            t("Guardar como…", "Save as…")
+                        ))
+                        .shortcut_text(short(Modifiers::COMMAND | Modifiers::SHIFT, Key::S)),
                     )
                     .clicked()
                 {
@@ -608,41 +712,70 @@ impl OndaluxApp {
                 }
                 ui.separator();
                 ui.add_enabled_ui(has_doc, |ui| {
-                    ui.menu_button(t("Exportar", "Export"), |ui| {
-                        if ui.button(t("Reporte PDF…", "PDF report…")).clicked() {
-                            self.export.report_open = true;
-                        }
-                        if ui
-                            .button(t("Imagen del mapa (PNG)…", "Heat map image (PNG)…"))
-                            .clicked()
-                        {
-                            export_ui::export_png(self);
-                        }
-                        if ui
-                            .button(t("Lista de APs (CSV)…", "Access point list (CSV)…"))
-                            .clicked()
-                        {
-                            export_ui::export_ap_csv(self);
-                        }
-                        if ui
-                            .button(t("Mediciones (CSV)…", "Survey measurements (CSV)…"))
-                            .clicked()
-                        {
-                            survey_ui::export_csv(self);
-                        }
-                    });
+                    ui.menu_button(
+                        format!("{}  {}", icon::EXPORT, t("Exportar", "Export")),
+                        |ui| {
+                            if ui
+                                .button(format!(
+                                    "{}  {}",
+                                    icon::FILE_PDF,
+                                    t("Reporte PDF…", "PDF report…")
+                                ))
+                                .clicked()
+                            {
+                                self.export.report_open = true;
+                            }
+                            if ui
+                                .button(format!(
+                                    "{}  {}",
+                                    icon::IMAGE,
+                                    t("Imagen del mapa (PNG)…", "Heat map image (PNG)…")
+                                ))
+                                .clicked()
+                            {
+                                export_ui::export_png(self);
+                            }
+                            if ui
+                                .button(format!(
+                                    "{}  {}",
+                                    icon::FILE_CSV,
+                                    t("Lista de APs (CSV)…", "Access point list (CSV)…")
+                                ))
+                                .clicked()
+                            {
+                                export_ui::export_ap_csv(self);
+                            }
+                            if ui
+                                .button(format!(
+                                    "{}  {}",
+                                    icon::FILE_CSV,
+                                    t("Mediciones (CSV)…", "Survey measurements (CSV)…")
+                                ))
+                                .clicked()
+                            {
+                                survey_ui::export_csv(self);
+                            }
+                        },
+                    );
                 });
                 ui.separator();
                 if ui
                     .add_enabled(
                         has_doc,
-                        egui::Button::new(t("Cerrar proyecto", "Close project")),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::X,
+                            t("Cerrar proyecto", "Close project")
+                        )),
                     )
                     .clicked()
                 {
                     self.guarded(&ctx, Pending::Close);
                 }
-                if ui.button(t("Salir", "Quit")).clicked() {
+                if ui
+                    .button(format!("{}  {}", icon::SIGN_OUT, t("Salir", "Quit")))
+                    .clicked()
+                {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
             });
@@ -654,8 +787,12 @@ impl OndaluxApp {
                 if ui
                     .add_enabled(
                         can_undo,
-                        egui::Button::new(t("Deshacer", "Undo"))
-                            .shortcut_text(short(Modifiers::COMMAND, Key::Z)),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::ARROW_U_UP_LEFT,
+                            t("Deshacer", "Undo")
+                        ))
+                        .shortcut_text(short(Modifiers::COMMAND, Key::Z)),
                     )
                     .clicked()
                 {
@@ -664,8 +801,12 @@ impl OndaluxApp {
                 if ui
                     .add_enabled(
                         can_redo,
-                        egui::Button::new(t("Rehacer", "Redo"))
-                            .shortcut_text(short(Modifiers::COMMAND, Key::Y)),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::ARROW_U_UP_RIGHT,
+                            t("Rehacer", "Redo")
+                        ))
+                        .shortcut_text(short(Modifiers::COMMAND, Key::Y)),
                     )
                     .clicked()
                 {
@@ -675,8 +816,12 @@ impl OndaluxApp {
                 if ui
                     .add_enabled(
                         self.selection != Selection::None,
-                        egui::Button::new(t("Eliminar selección", "Delete selection"))
-                            .shortcut_text("Supr"),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::TRASH,
+                            t("Eliminar selección", "Delete selection")
+                        ))
+                        .shortcut_text("Supr"),
                     )
                     .clicked()
                 {
@@ -686,21 +831,36 @@ impl OndaluxApp {
                 if ui
                     .add_enabled(
                         has_doc,
-                        egui::Button::new(t("Materiales de pared…", "Wall materials…")),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::WALL,
+                            t("Materiales de pared…", "Wall materials…")
+                        )),
                     )
                     .clicked()
                 {
                     self.show_materials = true;
                 }
-                if ui.button(t("Catálogo de APs…", "AP catalog…")).clicked() {
+                if ui
+                    .button(format!(
+                        "{}  {}",
+                        icon::BOOK_OPEN,
+                        t("Catálogo de APs…", "AP catalog…")
+                    ))
+                    .clicked()
+                {
                     self.catalog.open = true;
                 }
                 if ui
                     .add_enabled(
                         has_doc,
-                        egui::Button::new(t(
-                            "Requisitos y modelo de predicción…",
-                            "Requirements and prediction model…",
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::GEAR,
+                            t(
+                                "Requisitos y modelo de predicción…",
+                                "Requirements and prediction model…",
+                            )
                         )),
                     )
                     .clicked()
@@ -711,8 +871,12 @@ impl OndaluxApp {
             ui.menu_button(t("Ver", "View"), |ui| {
                 if ui
                     .add(
-                        egui::Button::new(t("Ajustar plano a la ventana", "Fit plan to window"))
-                            .shortcut_text("F"),
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::CORNERS_OUT,
+                            t("Ajustar plano a la ventana", "Fit plan to window")
+                        ))
+                        .shortcut_text("F"),
                     )
                     .clicked()
                 {
@@ -724,11 +888,14 @@ impl OndaluxApp {
                 );
                 ui.separator();
                 let mut prefs = self.prefs.clone();
-                ui.menu_button(t("Idioma", "Language"), |ui| {
-                    ui.radio_value(&mut prefs.english, false, "Español");
-                    ui.radio_value(&mut prefs.english, true, "English");
-                });
-                ui.menu_button(t("Tema", "Theme"), |ui| {
+                ui.menu_button(
+                    format!("{}  {}", icon::TRANSLATE, t("Idioma", "Language")),
+                    |ui| {
+                        ui.radio_value(&mut prefs.english, false, "Español");
+                        ui.radio_value(&mut prefs.english, true, "English");
+                    },
+                );
+                ui.menu_button(format!("{}  {}", icon::PALETTE, t("Tema", "Theme")), |ui| {
                     ui.radio_value(
                         &mut prefs.theme,
                         ThemeChoice::System,
@@ -746,13 +913,21 @@ impl OndaluxApp {
             });
             ui.menu_button(t("Ayuda", "Help"), |ui| {
                 if ui
-                    .button(t("Atajos de teclado", "Keyboard shortcuts"))
+                    .button(format!(
+                        "{}  {}",
+                        icon::KEYBOARD,
+                        t("Atajos de teclado", "Keyboard shortcuts")
+                    ))
                     .clicked()
                 {
                     self.show_shortcuts = true;
                 }
                 if ui
-                    .button(t("Acerca de Ondalux Heatmap", "About Ondalux Heatmap"))
+                    .button(format!(
+                        "{}  {}",
+                        icon::INFO,
+                        t("Acerca de Ondalux Heatmap", "About Ondalux Heatmap")
+                    ))
                     .clicked()
                 {
                     self.show_about = true;
@@ -763,203 +938,419 @@ impl OndaluxApp {
 
     /// Left column: tools, then the options of the active tool.
     fn tool_panel(&mut self, ui: &mut egui::Ui) {
+        let p = style::palette(ui);
         style::section(ui, t("Herramientas", "Tools"));
+        ui.spacing_mut().item_spacing.y = 4.0;
         for tool in Tool::ALL {
-            let text = format!("{}   {}", tool.icon(), tool.label());
-            let r = ui
-                .add_sized(
-                    [ui.available_width(), 32.0],
-                    egui::Button::new(text).selected(self.tool == tool),
-                )
-                .on_hover_text(format!(
-                    "{}\n\n{}: {}",
-                    tool.hint(),
-                    t("Atajo", "Shortcut"),
-                    tool.key()
-                ));
+            let r =
+                style::tool_button(ui, tool.icon(), tool.label(), tool.key(), self.tool == tool)
+                    .on_hover_text(tool.hint());
             if r.clicked() {
                 self.set_tool(tool);
             }
         }
-        ui.add_space(4.0);
-        ui.separator();
-        style::section(ui, t("Opciones", "Options"));
+        ui.spacing_mut().item_spacing.y = 8.0;
+        ui.add_space(10.0);
         let Some(doc) = self.doc.as_ref() else {
             return;
         };
-        match self.tool {
-            Tool::Select => {
-                ui.label(t(
-                    "Haz clic en un AP, pared o punto medido para ver y editar sus datos. Arrastra para moverlo.",
-                    "Click an AP, wall or survey point to see and edit it. Drag to move it.",
-                ));
-            }
-            Tool::Wall => {
-                ui.label(t("Material", "Material"));
-                let w = ui.available_width();
-                crate::panels::material_combo(
-                    ui,
-                    "wall-material",
-                    &doc.project.materials,
-                    &mut self.wall_material,
-                    w,
+        style::card(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label(
+                    egui::RichText::new(self.tool.icon())
+                        .size(16.0)
+                        .color(p.accent),
                 );
-                ui.weak(t(
-                    "Clic para agregar puntos. Mayús = ángulos de 45°. Esc o doble clic termina la pared.",
-                    "Click to add points. Shift = 45° angles. Esc or double-click ends the wall.",
-                ));
-                if ui
-                    .button(t("Editar materiales…", "Edit materials…"))
-                    .clicked()
-                {
-                    self.show_materials = true;
+                ui.label(style::bold(self.tool.label()));
+            });
+            match self.tool {
+                Tool::Select => {
+                    ui.label(
+                        egui::RichText::new(t(
+                            "Haz clic en un AP, pared o punto medido para ver y editar sus datos. Arrastra para moverlo.",
+                            "Click an AP, wall or survey point to see and edit it. Drag to move it.",
+                        ))
+                        .color(p.muted),
+                    );
+                }
+                Tool::Wall => {
+                    ui.label(egui::RichText::new(t("Material", "Material")).color(p.muted));
+                    let w = ui.available_width();
+                    crate::panels::material_combo(
+                        ui,
+                        "wall-material",
+                        &doc.project.materials,
+                        &mut self.wall_material,
+                        w,
+                    );
+                    ui.label(
+                        egui::RichText::new(t(
+                            "Clic para agregar puntos. Mayús = ángulos de 45°. Esc o doble clic termina la pared.",
+                            "Click to add points. Shift = 45° angles. Esc or double-click ends the wall.",
+                        ))
+                        .color(p.muted),
+                    );
+                    if ui
+                        .button(format!(
+                            "{}  {}",
+                            icon::SLIDERS_HORIZONTAL,
+                            t("Editar materiales…", "Edit materials…")
+                        ))
+                        .clicked()
+                    {
+                        self.show_materials = true;
+                    }
+                }
+                Tool::Ap => {
+                    ui.label(
+                        egui::RichText::new(t("Modelo para nuevos APs", "Model for new APs"))
+                            .color(p.muted),
+                    );
+                    catalog_ui::model_combo(
+                        ui,
+                        "new-ap-model",
+                        &self.catalog.catalog,
+                        &mut self.catalog.new_ap_model,
+                        t("Genérico", "Generic"),
+                    );
+                    ui.label(
+                        egui::RichText::new(t(
+                            "Clic en el plano para colocar un AP. Sus radios se llenan con los datos del modelo.",
+                            "Click on the plan to place an AP. Its radios are filled from the model.",
+                        ))
+                        .color(p.muted),
+                    );
+                    if ui
+                        .button(format!(
+                            "{}  {}",
+                            icon::BOOK_OPEN,
+                            t("Ver catálogo…", "Browse catalog…")
+                        ))
+                        .clicked()
+                    {
+                        self.catalog.open = true;
+                    }
+                }
+                Tool::Calibrate => {
+                    match doc.project.plan.calibration {
+                        Some(c) => {
+                            style::badge(
+                                ui,
+                                &format!(
+                                    "{} · {:.1} px/m",
+                                    t("Calibrada", "Calibrated"),
+                                    c.px_per_m()
+                                ),
+                                p.success,
+                            );
+                        }
+                        None => {
+                            style::badge(ui, t("Sin calibrar", "Not calibrated"), p.warning);
+                        }
+                    }
+                    ui.label(
+                        egui::RichText::new(t(
+                            "Haz clic en dos puntos cuya distancia real conozcas (una puerta, una cota) y escribe la distancia.",
+                            "Click two points whose real distance you know (a door, a dimension) and type the distance.",
+                        ))
+                        .color(p.muted),
+                    );
+                }
+                Tool::Survey => {
+                    ui.label(
+                        egui::RichText::new(t(
+                            "Párate en un lugar, haz clic en tu posición en el plano y espera a que termine el escaneo.",
+                            "Stand somewhere, click your position on the plan and wait for the scan to finish.",
+                        ))
+                        .color(p.muted),
+                    );
+                    if ui
+                        .button(format!(
+                            "{}  {}",
+                            icon::CELL_SIGNAL_HIGH,
+                            t("Panel de mediciones", "Survey panel")
+                        ))
+                        .clicked()
+                    {
+                        self.right_tab = RightTab::Survey;
+                    }
                 }
             }
-            Tool::Ap => {
-                ui.label(t("Modelo para nuevos APs", "Model for new APs"));
-                catalog_ui::model_combo(
-                    ui,
-                    "new-ap-model",
-                    &self.catalog.catalog,
-                    &mut self.catalog.new_ap_model,
-                    t("Genérico", "Generic"),
-                );
-                ui.weak(t(
-                    "Clic en el plano para colocar un AP. Sus radios se llenan con los datos del modelo.",
-                    "Click on the plan to place an AP. Its radios are filled from the model.",
-                ));
-                if ui.button(t("Ver catálogo…", "Browse catalog…")).clicked() {
-                    self.catalog.open = true;
-                }
-            }
-            Tool::Calibrate => {
-                match doc.project.plan.calibration {
-                    Some(c) => ui.label(format!(
-                        "{} {:.1} px/m",
-                        t("Escala actual:", "Current scale:"),
-                        c.px_per_m()
-                    )),
-                    None => ui.colored_label(
-                        ui.visuals().warn_fg_color,
-                        t("Escala sin calibrar", "Scale not calibrated"),
+        });
+
+        // Project summary.
+        let coverage = self.heat.field.as_ref().and_then(|f| f.coverage);
+        let p2 = &doc.project;
+        ui.add_space(6.0);
+        style::section(ui, t("Resumen", "Summary"));
+        style::card(ui, |ui| {
+            ui.columns(3, |cols| {
+                let (cov, color) = match coverage {
+                    Some(c) if !p2.aps.is_empty() => (
+                        format!("{:.0}%", c * 100.0),
+                        if c >= 0.95 {
+                            p.success
+                        } else if c >= 0.8 {
+                            p.warning
+                        } else {
+                            p.danger
+                        },
                     ),
+                    _ => ("—".to_owned(), p.muted),
                 };
-                ui.weak(t(
-                    "Haz clic en dos puntos cuya distancia real conozcas (una puerta, una cota) y escribe la distancia.",
-                    "Click two points whose real distance you know (a door, a dimension) and type the distance.",
-                ));
-            }
-            Tool::Survey => {
-                ui.weak(t(
-                    "Párate en un lugar, haz clic en tu posición en el plano y espera a que termine el escaneo.",
-                    "Stand somewhere, click your position on the plan and wait for the scan to finish.",
-                ));
-                if ui
-                    .button(t("Abrir panel de mediciones", "Open survey panel"))
-                    .clicked()
-                {
-                    self.right_tab = RightTab::Survey;
-                }
-            }
-        }
-        ui.add_space(8.0);
-        if ui
-            .button(t("⛶  Ajustar vista", "⛶  Fit view"))
-            .on_hover_text("F")
-            .clicked()
-        {
-            self.fit_pending = true;
-        }
+                style::stat(&mut cols[0], &cov, t("cobertura", "coverage"), color);
+                style::stat(&mut cols[1], &p2.aps.len().to_string(), "APs", p.text);
+                style::stat(
+                    &mut cols[2],
+                    &p2.walls.len().to_string(),
+                    t("paredes", "walls"),
+                    p.text,
+                );
+            });
+        });
     }
 
-    /// Bar above the plan: what the heat map shows.
-    fn view_bar(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.checkbox(&mut self.heat.show, t("Mapa de calor", "Heat map"))
-                .on_hover_text("H");
-            ui.add_enabled_ui(self.heat.show, |ui| {
-                ui.separator();
-                ui.label(t("Mostrar", "Show"));
-                egui::ComboBox::from_id_salt("heatmap-metric")
-                    .selected_text(metric_label(self.heat.metric))
-                    .width(190.0)
-                    .show_ui(ui, |ui| {
-                        for (i, m) in MetricKind::ALL.into_iter().enumerate() {
-                            ui.selectable_value(&mut self.heat.metric, m, metric_label(m))
-                                .on_hover_text(format!(
-                                    "{}\n\n{}: {}",
-                                    metric_help(m),
-                                    t("Atajo", "Shortcut"),
-                                    i + 1
-                                ));
+    /// Controls floating over the floor plan: what the heat map shows,
+    /// zoom, cursor readout and notifications.
+    fn canvas_overlays(&mut self, ui: &mut egui::Ui, rect: egui::Rect) {
+        let p = style::palette(ui);
+        let ctx = ui.ctx().clone();
+        // ---- heat map bar (top center) ----
+        egui::Area::new(egui::Id::new("heat-bar"))
+            .fixed_pos(rect.center_top() + egui::vec2(0.0, 12.0))
+            .pivot(egui::Align2::CENTER_TOP)
+            .constrain_to(rect)
+            .show(&ctx, |ui| {
+                style::floating(ui).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        let on = self.heat.show;
+                        let toggle = egui::Button::new(format!(
+                            "{}  {}",
+                            if on { icon::EYE } else { icon::EYE_SLASH },
+                            t("Mapa de calor", "Heat map")
+                        ))
+                        .selected(on);
+                        if ui.add(toggle).on_hover_text("H").clicked() {
+                            self.heat.show = !on;
                         }
-                    })
-                    .response
-                    .on_hover_text(metric_help(self.heat.metric));
-                ui.label(t("Banda", "Band"));
-                egui::ComboBox::from_id_salt("heatmap-band")
-                    .selected_text(self.heat.band.label())
-                    .width(90.0)
-                    .show_ui(ui, |ui| {
-                        for b in Band::ALL {
-                            ui.selectable_value(&mut self.heat.band, b, b.label());
+                        ui.add_enabled_ui(on, |ui| {
+                            egui::ComboBox::from_id_salt("heatmap-metric")
+                                .selected_text(metric_label(self.heat.metric))
+                                .width(175.0)
+                                .show_ui(ui, |ui| {
+                                    for (i, m) in MetricKind::ALL.into_iter().enumerate() {
+                                        ui.selectable_value(
+                                            &mut self.heat.metric,
+                                            m,
+                                            metric_label(m),
+                                        )
+                                        .on_hover_text(
+                                            format!(
+                                                "{}\n\n{}: {}",
+                                                metric_help(m),
+                                                t("Atajo", "Shortcut"),
+                                                i + 1
+                                            ),
+                                        );
+                                    }
+                                })
+                                .response
+                                .on_hover_text(metric_help(self.heat.metric));
+                            // Band as a segmented control.
+                            ui.horizontal(|ui| {
+                                ui.spacing_mut().item_spacing.x = 2.0;
+                                for b in Band::ALL {
+                                    ui.selectable_value(&mut self.heat.band, b, b.label());
+                                }
+                            });
+                            egui::ComboBox::from_id_salt("heatmap-source")
+                                .selected_text(format!(
+                                    "{}  {}",
+                                    source_icon(self.heat.source),
+                                    source_label(self.heat.source)
+                                ))
+                                .width(132.0)
+                                .show_ui(ui, |ui| {
+                                    for s in Source::ALL {
+                                        ui.selectable_value(
+                                            &mut self.heat.source,
+                                            s,
+                                            format!("{}  {}", source_icon(s), source_label(s)),
+                                        )
+                                        .on_hover_text(source_help(s));
+                                    }
+                                })
+                                .response
+                                .on_hover_text(source_help(self.heat.source));
+                            // Opacity only when there is room for it.
+                            if rect.width() > 820.0 {
+                                ui.label(egui::RichText::new(icon::CIRCLE_HALF).color(p.muted))
+                                    .on_hover_text(t("Opacidad", "Opacity"));
+                                ui.spacing_mut().slider_width = 64.0;
+                                ui.add(
+                                    egui::Slider::new(&mut self.heat.opacity, 0.1..=1.0)
+                                        .show_value(false),
+                                )
+                                .on_hover_text(t("Opacidad", "Opacity"));
+                            }
+                        });
+                        if self.worker.busy() {
+                            ui.spinner();
                         }
                     });
-                ui.label(t("Datos", "Data"));
-                egui::ComboBox::from_id_salt("heatmap-source")
-                    .selected_text(source_label(self.heat.source))
-                    .width(150.0)
-                    .show_ui(ui, |ui| {
-                        for s in Source::ALL {
-                            ui.selectable_value(&mut self.heat.source, s, source_label(s))
-                                .on_hover_text(source_help(s));
-                        }
-                    })
-                    .response
-                    .on_hover_text(source_help(self.heat.source));
-                ui.label(t("Opacidad", "Opacity"));
-                ui.add(egui::Slider::new(&mut self.heat.opacity, 0.1..=1.0).show_value(false));
+                });
             });
-        });
+
+        // ---- empty state ----
+        if let Some(doc) = &self.doc {
+            if self.heat.show && doc.project.aps.is_empty() {
+                egui::Area::new(egui::Id::new("empty-hint"))
+                    .fixed_pos(rect.center_top() + egui::vec2(0.0, 72.0))
+                    .pivot(egui::Align2::CENTER_TOP)
+                    .interactable(false)
+                    .show(&ctx, |ui| {
+                        style::floating(ui).show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                ui.label(egui::RichText::new(icon::LIGHTBULB).color(p.warning).size(16.0));
+                                ui.label(t(
+                                    "Coloca puntos de acceso con la herramienta AP (A) para ver el mapa de calor",
+                                    "Place access points with the AP tool (A) to see the heat map",
+                                ));
+                            });
+                        });
+                    });
+            }
+        }
+
+        // ---- zoom (bottom right) ----
+        egui::Area::new(egui::Id::new("zoom-bar"))
+            .fixed_pos(rect.right_bottom() - egui::vec2(12.0, 12.0))
+            .pivot(egui::Align2::RIGHT_BOTTOM)
+            .show(&ctx, |ui| {
+                style::floating(ui).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 2.0;
+                        let center = rect.center();
+                        if style::icon_button(
+                            ui,
+                            icon::MAGNIFYING_GLASS_MINUS,
+                            t("Alejar", "Zoom out"),
+                        )
+                        .clicked()
+                        {
+                            self.view.zoom_around(center, 1.0 / 1.25);
+                            self.canvas.stop_auto_fit();
+                        }
+                        let fit_zoom = self
+                            .doc
+                            .as_ref()
+                            .map(|d| {
+                                let plan = &d.project.plan;
+                                View::fit(
+                                    rect,
+                                    egui::vec2(plan.width_px as f32, plan.height_px as f32),
+                                )
+                                .zoom
+                            })
+                            .unwrap_or(1.0);
+                        let pct = (self.view.zoom / fit_zoom * 100.0).round();
+                        ui.add_sized(
+                            [52.0, 30.0],
+                            egui::Label::new(
+                                egui::RichText::new(format!("{pct:.0} %")).color(p.muted),
+                            ),
+                        );
+                        if style::icon_button(
+                            ui,
+                            icon::MAGNIFYING_GLASS_PLUS,
+                            t("Acercar", "Zoom in"),
+                        )
+                        .clicked()
+                        {
+                            self.view.zoom_around(center, 1.25);
+                            self.canvas.stop_auto_fit();
+                        }
+                        if style::icon_button(
+                            ui,
+                            icon::CORNERS_OUT,
+                            t("Ajustar a la ventana (F)", "Fit to window (F)"),
+                        )
+                        .clicked()
+                        {
+                            self.fit_pending = true;
+                        }
+                    });
+                });
+            });
+
+        // ---- cursor readout / tool hint (bottom center) ----
+        let readout = self.canvas.hover_text.take();
+        // A notification takes this spot while it is shown.
+        if self.status.is_some() {
+            return;
+        }
+        // Above the legend and zoom row, so nothing overlaps.
+        egui::Area::new(egui::Id::new("readout"))
+            .fixed_pos(rect.center_bottom() - egui::vec2(0.0, 92.0))
+            .pivot(egui::Align2::CENTER_BOTTOM)
+            .interactable(false)
+            .show(&ctx, |ui| {
+                style::floating(ui).show(ui, |ui| {
+                    ui.set_max_width((rect.width() - 48.0).min(620.0));
+                    ui.horizontal(|ui| match &readout {
+                        Some(text) => {
+                            ui.label(egui::RichText::new(icon::CROSSHAIR).color(p.muted));
+                            ui.label(text);
+                        }
+                        None => {
+                            ui.label(egui::RichText::new(self.tool.icon()).color(p.accent));
+                            ui.label(egui::RichText::new(self.tool.hint()).color(p.muted));
+                        }
+                    });
+                });
+            });
     }
 
-    fn status_bar(&mut self, ui: &mut egui::Ui) {
-        if self.status_at.is_some_and(|t| t.elapsed() > STATUS_TTL) {
+    /// Notification in the bottom-right corner of the window, fading out.
+    fn toast(&mut self, ctx: &egui::Context, area: egui::Rect) {
+        let (Some((msg, is_error)), Some(at)) = (self.status.clone(), self.status_at) else {
+            return;
+        };
+        let age = at.elapsed();
+        if age > STATUS_TTL {
             self.status = None;
             self.status_at = None;
+            return;
         }
-        // Right-to-left so the readouts keep their space and the message
-        // on the left is truncated instead of overlapping them.
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if self.worker.busy() {
-                ui.spinner();
-            }
-            if let Some(c) = self.heat.field.as_ref().and_then(|f| f.coverage) {
-                let req = self.doc.as_ref().map(|d| d.project.requirements);
-                let tip = req.map_or(String::new(), |r| {
-                    format!(
-                        "{} ≥ {:.0} dBm, SNR ≥ {:.0} dB",
-                        t("Área que cumple: señal", "Area meeting: signal"),
-                        r.min_rssi.0,
-                        r.min_snr.0
-                    )
-                });
-                ui.label(format!("{} {:.0} %", t("Cobertura", "Coverage"), c * 100.0))
-                    .on_hover_text(tip);
-                ui.separator();
-            }
-            if let Some(text) = self.canvas.hover_text.take() {
-                ui.weak(text);
-            }
-            ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                let (text, color) = match &self.status {
-                    Some((msg, true)) => (msg.as_str(), ui.visuals().error_fg_color),
-                    Some((msg, false)) => (msg.as_str(), ui.visuals().text_color()),
-                    None => (self.tool.hint(), ui.visuals().weak_text_color()),
+        let fade =
+            1.0 - ((age.as_secs_f32() - (STATUS_TTL.as_secs_f32() - 0.6)) / 0.6).clamp(0.0, 1.0);
+        ctx.request_repaint_after(Duration::from_millis(50));
+        egui::Area::new(egui::Id::new("toast"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(area.center_bottom() - egui::vec2(0.0, 92.0))
+            .pivot(egui::Align2::CENTER_BOTTOM)
+            .show(ctx, |ui| {
+                ui.set_opacity(fade);
+                let p = style::palette(ui);
+                let (glyph, color) = if is_error {
+                    (icon::WARNING_CIRCLE, p.danger)
+                } else {
+                    (icon::CHECK_CIRCLE, p.success)
                 };
-                ui.add(egui::Label::new(egui::RichText::new(text).color(color)).truncate());
+                style::floating(ui)
+                    .inner_margin(egui::Margin::symmetric(14, 10))
+                    .show(ui, |ui| {
+                        ui.set_max_width(420.0);
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new(glyph).size(18.0).color(color));
+                            ui.add(egui::Label::new(msg).wrap());
+                            if style::icon_button(ui, icon::X, t("Cerrar", "Dismiss")).clicked() {
+                                self.status = None;
+                                self.status_at = None;
+                            }
+                        });
+                    });
             });
-        });
     }
 
     fn request_heatmap(&mut self) {
@@ -1094,50 +1485,101 @@ impl eframe::App for OndaluxApp {
         survey_ui::poll(self);
         export_ui::poll(self);
 
-        egui::Panel::top("menu").show(ui, |ui| self.menu_bar(ui));
-        egui::Panel::bottom("status").show(ui, |ui| self.status_bar(ui));
+        let p = style::palette(ui);
+        let side = |fill| {
+            egui::Frame::new()
+                .fill(fill)
+                .inner_margin(egui::Margin::symmetric(14, 12))
+                .stroke(egui::Stroke::new(1.0, p.border))
+        };
+        egui::Panel::top("header")
+            .frame(
+                egui::Frame::new()
+                    .fill(p.panel)
+                    .inner_margin(egui::Margin::symmetric(14, 6))
+                    .stroke(egui::Stroke::new(1.0, p.border)),
+            )
+            .show(ui, |ui| self.header(ui));
         if self.doc.is_some() {
             egui::Panel::left("tools")
                 .resizable(false)
-                .exact_size(200.0)
+                .exact_size(236.0)
+                .frame(side(p.panel))
                 .show(ui, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| self.tool_panel(ui));
                 });
             egui::Panel::right("inspector")
                 .resizable(true)
-                .default_size(320.0)
+                .default_size(340.0)
+                .min_size(300.0)
+                .frame(side(p.panel))
                 .show(ui, |ui| {
-                    ui.add_space(4.0);
-                    ui.horizontal(|ui| {
-                        ui.selectable_value(
-                            &mut self.right_tab,
-                            RightTab::Inspector,
-                            egui::RichText::new(t("Propiedades", "Properties")).strong(),
-                        );
-                        ui.selectable_value(
-                            &mut self.right_tab,
-                            RightTab::Survey,
-                            egui::RichText::new(t("Mediciones", "Survey")).strong(),
-                        );
-                    });
-                    ui.separator();
+                    // Segmented tabs.
+                    egui::Frame::new()
+                        .fill(p.surface)
+                        .corner_radius(10)
+                        .inner_margin(egui::Margin::same(3))
+                        .show(ui, |ui| {
+                            ui.columns(2, |cols| {
+                                for (col, tab, glyph, label) in [
+                                    (
+                                        0,
+                                        RightTab::Inspector,
+                                        icon::SLIDERS_HORIZONTAL,
+                                        t("Propiedades", "Properties"),
+                                    ),
+                                    (
+                                        1,
+                                        RightTab::Survey,
+                                        icon::CELL_SIGNAL_HIGH,
+                                        t("Mediciones", "Survey"),
+                                    ),
+                                ] {
+                                    let ui = &mut cols[col];
+                                    let on = self.right_tab == tab;
+                                    let text = format!("{glyph}  {label}");
+                                    let button = if on {
+                                        egui::Button::new(style::bold(text).color(p.text))
+                                            .fill(p.panel)
+                                            .stroke(egui::Stroke::new(1.0, p.border))
+                                    } else {
+                                        egui::Button::new(egui::RichText::new(text).color(p.muted))
+                                            .frame_when_inactive(false)
+                                    };
+                                    if ui
+                                        .add_sized(
+                                            [ui.available_width(), 30.0],
+                                            button.corner_radius(8),
+                                        )
+                                        .clicked()
+                                    {
+                                        self.right_tab = tab;
+                                    }
+                                }
+                            });
+                        });
+                    ui.add_space(6.0);
                     egui::ScrollArea::vertical().show(ui, |ui| match self.right_tab {
                         RightTab::Inspector => panels::inspector(self, ui),
                         RightTab::Survey => survey_ui::panel(self, ui),
                     });
                 });
-            egui::Panel::top("view").show(ui, |ui| self.view_bar(ui));
         }
+        let mut toast_area = ctx.content_rect();
         egui::CentralPanel::default()
-            .frame(egui::Frame::new().fill(ui.visuals().extreme_bg_color))
+            .frame(egui::Frame::new().fill(p.backdrop))
             .show(ui, |ui| {
+                let rect = ui.max_rect();
+                toast_area = rect;
                 if self.doc.is_some() {
                     crate::canvas::show(self, ui);
+                    self.canvas_overlays(ui, rect);
                 } else {
                     welcome(self, ui);
                 }
             });
 
+        self.toast(&ctx, toast_area);
         self.dialogs(&ctx);
         self.request_heatmap();
     }
@@ -1150,85 +1592,218 @@ fn file_name(path: &std::path::Path) -> String {
     )
 }
 
+/// Large clickable card with an icon, a title and one line of text.
+fn action_card(ui: &mut egui::Ui, glyph: &str, title: &str, text: &str, primary: bool) -> bool {
+    let p = style::palette(ui);
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(300.0, 104.0), egui::Sense::click());
+    let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
+    let hovered = response.hovered();
+    let painter = ui.painter();
+    let (fill, stroke) = match (primary, hovered) {
+        (true, _) => (p.accent_soft, egui::Stroke::new(1.5, p.accent)),
+        (false, true) => (p.surface_hover, egui::Stroke::new(1.0, p.accent)),
+        (false, false) => (p.surface, egui::Stroke::new(1.0, p.border)),
+    };
+    painter.rect(rect, 14.0, fill, stroke, egui::StrokeKind::Inside);
+    let circle = rect.left_center() + egui::vec2(42.0, 0.0);
+    painter.circle_filled(circle, 24.0, if primary { p.accent } else { p.accent_soft });
+    painter.text(
+        circle,
+        egui::Align2::CENTER_CENTER,
+        glyph,
+        egui::FontId::proportional(22.0),
+        if primary {
+            egui::Color32::WHITE
+        } else {
+            p.accent
+        },
+    );
+    let x = rect.left() + 82.0;
+    painter.text(
+        egui::pos2(x, rect.center().y - 10.0),
+        egui::Align2::LEFT_CENTER,
+        title,
+        egui::FontId::new(16.0, style::semibold()),
+        p.text,
+    );
+    painter.text(
+        egui::pos2(x, rect.center().y + 13.0),
+        egui::Align2::LEFT_CENTER,
+        text,
+        egui::FontId::proportional(13.0),
+        p.muted,
+    );
+    response.clicked()
+}
+
 fn welcome(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
-    ui.vertical_centered(|ui| {
-        ui.add_space((ui.available_height() * 0.08).max(20.0));
-        let logo = app.logo_texture(&ctx);
-        ui.add(egui::Image::new(&logo).fit_to_exact_size(egui::vec2(96.0, 96.0)));
-        ui.add_space(8.0);
-        ui.label(egui::RichText::new("Ondalux Heatmap").size(34.0).strong());
-        ui.label(
-            egui::RichText::new(t(
-                "Diseño y medición de redes WiFi con mapas de calor",
-                "WiFi network design and survey with heat maps",
-            ))
-            .size(17.0)
-            .weak(),
-        );
-        ui.add_space(26.0);
-        if style::primary_button(
-            ui,
-            t(
-                "Nuevo proyecto desde un plano…",
-                "New project from a floor plan…",
-            ),
-        )
-        .clicked()
-        {
-            app.guarded(&ctx, Pending::NewFromPlan);
-        }
-        ui.add_space(4.0);
-        if ui
-            .add_sized(
-                [ui.available_width().min(320.0), 32.0],
-                egui::Button::new(t("Abrir proyecto…", "Open project…")),
-            )
-            .clicked()
-        {
-            app.guarded(&ctx, Pending::Open);
-        }
-        ui.add_space(34.0);
-        ui.label(egui::RichText::new(t("Cómo funciona", "How it works")).strong());
-        ui.add_space(4.0);
-        let steps = [
-            t(
-                "Importa el plano (PNG, JPG o PDF).",
-                "Import the floor plan (PNG, JPG or PDF).",
-            ),
-            t(
-                "Calibra la escala con una distancia conocida.",
-                "Calibrate the scale with a known distance.",
-            ),
-            t(
-                "Dibuja las paredes eligiendo su material.",
-                "Draw the walls, choosing their material.",
-            ),
-            t(
-                "Coloca los puntos de acceso y revisa la cobertura.",
-                "Place access points and check the coverage.",
-            ),
-            t(
-                "Opcional: mide en sitio y compara.",
-                "Optional: survey on site and compare.",
-            ),
-            t("Exporta el reporte PDF.", "Export the PDF report."),
-        ];
-        egui::Frame::group(ui.style())
-            .inner_margin(12.0)
-            .show(ui, |ui| {
-                ui.set_width(420.0);
-                for (i, s) in steps.iter().enumerate() {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new(format!("{}", i + 1))
-                                .strong()
-                                .color(style::ACCENT),
-                        );
-                        ui.label(*s);
-                    });
-                }
+    let p = style::palette(ui);
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        ui.vertical_centered(|ui| {
+            ui.add_space((ui.available_height() * 0.07).max(24.0));
+            let logo = app.logo_texture(&ctx);
+            ui.add(egui::Image::new(&logo).fit_to_exact_size(egui::vec2(88.0, 88.0)));
+            ui.add_space(10.0);
+            ui.label(style::bold("Ondalux Heatmap").size(32.0));
+            ui.label(
+                egui::RichText::new(t(
+                    "Diseña y mide redes WiFi con mapas de calor",
+                    "Design and survey WiFi networks with heat maps",
+                ))
+                .size(16.0)
+                .color(p.muted),
+            );
+            ui.add_space(28.0);
+
+            // Two main actions, side by side.
+            let width = 300.0 * 2.0 + 16.0;
+            ui.allocate_ui(egui::vec2(width, 104.0), |ui| {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 16.0;
+                    if action_card(
+                        ui,
+                        icon::FILE_PLUS,
+                        t("Nuevo proyecto", "New project"),
+                        t(
+                            "Empieza importando un plano",
+                            "Start by importing a floor plan",
+                        ),
+                        true,
+                    ) {
+                        app.guarded(&ctx, Pending::NewFromPlan);
+                    }
+                    if action_card(
+                        ui,
+                        icon::FOLDER_OPEN,
+                        t("Abrir proyecto", "Open project"),
+                        t("Archivo .lux guardado", "A saved .lux file"),
+                        false,
+                    ) {
+                        app.guarded(&ctx, Pending::Open);
+                    }
+                });
             });
+
+            // Recent projects.
+            let recent: Vec<PathBuf> = app
+                .prefs
+                .recent
+                .iter()
+                .filter(|p| p.exists())
+                .cloned()
+                .collect();
+            if !recent.is_empty() {
+                ui.add_space(24.0);
+                ui.allocate_ui(egui::vec2(width, 0.0), |ui| {
+                    ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
+                        style::section(ui, t("Recientes", "Recent"));
+                        let mut open = None;
+                        style::card(ui, |ui| {
+                            ui.spacing_mut().item_spacing.y = 2.0;
+                            for path in &recent {
+                                let name = path
+                                    .file_stem()
+                                    .map_or_else(String::new, |s| s.to_string_lossy().into_owned());
+                                let folder = path
+                                    .parent()
+                                    .map_or_else(String::new, |d| d.display().to_string());
+                                let r = recent_row(ui, &name, &folder)
+                                    .on_hover_text(path.display().to_string());
+                                if r.clicked() {
+                                    open = Some(path.clone());
+                                }
+                            }
+                        });
+                        if let Some(path) = open {
+                            app.open_path(&ctx, path);
+                        }
+                    });
+                });
+            }
+
+            // How it works.
+            ui.add_space(28.0);
+            ui.allocate_ui(egui::vec2(width, 0.0), |ui| {
+                ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
+                    style::section(ui, t("Cómo funciona", "How it works"));
+                    let steps = [
+                        (
+                            icon::IMAGE,
+                            t("Importa el plano", "Import the floor plan"),
+                            t("PNG, JPG o PDF", "PNG, JPG or PDF"),
+                        ),
+                        (
+                            icon::RULER,
+                            t("Calibra la escala", "Calibrate the scale"),
+                            t("Con una distancia conocida", "With a known distance"),
+                        ),
+                        (
+                            icon::WALL,
+                            t("Dibuja las paredes", "Draw the walls"),
+                            t("Eligiendo su material", "Choosing their material"),
+                        ),
+                        (
+                            icon::BROADCAST,
+                            t("Coloca los APs", "Place the APs"),
+                            t("Y revisa la cobertura", "And check the coverage"),
+                        ),
+                        (
+                            icon::CELL_SIGNAL_HIGH,
+                            t("Mide en sitio", "Survey on site"),
+                            t("Opcional: compara", "Optional: compare"),
+                        ),
+                        (
+                            icon::FILE_PDF,
+                            t("Exporta el reporte", "Export the report"),
+                            t("PDF con mapas y hallazgos", "PDF with maps and findings"),
+                        ),
+                    ];
+                    egui::Grid::new("how-it-works")
+                        .num_columns(3)
+                        .spacing([12.0, 12.0])
+                        .show(ui, |ui| {
+                            for (i, (glyph, title, text)) in steps.iter().enumerate() {
+                                egui::Frame::new()
+                                    .fill(p.surface)
+                                    .stroke(egui::Stroke::new(1.0, p.border))
+                                    .corner_radius(12)
+                                    .inner_margin(egui::Margin::same(12))
+                                    .show(ui, |ui| {
+                                        let w = (width - 24.0) / 3.0 - 24.0;
+                                        ui.set_min_width(w);
+                                        ui.set_max_width(w);
+                                        ui.vertical(|ui| {
+                                            ui.spacing_mut().item_spacing.y = 2.0;
+                                            ui.horizontal(|ui| {
+                                                ui.label(
+                                                    egui::RichText::new(*glyph)
+                                                        .size(20.0)
+                                                        .color(p.accent),
+                                                );
+                                                ui.label(
+                                                    egui::RichText::new(format!("{}", i + 1))
+                                                        .size(12.0)
+                                                        .color(p.muted),
+                                                );
+                                            });
+                                            ui.label(style::bold(*title));
+                                            ui.label(
+                                                egui::RichText::new(*text)
+                                                    .size(12.5)
+                                                    .color(p.muted),
+                                            );
+                                        });
+                                    });
+                                if i % 3 == 2 {
+                                    ui.end_row();
+                                }
+                            }
+                        });
+                });
+            });
+            ui.add_space(24.0);
+        });
     });
 }
 
@@ -1367,4 +1942,57 @@ fn source_help(s: Source) -> &'static str {
             "Measured − predicted. Red: the real signal is weaker than predicted. Blue: stronger.",
         ),
     }
+}
+
+fn source_icon(s: Source) -> &'static str {
+    match s {
+        Source::Predicted => icon::CHART_LINE,
+        Source::Measured => icon::CELL_SIGNAL_HIGH,
+        Source::Difference => icon::GIT_DIFF,
+    }
+}
+
+/// One recent project: file icon, name and (shortened) folder.
+fn recent_row(ui: &mut egui::Ui, name: &str, folder: &str) -> egui::Response {
+    let p = style::palette(ui);
+    let (rect, response) =
+        ui.allocate_exact_size(egui::vec2(ui.available_width(), 36.0), egui::Sense::click());
+    let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
+    let painter = ui.painter();
+    if response.hovered() {
+        painter.rect_filled(rect, 8.0, p.surface_hover);
+    }
+    painter.text(
+        rect.left_center() + egui::vec2(10.0, 0.0),
+        egui::Align2::LEFT_CENTER,
+        icon::FILE,
+        egui::FontId::proportional(17.0),
+        p.accent,
+    );
+    let name_rect = painter.text(
+        rect.left_center() + egui::vec2(36.0, 0.0),
+        egui::Align2::LEFT_CENTER,
+        name,
+        egui::FontId::new(14.0, style::semibold()),
+        p.text,
+    );
+    // Keep the end of long folders, which is the informative part.
+    let room = ((rect.right() - name_rect.right() - 24.0) / 6.5).max(8.0) as usize;
+    let chars: Vec<char> = folder.chars().collect();
+    let shown = if chars.len() > room {
+        format!(
+            "…{}",
+            chars[chars.len() - room + 1..].iter().collect::<String>()
+        )
+    } else {
+        folder.to_owned()
+    };
+    painter.text(
+        rect.right_center() - egui::vec2(10.0, 0.0),
+        egui::Align2::RIGHT_CENTER,
+        shown,
+        egui::FontId::proportional(12.0),
+        p.muted,
+    );
+    response
 }

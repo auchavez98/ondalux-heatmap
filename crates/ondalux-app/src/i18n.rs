@@ -77,6 +77,8 @@ pub enum ThemeChoice {
 pub struct UiPrefs {
     pub english: bool,
     pub theme: ThemeChoice,
+    /// Recently opened or saved projects, newest first.
+    pub recent: Vec<std::path::PathBuf>,
 }
 
 fn prefs_path() -> Option<std::path::PathBuf> {
@@ -84,6 +86,14 @@ fn prefs_path() -> Option<std::path::PathBuf> {
 }
 
 impl UiPrefs {
+    /// Moves `path` to the top of the recent projects (max. 6) and saves.
+    pub fn remember(&mut self, path: &std::path::Path) {
+        self.recent.retain(|p| p != path);
+        self.recent.insert(0, path.to_path_buf());
+        self.recent.truncate(6);
+        self.save();
+    }
+
     pub fn load() -> Self {
         prefs_path()
             .and_then(|p| std::fs::read_to_string(p).ok())
@@ -125,6 +135,7 @@ mod tests {
         let p = UiPrefs {
             english: true,
             theme: ThemeChoice::Light,
+            recent: vec!["a.lux".into()],
         };
         let s = serde_json::to_string(&p).unwrap();
         assert_eq!(serde_json::from_str::<UiPrefs>(&s).unwrap(), p);

@@ -84,4 +84,16 @@ fn ui_shots() {
     h.state_mut().show_materials = true;
     h.run_steps(4);
     save(&mut h, &dir, "08-materials");
+
+    h.state_mut().show_materials = false;
+    h.state_mut().set_tool(crate::app::Tool::Select);
+    h.state_mut().selection = Selection::Ap(ApId(2));
+    h.ctx.set_theme(eframe::egui::ThemePreference::Light);
+    h.run_steps(6);
+    save(&mut h, &dir, "09-light");
+
+    let mut h = harness(None);
+    h.ctx.set_theme(eframe::egui::ThemePreference::Light);
+    h.run_steps(6);
+    save(&mut h, &dir, "10-welcome-light");
 }

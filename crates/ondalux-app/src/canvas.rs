@@ -52,6 +52,11 @@ pub struct CanvasState {
 }
 
 impl CanvasState {
+    /// The user zoomed: stop refitting the plan when the canvas resizes.
+    pub fn stop_auto_fit(&mut self) {
+        self.auto_fit = false;
+    }
+
     pub fn cancel(&mut self) {
         self.wall_draft = None;
         self.calib_first = None;
@@ -154,6 +159,32 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         plan: &project.plan,
     };
     let plan_rect = app.view.image_rect(size);
+    // Dotted backdrop and a soft shadow under the plan.
+    let pal = if ui.visuals().dark_mode {
+        crate::style::DARK
+    } else {
+        crate::style::LIGHT
+    };
+    let dot = pal.border;
+    let step = 22.0;
+    let mut y = rect.top() + (step - (rect.top() % step));
+    while y < rect.bottom() {
+        let mut x = rect.left() + (step - (rect.left() % step));
+        while x < rect.right() {
+            painter.circle_filled(Pos2::new(x, y), 1.0, dot);
+            x += step;
+        }
+        y += step;
+    }
+    painter.add(
+        egui::Shadow {
+            offset: [0, 8],
+            blur: 28,
+            spread: 0,
+            color: Color32::from_black_alpha(if ui.visuals().dark_mode { 140 } else { 45 }),
+        }
+        .as_shape(plan_rect, 4.0),
+    );
     match &app.plan_texture {
         Some(tex) => {
             painter.image(
@@ -193,18 +224,6 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     draw_measurements(&painter, app, xf, ui.input(|i| i.time));
     draw_tool_overlay(app, &painter, xf, pointer, shift);
 
-    if app.heat.show && project.aps.is_empty() {
-        painter.text(
-            rect.center_top() + egui::vec2(0.0, 16.0),
-            Align2::CENTER_TOP,
-            t(
-                "Coloca puntos de acceso con la herramienta AP (A) para ver el mapa de calor",
-                "Place access points with the AP tool (A) to see the heat map",
-            ),
-            FontId::proportional(14.0),
-            ui.visuals().weak_text_color(),
-        );
-    }
     if let (true, Some(field)) = (app.heat.show, &app.heat.field) {
         draw_legend(
             &painter,
@@ -907,17 +926,23 @@ fn draw_legend(
     visuals: &egui::Visuals,
 ) {
     let stops = heatmap::stops(scale);
-    let width = 280.0;
-    let height = 58.0;
+    let pal = if visuals.dark_mode {
+        crate::style::DARK
+    } else {
+        crate::style::LIGHT
+    };
+    let width = 300.0;
+    let height = 66.0;
     let rect = Rect::from_min_size(
         canvas.left_bottom() + egui::vec2(12.0, -height - 12.0),
         egui::vec2(width, height),
     );
+    painter.add(visuals.popup_shadow.as_shape(rect, 12.0));
     painter.rect(
         rect,
-        6.0,
-        visuals.window_fill.gamma_multiply(0.92),
-        visuals.window_stroke,
+        12.0,
+        pal.panel,
+        Stroke::new(1.0, pal.border),
         StrokeKind::Inside,
     );
     let title = match scale {
@@ -951,15 +976,15 @@ fn draw_legend(
         _ => title,
     };
     painter.text(
-        rect.min + egui::vec2(8.0, 6.0),
+        rect.min + egui::vec2(12.0, 9.0),
         Align2::LEFT_TOP,
         title,
-        FontId::proportional(12.0),
-        visuals.text_color(),
+        FontId::new(12.5, crate::style::semibold()),
+        pal.text,
     );
     let bar = Rect::from_min_size(
-        rect.min + egui::vec2(8.0, 24.0),
-        egui::vec2(width - 16.0, 12.0),
+        rect.min + egui::vec2(12.0, 30.0),
+        egui::vec2(width - 24.0, 10.0),
     );
     let (lo, hi) = (stops[0].0, stops[stops.len() - 1].0);
     if heatmap::is_discrete(scale) {
@@ -970,9 +995,12 @@ fn draw_legend(
             let cell = Rect::from_min_max(Pos2::new(x0, bar.top()), Pos2::new(x1, bar.bottom()));
             painter.rect_filled(cell, 0.0, heatmap::color_at(scale, *v));
             let text = match scale {
-                Scale::Metric(MetricKind::Coverage) => {
-                    if *v > 0.5 { "meets" } else { "fails" }.to_owned()
+                Scale::Metric(MetricKind::Coverage) => if *v > 0.5 {
+                    t("cumple", "meets")
+                } else {
+                    t("no cumple", "fails")
                 }
+                .to_owned(),
                 _ if i == n - 1 => format!("{v:.0}+"),
                 _ => format!("{v:.0}"),
             };
@@ -981,7 +1009,7 @@ fn draw_legend(
                 Align2::CENTER_TOP,
                 text,
                 FontId::proportional(11.0),
-                visuals.text_color(),
+                pal.muted,
             );
         }
     } else {
@@ -1008,7 +1036,7 @@ fn draw_legend(
                 Align2::CENTER_TOP,
                 text,
                 FontId::proportional(11.0),
-                visuals.text_color(),
+                pal.muted,
             );
         }
     }
