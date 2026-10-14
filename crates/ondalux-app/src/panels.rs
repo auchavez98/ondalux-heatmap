@@ -7,6 +7,7 @@ use crate::app::{OndaluxApp, Selection, Tool};
 use crate::catalog_ui;
 use crate::i18n::{self, t};
 use crate::style;
+use crate::tr;
 use eframe::egui::{self, Color32, DragValue, RichText};
 use ondalux_core::ap::{AntennaPattern, ApId, Mount, Radio};
 use ondalux_core::channel::{Band, Channel, ChannelWidth, PerBand};
@@ -313,14 +314,14 @@ fn direction_dial(ui: &mut egui::Ui, deg: &mut f32) {
 /// Plain-language direction on the plan (screen up = "arriba").
 fn direction_name(deg: f32) -> &'static str {
     const NAMES: [(&str, &str); 8] = [
-        ("→ Derecha", "→ Right"),
-        ("↘ Abajo a la derecha", "↘ Down-right"),
-        ("↓ Abajo", "↓ Down"),
-        ("↙ Abajo a la izquierda", "↙ Down-left"),
-        ("← Izquierda", "← Left"),
-        ("↖ Arriba a la izquierda", "↖ Up-left"),
-        ("↑ Arriba", "↑ Up"),
-        ("↗ Arriba a la derecha", "↗ Up-right"),
+        ("Derecha", "Right"),
+        ("Abajo a la derecha", "Down-right"),
+        ("Abajo", "Down"),
+        ("Abajo a la izquierda", "Down-left"),
+        ("Izquierda", "Left"),
+        ("Arriba a la izquierda", "Up-left"),
+        ("Arriba", "Up"),
+        ("Arriba a la derecha", "Up-right"),
     ];
     let i = ((deg.rem_euclid(360.0) + 22.5) / 45.0) as usize % 8;
     t(NAMES[i].0, NAMES[i].1)
@@ -716,7 +717,8 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
     let mut open = true;
     egui::Window::new(t("Materiales de pared", "Wall materials"))
         .open(&mut open)
-        .default_width(540.0)
+        .default_width(600.0)
+        .min_width(600.0)
         .show(ctx, |ui| {
             ui.weak(t(
                 "Pérdida de señal al atravesar una pared de cada material, en dB. Son valores típicos: ajústalos a tu edificio.",
@@ -742,7 +744,8 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
                         .add(
                             egui::TextEdit::singleline(&mut name)
                                 .id_salt(("material-name", id.0))
-                                .desired_width(150.0),
+                                .desired_width(150.0)
+                                .min_size(egui::vec2(170.0, 0.0)),
                         )
                         .changed()
                     {
@@ -768,13 +771,37 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
             if let Some(id) = remove {
                 lib.remove(id);
             }
-            if ui.button(t("Agregar material", "Add material")).clicked() {
-                lib.add(
-                    t("Nuevo material", "New material"),
-                    [220, 120, 220, 255],
-                    PerBand::new(Db(5.0), Db(7.0), Db(8.0)),
-                );
-            }
+            let missing: Vec<_> = MaterialLibrary::default()
+                .iter()
+                .filter(|d| !lib.iter().any(|m| m.name == d.name))
+                .cloned()
+                .collect();
+            ui.horizontal(|ui| {
+                if ui.button(t("Agregar material", "Add material")).clicked() {
+                    lib.add(
+                        t("Nuevo material", "New material"),
+                        [220, 120, 220, 255],
+                        PerBand::new(Db(5.0), Db(7.0), Db(8.0)),
+                    );
+                }
+                if !missing.is_empty()
+                    && ui
+                        .button(tr!(
+                            "Agregar {} materiales comunes que faltan",
+                            "Add {} missing common materials",
+                            missing.len()
+                        ))
+                        .on_hover_text(t(
+                            "Puertas, block, vidrio Low-E, elevador, mamparas…",
+                            "Doors, concrete block, Low-E glass, elevator, cubicles…",
+                        ))
+                        .clicked()
+                {
+                    for m in missing {
+                        lib.add(m.name, m.color, m.attenuation);
+                    }
+                }
+            });
         });
     if lib != orig {
         doc.checkpoint_coalesced("materials");

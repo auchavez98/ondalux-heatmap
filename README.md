@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" width="112" alt="Ondalux Heatmap logo"></p>
+
 # Ondalux Heatmap
 
 Open source desktop tool for WiFi network design with heat maps, written in

@@ -165,6 +165,8 @@ pub struct OndaluxApp {
     status_at: Option<Instant>,
     pub prefs: UiPrefs,
     show_shortcuts: bool,
+    /// Logo texture, created on first use.
+    logo: Option<egui::TextureHandle>,
 }
 
 /// How long status bar messages stay visible.
@@ -215,6 +217,7 @@ impl OndaluxApp {
             status_at: None,
             prefs,
             show_shortcuts: false,
+            logo: None,
         };
         if let Some(e) = catalog_error {
             app.error(e);
@@ -231,6 +234,20 @@ impl OndaluxApp {
             }
         }
         app
+    }
+
+    /// The logo as a texture (rendered once at a size sharp on HiDPI screens).
+    fn logo_texture(&mut self, ctx: &egui::Context) -> egui::TextureHandle {
+        self.logo
+            .get_or_insert_with(|| {
+                let size = 192;
+                let image = egui::ColorImage::from_rgba_unmultiplied(
+                    [size as usize, size as usize],
+                    &crate::logo::rgba(size),
+                );
+                ctx.load_texture("ondalux-logo", image, egui::TextureOptions::LINEAR)
+            })
+            .clone()
     }
 
     /// True once a heat map has been computed and none is pending.
@@ -546,7 +563,9 @@ impl OndaluxApp {
         let ctx = ui.ctx().clone();
         let short = |m: Modifiers, k: Key| ctx.format_shortcut(&KeyboardShortcut::new(m, k));
         let has_doc = self.doc.is_some();
+        let logo = self.logo_texture(ui.ctx());
         egui::MenuBar::new().ui(ui, |ui| {
+            ui.add(egui::Image::new(&logo).fit_to_exact_size(egui::vec2(18.0, 18.0)));
             ui.menu_button(t("Archivo", "File"), |ui| {
                 if ui
                     .add(
@@ -1134,7 +1153,10 @@ fn file_name(path: &std::path::Path) -> String {
 fn welcome(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
     ui.vertical_centered(|ui| {
-        ui.add_space((ui.available_height() * 0.14).max(20.0));
+        ui.add_space((ui.available_height() * 0.08).max(20.0));
+        let logo = app.logo_texture(&ctx);
+        ui.add(egui::Image::new(&logo).fit_to_exact_size(egui::vec2(96.0, 96.0)));
+        ui.add_space(8.0);
         ui.label(egui::RichText::new("Ondalux Heatmap").size(34.0).strong());
         ui.label(
             egui::RichText::new(t(

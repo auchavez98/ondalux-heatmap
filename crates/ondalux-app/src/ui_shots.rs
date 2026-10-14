@@ -3,9 +3,9 @@
 //!
 //! `ONDALUX_SHOTS=<dir> ONDALUX_DEMO=<demo.lux> cargo test -p ondalux-app ui_shots -- --ignored`
 
-use crate::app::{OndaluxApp, RightTab, Selection};
+use crate::app::{OndaluxApp, RightTab, Selection, Tool};
 use egui_kittest::Harness;
-use ondalux_core::ap::ApId;
+use ondalux_core::ap::{ApId, Mount};
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -68,4 +68,20 @@ fn ui_shots() {
     h.state_mut().export.report_open = true;
     h.run_steps(4);
     save(&mut h, &dir, "06-report");
+
+    h.state_mut().export.report_open = false;
+    if let Some(doc) = h.state_mut().doc.as_mut() {
+        let ap = &mut doc.project.aps[0];
+        ap.set_mount(Mount::Wall);
+        ap.orientation_deg = 90.0;
+    }
+    h.state_mut().selection = Selection::Ap(ApId(1));
+    settle(&mut h);
+    save(&mut h, &dir, "07-ap-wall");
+
+    h.state_mut().selection = Selection::None;
+    h.state_mut().set_tool(Tool::Wall);
+    h.state_mut().show_materials = true;
+    h.run_steps(4);
+    save(&mut h, &dir, "08-materials");
 }

@@ -738,17 +738,17 @@ fn draw_aps(painter: &egui::Painter, project: &Project, xf: Xf, selection: Selec
         } else {
             format!("{} · ch {}", ap.name, channels.join("/"))
         };
-        let galley_pos = p + egui::vec2(0.0, 13.0);
+        // Wall APs pointing down keep their label above, off the beam.
+        let above = ap.mount == Mount::Wall && ap.direction().y > 0.5;
+        let (galley_pos, align) = if above {
+            (p - egui::vec2(0.0, 16.0), Align2::CENTER_BOTTOM)
+        } else {
+            (p + egui::vec2(0.0, 13.0), Align2::CENTER_TOP)
+        };
         let font = FontId::proportional(12.0);
-        let text_rect = painter.text(
-            galley_pos,
-            Align2::CENTER_TOP,
-            &label,
-            font.clone(),
-            Color32::WHITE,
-        );
+        let text_rect = painter.text(galley_pos, align, &label, font.clone(), Color32::WHITE);
         painter.rect_filled(text_rect.expand(2.0), 3.0, Color32::from_black_alpha(170));
-        painter.text(galley_pos, Align2::CENTER_TOP, label, font, Color32::WHITE);
+        painter.text(galley_pos, align, label, font, Color32::WHITE);
     }
 }
 
@@ -773,7 +773,7 @@ fn draw_wall_mount(
         let a = base - half + 2.0 * half * i as f32 / 16.0;
         fan.push(p + egui::vec2(a.cos(), a.sin()) * radius);
     }
-    let alpha = if selected { 70 } else { 40 };
+    let alpha = if selected { 110 } else { 70 };
     painter.add(Shape::convex_polygon(
         fan,
         Color32::from_rgba_unmultiplied(fill.r(), fill.g(), fill.b(), alpha),
