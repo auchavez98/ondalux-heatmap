@@ -8,7 +8,7 @@ values. Every value can still be edited per AP.
 ## Where the values come from
 
 Every model has a `source` URL. Values were taken from the vendor's own
-datasheet or specification page, retrieved on 2026-10-13. It currently holds 105 models from 14 vendors: Ubiquiti (22), TP-Link Omada (20), Grandstream (18), HPE Aruba Networking (17), Cisco Catalyst (9), Cisco Meraki (4), EnGenius (4), Huawei (3), Cambium (2), Ruckus (2), Extreme Networks, MikroTik, Ruijie and Zyxel (1 each). A few are marked
+datasheet or specification page, retrieved on 2026-10-13. It currently holds 119 models from 15 vendors: Ubiquiti (22), TP-Link Omada (20), Grandstream (18), HPE Aruba Networking (17), Fortinet FortiAP (14, added 2026-10-16 from the FortiAP Series data sheet), Cisco Catalyst (9), Cisco Meraki (4), EnGenius (4), Huawei (3), Cambium (2), Ruckus (2), Extreme Networks, MikroTik, Ruijie and Zyxel (1 each). A few are marked
 otherwise in their `notes`:
 
 - **HPE Aruba Networking:** the official PDFs could not be downloaded
@@ -26,10 +26,9 @@ otherwise in their `notes`:
 
 Models whose datasheet does not publish a maximum transmit power are **not**
 included rather than guessed. Examples found during research: Ruckus R650,
-Juniper Mist AP45, NETGEAR WAX620, Fortinet FortiAP 231F, Ruijie
+Juniper Mist AP45, NETGEAR WAX620, Ruijie
 RG-RAP2260(G), Grandstream GWN7673, Cisco Meraki MR57, Cambium XV2-21X,
-Extreme AP410C. Fortinet's series data sheet is a 10 MB PDF that could not
-be processed automatically. You can add them as custom models once you have their figures.
+Extreme AP410C. You can add them as custom models once you have their figures.
 
 ## How the figures are used
 

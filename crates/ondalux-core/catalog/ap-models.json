@@ -794,6 +794,155 @@
         { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 3.2, "spatial_streams": 2, "max_width": "40" },
         { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "80" } ],
       "tx_power_basis": "aggregate_conducted", "source": "https://www.securewirelessworks.com/aruba-ap-565.asp",
-      "notes": "23 dBm per chain; max EIRP 29.2 / 31.4 dBm. Aruba data sheet as reproduced by the reseller." }
+      "notes": "23 dBm per chain; max EIRP 29.2 / 31.4 dBm. Aruba data sheet as reproduced by the reseller." },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 441K", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 29, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27.8, "antenna_gain_dbi": 5.6, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.4, "spatial_streams": 4, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Internal antennas. 6 GHz power stated at 160 MHz. The 5 GHz radio also supports 240 MHz (not modelled; 160 MHz used). Four radios (fourth is a scanning radio)."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 443K", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 29, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 27.8, "antenna_gain_dbi": 5, "spatial_streams": 4, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.8, "spatial_streams": 4, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. External antennas (RP-SMA); gains of the included dual-band and 6 GHz antennas. 6 GHz power stated at 160 MHz; 6 GHz use subject to regional approval. 5 GHz 240 MHz not modelled."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 241K", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4.7, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.4, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.7, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Internal antennas. 6 GHz power stated at 320 MHz. 5 GHz 240 MHz not modelled. Four radios (fourth is a scanning radio)."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 243K", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4.5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.7, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.25, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. External omni antennas. 6 GHz power stated at 320 MHz. 5 GHz 240 MHz not modelled."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 231K", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 4.2, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 5.1, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Internal antennas. 6 GHz power stated at 320 MHz."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 221K", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 5.7, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 5.9, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Dual-band, internal antennas."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 23JK", "standard": "Wi-Fi 7", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4.4, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 3.6, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Wall-plate AP: consider Wall mounting. 6 GHz power stated at 320 MHz."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 244K", "standard": "Wi-Fi 7", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 8.8, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 9.4, "spatial_streams": 2, "max_width": "160" },
+        { "band": "6GHz", "max_tx_power_dbm": 23, "antenna_gain_dbi": 8.5, "spatial_streams": 2, "max_width": "320" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Ruggedized outdoor AP with internal directional antennas: use Wall mounting with a directional pattern. 5 GHz 240 MHz not modelled."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 222KL", "standard": "Wi-Fi 7", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 25, "antenna_gain_dbi": 5, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6.5, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Ruggedized outdoor AP with external N-type antennas; gains of the Wi-Fi antennas listed in the data sheet. 5 GHz 240 MHz not modelled."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 432G", "standard": "Wi-Fi 6E", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 29.8, "antenna_gain_dbi": 5.1, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 29.8, "antenna_gain_dbi": 6.4, "spatial_streams": 4, "max_width": "80" },
+        { "band": "6GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Indoor/outdoor, external antennas (dual-band and tri-band gains). 6 GHz power stated at 160 MHz. The third radio can also serve 5 GHz at up to 160 MHz."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 234G", "standard": "Wi-Fi 6E", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 6.8, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 26, "antenna_gain_dbi": 8.4, "spatial_streams": 2, "max_width": "80" },
+        { "band": "6GHz", "max_tx_power_dbm": 20.5, "antenna_gain_dbi": 5.5, "spatial_streams": 2, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Indoor/outdoor, internal cross-dipole antennas. The data sheet gives 6 GHz as 26 dBm EIRP; converted to conducted with the 5.5 dBi dual-band antenna gain (20.5 dBm)."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 831F", "standard": "Wi-Fi 6", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 27, "antenna_gain_dbi": 4, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 25.5, "antenna_gain_dbi": 6, "spatial_streams": 8, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. 8x8 on 5 GHz in mode 1 (or 4x4+4x4). Third radio is a scanning radio."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 432FR", "standard": "Wi-Fi 6", "environment": "outdoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 29, "antenna_gain_dbi": 5.5, "spatial_streams": 4, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 28, "antenna_gain_dbi": 7.2, "spatial_streams": 4, "max_width": "160" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Indoor/outdoor/industrial AP with external antennas. 5 GHz is 4x4 up to 80 MHz and 2x2 at 160 MHz."
+    },
+    {
+      "vendor": "Fortinet", "model": "FortiAP 23JF", "standard": "Wi-Fi 6", "environment": "indoor",
+      "radios": [
+        { "band": "2.4GHz", "max_tx_power_dbm": 22, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "40" },
+        { "band": "5GHz", "max_tx_power_dbm": 21, "antenna_gain_dbi": 4, "spatial_streams": 2, "max_width": "80" }
+      ],
+      "tx_power_basis": "aggregate_conducted",
+      "source": "https://www.fortinet.com/content/dam/fortinet/assets/data-sheets/fortiap-series.pdf",
+      "notes": "FortiAP Series data sheet. Max TX power is conducted, all chains combined. Wall-plate AP: consider Wall mounting. The data sheet is inconsistent (2.4 GHz \"25 dBm / 158 mW\", 5 GHz \"21 dBm / 158 mW\"); the lower figure of each pair is used (22 and 21 dBm)."
+    }
   ]
 }
