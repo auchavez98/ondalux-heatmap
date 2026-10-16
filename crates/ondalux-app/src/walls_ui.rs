@@ -320,8 +320,8 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
             ui.add_space(4.0);
             ui.label(
                 egui::RichText::new(t(
-                    "Detecta muros horizontales y verticales; los diagonales o curvos dibújalos a mano. Es una propuesta: revísala antes de confiar en el mapa de calor.",
-                    "Finds horizontal and vertical walls; draw diagonal or curved ones by hand. It is a proposal: review it before trusting the heat map.",
+                    "Detecta muros rectos (también diagonales) y aproxima los curvos con tramos rectos. Es una propuesta: revísala antes de confiar en el mapa de calor.",
+                    "Finds straight walls (diagonal ones too) and approximates curved walls with straight pieces. It is a proposal: review it before trusting the heat map.",
                 ))
                 .size(12.0)
                 .color(p.muted),
@@ -379,8 +379,8 @@ pub fn auto_detect_checkbox(ui: &mut egui::Ui, prefs: &mut UiPrefs) {
                 ),
             )
             .on_hover_text(t(
-                "Al importar un plano se propone el trazado de muros para que lo revises antes de agregarlo. Función beta: solo detecta muros horizontales y verticales.",
-                "When a plan is imported, walls are proposed for you to review before adding them. Beta feature: only horizontal and vertical walls are detected.",
+                "Al importar un plano se propone el trazado de muros para que lo revises antes de agregarlo. Función beta: detecta muros rectos, diagonales y curvos.",
+                "When a plan is imported, walls are proposed for you to review before adding them. Beta feature: detects straight, diagonal and curved walls.",
             ))
             .changed();
         beta_badge(ui);

@@ -23,7 +23,7 @@ real hardware. See [what works](#status) below.
 | Import floor plan: PNG, JPEG, first page of a PDF | ✅ |
 | Scale calibration (two points + known distance) | ✅ |
 | Draw walls with snapping; material library with editable dB per band (2.4/5/6 GHz) | ✅ |
-| Automatic wall detection (beta, opt-in) from vector PDF line art or the image, with preview and materials by thickness | ✅ horizontal and vertical walls; see [docs/wall-detection.md](docs/wall-detection.md) |
+| Automatic wall detection (beta, opt-in) from vector PDF line art or the image, with preview and materials by thickness | ✅ straight, diagonal and curved walls; see [docs/wall-detection.md](docs/wall-detection.md) |
 | Place / drag APs; radios with band, channel, width, Tx power, antenna gain; AP height | ✅ |
 | AP model catalog by vendor (119 models, 15 vendors, datasheet values with sources) + custom models | ✅ see [docs/ap-catalog.md](docs/ap-catalog.md) |
 | AP mounting (ceiling / wall) and pointing direction | ✅ wall APs use a simplified horizontal pattern; ceiling APs are omnidirectional |

@@ -45,6 +45,25 @@ results are scaled back to plan pixels.
    thickness (where another wall crosses); door openings, which are wider,
    stay open. Endpoints are snapped onto the center line of perpendicular
    walls so corners and T-junctions close.
+5. **Diagonal walls.** A reduced copy of the mask (≤ 700 px) is rotated in
+   2° steps between 10° and 84°; each angle is scored by the long,
+   wall-thick row runs it produces (a run scores its length, so a wall
+   exactly at that angle scores much more than one a few degrees off).
+   Clear local peaks (refined to 0.5°, at most four) are dominant angles.
+   For each, the full mask is rotated so those walls become horizontal or
+   vertical, steps 1–4 run again, and walls really at that angle are
+   rotated back and kept unless already found.
+6. **Curved walls.** Straight walls found so far are erased from the mask
+   (with a small margin), as are areas near solid fills. What is left is
+   thinned to one-pixel center lines (Zhang–Suen); a chamfer distance
+   transform gives the local thickness, and only center-line pixels of
+   wall thickness remain. Chains are traced from their end points; those
+   long and wide enough (≥ 3× the minimum length in both length and
+   extent, which drops letters and symbols) are simplified with
+   Douglas–Peucker (tolerance: half the wall thickness) into straight
+   pieces with the chain's median thickness.
+7. **Joining.** Loose ends of diagonal and curved walls are moved onto the
+   nearest wall within reach, so they connect.
 
 ### Automatic parameters
 
@@ -67,14 +86,19 @@ adding, and per wall afterwards.
 
 ## Limitations
 
-- Only horizontal and vertical walls; diagonal and curved walls must be
-  drawn by hand.
+- Diagonal walls are found only at angles that carry a lot of wall (up to
+  four dominant angles per plan); a single short diagonal may be missed.
+- Curved walls are approximated by straight pieces (within half a wall
+  thickness of the curve). Curves drawn as two thin lines are not filled,
+  so only solid or thick-stroke curves are found. Pieces at the ends of an
+  arc that are nearly straight may come out as short straight walls.
 - Windows, doors and glass partitions are not classified; openings stay as
   gaps.
 - Hatched or heavily furnished raster plans, photos and low-contrast scans
   give worse results; use a PDF exported from CAD when possible.
 - Measured on a synthetic CAD-style plan (exterior poché walls, partitions,
-  a double-line wall, doors, text, desks, dimensions, a dashed beam):
-  14/14 walls found with no false positives, both from the PDF line art
-  and from the rasterized image. Run on your own plans with
+  a double-line wall, a 45° partition, a curved reception wall, doors,
+  text, desks, dimensions, a dashed beam): every wall found, including the
+  diagonal and the curve, with no false positives, both from the PDF line
+  art and from the rasterized image. Run on your own plans with
   `cargo run --release -p ondalux-io --example detect_walls -- plan.pdf out.png`.

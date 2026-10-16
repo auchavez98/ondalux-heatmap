@@ -69,10 +69,16 @@ fn run(input: &Path, output: &Path, sensitivity: f32) {
         let half = (w.thickness_px / 2.0).max(1.0);
         let (x0, x1) = (w.a.x.min(w.b.x) - half, w.a.x.max(w.b.x) + half);
         let (y0, y1) = (w.a.y.min(w.b.y) - half, w.a.y.max(w.b.y) + half);
+        let (dx, dy) = (w.b.x - w.a.x, w.b.y - w.a.y);
+        let len2 = (dx * dx + dy * dy).max(1e-6);
         for y in y0.max(0.0) as u32..(y1 as u32).min(img.height()) {
             for x in x0.max(0.0) as u32..(x1 as u32).min(img.width()) {
-                let p = img.get_pixel_mut(x, y);
-                *p = image::Rgba([230, 40, 40, 255]);
+                // Distance from the pixel to the wall center line.
+                let (px, py) = (x as f32 + 0.5 - w.a.x, y as f32 + 0.5 - w.a.y);
+                let t = ((px * dx + py * dy) / len2).clamp(0.0, 1.0);
+                if (px - dx * t).hypot(py - dy * t) <= half {
+                    img.put_pixel(x, y, image::Rgba([230, 40, 40, 255]));
+                }
             }
         }
     }
@@ -123,6 +129,23 @@ fn synthetic_pdf() -> Vec<u8> {
     line(&mut c, t, 30.0, 7.0, 30.0, 15.0);
     line(&mut c, t, 45.0, 0.3, 45.0, 15.0);
     line(&mut c, t, 40.0, 15.0, 40.0, 39.7);
+    // A diagonal partition (45°) in the storage room.
+    line(&mut c, t, 45.0, 15.0, 55.0, 25.0);
+    // A curved reception wall: quarter circle, 6 m radius.
+    {
+        let (cx, cy, r, k) = (10.0, 39.7, 6.0, 0.5523);
+        c.push_str(&format!(
+            "{t:.2} w {:.1} {:.1} m {:.1} {:.1} {:.1} {:.1} {:.1} {:.1} c S\n",
+            x(cx + r),
+            y(cy),
+            x(cx + r),
+            y(cy - k * r),
+            x(cx + k * r),
+            y(cy - r),
+            x(cx),
+            y(cy - r)
+        ));
+    }
     // A wall drawn as two lines 20 cm apart (corridor wall).
     line(&mut c, 0.6, 0.3, 25.0, 39.7, 25.0);
     line(&mut c, 0.6, 0.3, 25.2, 39.7, 25.2);
