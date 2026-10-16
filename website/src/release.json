@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-16",
+  "notes": {
+    "en": [
+      "3D view: walls extruded at their real thickness over the heat map.",
+      "Multi-floor buildings: one plan per floor, slab loss and signal between floors.",
+      "Wall thickness in cm; the loss of solid materials follows the thickness.",
+      "Wall detection (beta) now finds diagonal and curved walls.",
+      "14 Fortinet FortiAP models (Wi-Fi 6, 6E and 7): 119 models in the catalog.",
+      "Reports cover every floor of the building.",
+      "Help menu links to the website and the GitHub repository; update notices."
+    ],
+    "es": [
+      "Vista 3D: muros levantados con su grosor real sobre el mapa de calor.",
+      "Edificios de varios pisos: un plano por piso, pérdida de losa y señal entre pisos.",
+      "Grosor de muros en cm; la pérdida de los materiales sólidos sigue al grosor.",
+      "La detección de muros (beta) ahora encuentra muros diagonales y curvos.",
+      "14 modelos Fortinet FortiAP (Wi-Fi 6, 6E y 7): 119 modelos en el catálogo.",
+      "Los reportes cubren todos los pisos del edificio.",
+      "El menú Ayuda enlaza al sitio y al repositorio de GitHub; avisos de nuevas versiones."
+    ]
+  }
+}

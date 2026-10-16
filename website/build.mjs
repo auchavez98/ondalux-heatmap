@@ -293,6 +293,26 @@ for (const lang of langs) {
   }
 }
 
+// ---- version.json: read by the app to tell users about new versions ----
+const release = JSON.parse(readFileSync(join(src, "release.json"), "utf8"));
+writeFileSync(
+  join(pub, "version.json"),
+  JSON.stringify(
+    {
+      version,
+      date: release.date,
+      download: { en: `${domain}/#download`, es: `${domain}/es/#download` },
+      file: `${domain}/downloads/${exe.name}`,
+      sha256: exe.sha256,
+      notes: release.notes,
+    },
+    null,
+    2,
+  ) + "
+",
+);
+console.log("wrote version.json");
+
 writeFileSync(
   join(pub, "sitemap.xml"),
   `<?xml version="1.0" encoding="UTF-8"?>
