@@ -918,7 +918,7 @@ fn draw_measurements(painter: &egui::Painter, app: &OndaluxApp, xf: Xf, time: f6
     }
 }
 
-fn draw_legend(
+pub(crate) fn draw_legend(
     painter: &egui::Painter,
     canvas: Rect,
     scale: Scale,

@@ -156,6 +156,7 @@ pub struct OndaluxApp {
     pub catalog: CatalogState,
     pub export: ExportState,
     pub walls: crate::walls_ui::WallDetectState,
+    pub view3d: crate::view3d::View3dState,
     pub show_materials: bool,
     pub show_settings: bool,
     show_about: bool,
@@ -211,6 +212,7 @@ impl OndaluxApp {
             catalog,
             export: ExportState::default(),
             walls: Default::default(),
+            view3d: Default::default(),
             show_materials: false,
             show_settings: false,
             show_about: false,
@@ -322,6 +324,7 @@ impl OndaluxApp {
         self.doc = doc;
         self.selection = Selection::None;
         self.walls = Default::default();
+        self.view3d = Default::default();
         self.canvas = CanvasState::default();
         self.heat.texture = None;
         self.heat.field = None;
@@ -547,6 +550,9 @@ impl OndaluxApp {
         }
         if key(Key::H) {
             self.heat.show = !self.heat.show;
+        }
+        if key(Key::D) {
+            self.view3d.enabled = !self.view3d.enabled;
         }
         if key(Key::Delete) || key(Key::Backspace) {
             self.delete_selection();
@@ -1179,6 +1185,17 @@ impl OndaluxApp {
                         if ui.add(toggle).on_hover_text("H").clicked() {
                             self.heat.show = !on;
                         }
+                        let in_3d = self.view3d.enabled;
+                        if ui
+                            .add(egui::Button::new(format!("{}  3D", icon::CUBE)).selected(in_3d))
+                            .on_hover_text(t(
+                                "Ver el plano en 3D con los muros levantados (D)",
+                                "View the plan in 3D with extruded walls (D)",
+                            ))
+                            .clicked()
+                        {
+                            self.view3d.enabled = !in_3d;
+                        }
                         ui.add_enabled_ui(on, |ui| {
                             egui::ComboBox::from_id_salt("heatmap-metric")
                                 .selected_text(metric_label(self.heat.metric))
@@ -1284,8 +1301,12 @@ impl OndaluxApp {
                         )
                         .clicked()
                         {
-                            self.view.zoom_around(center, 1.0 / 1.25);
-                            self.canvas.stop_auto_fit();
+                            if self.view3d.enabled {
+                                self.view3d.zoom(1.25);
+                            } else {
+                                self.view.zoom_around(center, 1.0 / 1.25);
+                                self.canvas.stop_auto_fit();
+                            }
                         }
                         let fit_zoom = self
                             .doc
@@ -1300,11 +1321,14 @@ impl OndaluxApp {
                             })
                             .unwrap_or(1.0);
                         let pct = (self.view.zoom / fit_zoom * 100.0).round();
+                        let label = if self.view3d.enabled {
+                            "3D".to_owned()
+                        } else {
+                            format!("{pct:.0} %")
+                        };
                         ui.add_sized(
                             [52.0, 30.0],
-                            egui::Label::new(
-                                egui::RichText::new(format!("{pct:.0} %")).color(p.muted),
-                            ),
+                            egui::Label::new(egui::RichText::new(label).color(p.muted)),
                         );
                         if style::icon_button(
                             ui,
@@ -1313,8 +1337,12 @@ impl OndaluxApp {
                         )
                         .clicked()
                         {
-                            self.view.zoom_around(center, 1.25);
-                            self.canvas.stop_auto_fit();
+                            if self.view3d.enabled {
+                                self.view3d.zoom(1.0 / 1.25);
+                            } else {
+                                self.view.zoom_around(center, 1.25);
+                                self.canvas.stop_auto_fit();
+                            }
                         }
                         if style::icon_button(
                             ui,
@@ -1323,6 +1351,9 @@ impl OndaluxApp {
                         )
                         .clicked()
                         {
+                            if self.view3d.enabled {
+                                self.view3d.reset();
+                            }
                             self.fit_pending = true;
                         }
                     });
@@ -1620,7 +1651,11 @@ impl eframe::App for OndaluxApp {
                 let rect = ui.max_rect();
                 toast_area = rect;
                 if self.doc.is_some() {
-                    crate::canvas::show(self, ui);
+                    if self.view3d.enabled {
+                        crate::view3d::show(self, ui);
+                    } else {
+                        crate::canvas::show(self, ui);
+                    }
                     self.canvas_overlays(ui, rect);
                 } else {
                     welcome(self, ui);

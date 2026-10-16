@@ -87,6 +87,17 @@ fn ui_shots() {
     settle(&mut h);
     save(&mut h, &dir, "07-ap-wall");
 
+    // 3D view of the same project.
+    h.state_mut().view3d.enabled = true;
+    h.run_steps(6);
+    save(&mut h, &dir, "13-3d");
+    h.state_mut().view3d.yaw = 2.4;
+    h.state_mut().view3d.pitch = 0.55;
+    h.run_steps(4);
+    save(&mut h, &dir, "14-3d-rotated");
+    h.state_mut().view3d.enabled = false;
+    h.state_mut().view3d.reset();
+
     h.state_mut().selection = Selection::None;
     h.state_mut().set_tool(Tool::Wall);
     h.state_mut().show_materials = true;
