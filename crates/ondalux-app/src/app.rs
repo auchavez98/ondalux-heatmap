@@ -149,6 +149,8 @@ pub struct OndaluxApp {
     pub plan_texture: Option<TextureHandle>,
     pub canvas: CanvasState,
     pub wall_material: MaterialId,
+    /// Thickness of new walls; `None` = the material's typical one.
+    pub wall_thickness_cm: Option<f32>,
     pub heat: HeatmapView,
     worker: Worker,
     pub survey: SurveyState,
@@ -157,6 +159,8 @@ pub struct OndaluxApp {
     pub export: ExportState,
     pub walls: crate::walls_ui::WallDetectState,
     pub view3d: crate::view3d::View3dState,
+    pub floors: crate::floors_ui::FloorState,
+    pub update: crate::update::UpdateState,
     pub show_materials: bool,
     pub show_settings: bool,
     show_about: bool,
@@ -170,6 +174,9 @@ pub struct OndaluxApp {
     /// Logo texture, created on first use.
     logo: Option<egui::TextureHandle>,
 }
+
+/// Source code repository.
+pub const REPO_URL: &str = "https://github.com/auchavez98/ondalux-heatmap";
 
 /// How long status bar messages stay visible.
 const STATUS_TTL: Duration = Duration::from_secs(6);
@@ -191,6 +198,7 @@ impl OndaluxApp {
             plan_texture: None,
             canvas: CanvasState::default(),
             wall_material: MaterialId(1),
+            wall_thickness_cm: None,
             heat: HeatmapView {
                 show: true,
                 metric: MetricKind::Rssi,
@@ -213,6 +221,8 @@ impl OndaluxApp {
             export: ExportState::default(),
             walls: Default::default(),
             view3d: Default::default(),
+            floors: Default::default(),
+            update: Default::default(),
             show_materials: false,
             show_settings: false,
             show_about: false,
@@ -227,6 +237,7 @@ impl OndaluxApp {
         if let Some(e) = catalog_error {
             app.error(e);
         }
+        crate::update::check_on_startup(&mut app, &cc.egui_ctx);
         if let Some(path) = path {
             let is_project = path.extension().is_some_and(|e| {
                 e.eq_ignore_ascii_case(ondalux_io::project_file::EXTENSION)
@@ -296,9 +307,10 @@ impl OndaluxApp {
         }
     }
 
-    fn set_document(&mut self, ctx: &egui::Context, doc: Option<Document>) {
-        self.plan_texture = doc.as_ref().and_then(|d| {
-            let plan = d.plan_image.as_ref()?;
+    /// Loads the active floor's plan into a texture.
+    pub fn load_plan_texture(&mut self, ctx: &egui::Context) {
+        self.plan_texture = self.doc.as_ref().and_then(|d| {
+            let plan = d.plan_image()?;
             match decode_plan(plan) {
                 Ok(img) => {
                     // Only the on-screen copy is reduced if the GPU cannot
@@ -321,7 +333,12 @@ impl OndaluxApp {
                 }
             }
         });
+    }
+
+    fn set_document(&mut self, ctx: &egui::Context, doc: Option<Document>) {
         self.doc = doc;
+        self.floors = Default::default();
+        crate::floors_ui::sync(self, ctx);
         self.selection = Selection::None;
         self.walls = Default::default();
         self.view3d = Default::default();
@@ -361,8 +378,11 @@ impl OndaluxApp {
                     .file_stem()
                     .map_or_else(|| "Untitled".into(), |s| s.to_string_lossy().into_owned());
                 let project = Project::new(name, decoded.width, decoded.height);
-                let mut doc = Document::new(project, Some(plan), None);
-                doc.plan_source = source_pdf;
+                let mut doc = Document::new(project, None, None);
+                doc.set_assets(ondalux_io::FloorAssets {
+                    plan_image: Some(plan),
+                    plan_source: source_pdf,
+                });
                 doc.dirty = true;
                 self.set_document(ctx, Some(doc));
                 // Beta, opt-in: propose walls right away for review.
@@ -553,6 +573,14 @@ impl OndaluxApp {
         }
         if key(Key::D) {
             self.view3d.enabled = !self.view3d.enabled;
+        }
+        if let Some(doc) = &self.doc {
+            let i = doc.project.floor_index;
+            if key(Key::PageUp) {
+                crate::floors_ui::switch(self, i + 1);
+            } else if key(Key::PageDown) && i > 0 {
+                crate::floors_ui::switch(self, i - 1);
+            }
         }
         if key(Key::Delete) || key(Key::Backspace) {
             self.delete_selection();
@@ -958,6 +986,85 @@ impl OndaluxApp {
                 {
                     self.show_shortcuts = true;
                 }
+                ui.separator();
+                let site = if i18n::is_english() {
+                    "https://ondaluxheatmap.com/"
+                } else {
+                    "https://ondaluxheatmap.com/es/"
+                };
+                if ui
+                    .button(format!(
+                        "{}  {}",
+                        icon::GLOBE,
+                        t("Sitio web (guía y descargas)", "Website (guide and downloads)")
+                    ))
+                    .on_hover_text(site)
+                    .clicked()
+                {
+                    ui.ctx().open_url(egui::OpenUrl::new_tab(site));
+                }
+                if ui
+                    .button(format!(
+                        "{}  {}",
+                        icon::GITHUB_LOGO,
+                        t("Código fuente en GitHub", "Source code on GitHub")
+                    ))
+                    .on_hover_text(REPO_URL)
+                    .clicked()
+                {
+                    ui.ctx().open_url(egui::OpenUrl::new_tab(REPO_URL));
+                }
+                if ui
+                    .button(format!(
+                        "{}  {}",
+                        icon::BUG,
+                        t("Reportar un problema", "Report a problem")
+                    ))
+                    .on_hover_text(format!("{REPO_URL}/issues"))
+                    .clicked()
+                {
+                    ui.ctx()
+                        .open_url(egui::OpenUrl::new_tab(format!("{REPO_URL}/issues")));
+                }
+                ui.separator();
+                let checking = self.update.busy();
+                if ui
+                    .add_enabled(
+                        !checking,
+                        egui::Button::new(format!(
+                            "{}  {}",
+                            icon::ARROW_CIRCLE_UP,
+                            if checking {
+                                t("Buscando actualizaciones…", "Checking for updates…")
+                            } else {
+                                t("Buscar actualizaciones", "Check for updates")
+                            }
+                        )),
+                    )
+                    .clicked()
+                {
+                    let ctx = ui.ctx().clone();
+                    crate::update::check(self, &ctx, true);
+                }
+                let mut auto = self.prefs.check_updates;
+                if ui
+                    .checkbox(
+                        &mut auto,
+                        t(
+                            "Avisarme de nuevas versiones al iniciar",
+                            "Tell me about new versions at startup",
+                        ),
+                    )
+                    .on_hover_text(t(
+                        "Una vez al día consulta ondaluxheatmap.com/version.json. No envía datos de tus proyectos.",
+                        "Once a day it reads ondaluxheatmap.com/version.json. No project data is sent.",
+                    ))
+                    .changed()
+                {
+                    self.prefs.check_updates = auto;
+                    self.prefs.save();
+                }
+                ui.separator();
                 if ui
                     .button(format!(
                         "{}  {}",
@@ -1020,6 +1127,14 @@ impl OndaluxApp {
                         &mut self.wall_material,
                         w,
                     );
+                    ui.label(egui::RichText::new(t("Grosor", "Thickness")).color(p.muted));
+                    let typical = doc
+                        .project
+                        .materials
+                        .get(self.wall_material)
+                        .and_then(|m| m.thickness_cm)
+                        .unwrap_or(ondalux_core::material::DEFAULT_WALL_THICKNESS_CM);
+                    crate::panels::thickness_edit(ui, &mut self.wall_thickness_cm, typical);
                     ui.label(
                         egui::RichText::new(t(
                             "Clic para agregar puntos. Mayús = ángulos de 45°. Esc o doble clic termina la pared.",
@@ -1127,6 +1242,7 @@ impl OndaluxApp {
             crate::walls_ui::start(self, &ctx);
             return;
         }
+        crate::floors_ui::panel(self, ui);
         let Some(doc) = self.doc.as_ref() else {
             return;
         };
@@ -1195,6 +1311,27 @@ impl OndaluxApp {
                             .clicked()
                         {
                             self.view3d.enabled = !in_3d;
+                        }
+                        let floors = self.doc.as_ref().map_or(1, |d| d.project.floor_count());
+                        if in_3d && floors > 1 {
+                            let others = self.view3d.other_floors;
+                            if ui
+                                .add(
+                                    egui::Button::new(format!(
+                                        "{}  {}",
+                                        icon::STACK,
+                                        t("Pisos", "Floors")
+                                    ))
+                                    .selected(others),
+                                )
+                                .on_hover_text(t(
+                                    "Mostrar los demás pisos del edificio",
+                                    "Show the other floors of the building",
+                                ))
+                                .clicked()
+                            {
+                                self.view3d.other_floors = !others;
+                            }
                         }
                         ui.add_enabled_ui(on, |ui| {
                             egui::ComboBox::from_id_salt("heatmap-metric")
@@ -1440,7 +1577,7 @@ impl OndaluxApp {
             walls: p.walls.clone(),
             materials: p.materials.clone(),
             settings: p.settings.clone(),
-            aps: p.aps.clone(),
+            aps: p.radiating_aps(),
             requirements: p.requirements,
             grid: GridSpec::covering(w, h, p.grid_cell_m.clamp(0.05, 5.0)),
             band: self.heat.band,
@@ -1559,6 +1696,8 @@ impl eframe::App for OndaluxApp {
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
 
         self.shortcuts(&ctx);
+        crate::floors_ui::sync(self, &ctx);
+        crate::update::poll(self);
         self.poll_heatmap(&ctx);
         survey_ui::poll(self);
         export_ui::poll(self);
@@ -1664,6 +1803,8 @@ impl eframe::App for OndaluxApp {
 
         self.toast(&ctx, toast_area);
         self.dialogs(&ctx);
+        crate::floors_ui::settings_window(self, &ctx);
+        crate::update::window(self, &ctx);
         self.request_heatmap();
     }
 }
@@ -1940,6 +2081,11 @@ fn shortcuts_window(ctx: &egui::Context, open: &mut bool) {
                             "Ajustar el plano a la ventana",
                             "Fit the plan to the window",
                         ),
+                    ),
+                    ("D", t("Vista 3D", "3D view")),
+                    (
+                        t("Re Pág / Av Pág", "Page Up / Page Down"),
+                        t("Piso de arriba / de abajo", "Floor above / below"),
                     ),
                     ("Supr", t("Eliminar la selección", "Delete the selection")),
                     (

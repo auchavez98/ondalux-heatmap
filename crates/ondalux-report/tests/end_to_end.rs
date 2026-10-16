@@ -41,11 +41,13 @@ fn project_file() -> ProjectFile {
         p.walls.push(Wall {
             segment: Segment::new(c[k], c[(k + 1) % 4]),
             material: MaterialId(5),
+            thickness_cm: None,
         });
     }
     p.walls.push(Wall {
         segment: Segment::new(Vec2::new(12.5, 0.0), Vec2::new(12.5, 9.0)),
         material: MaterialId(1),
+        thickness_cm: None,
     });
     // One AP from the catalog and one generic AP.
     let catalog = Catalog::builtin();
@@ -84,14 +86,13 @@ fn project_file() -> ProjectFile {
             enabled: true,
         }],
     });
-    ProjectFile {
-        project: p,
-        plan_image: Some(PlanImage {
+    ProjectFile::single(
+        p,
+        Some(PlanImage {
             extension: "png".into(),
             bytes: png.into_inner(),
         }),
-        plan_source: None,
-    }
+    )
 }
 
 #[test]
@@ -102,7 +103,7 @@ fn project_to_report_round_trip() {
     project_file().save(&path).unwrap();
     let loaded = ProjectFile::load(&path).unwrap();
     assert_eq!(loaded.project.aps[0].vendor, "Ubiquiti");
-    let plan = decode_plan(loaded.plan_image.as_ref().unwrap()).unwrap();
+    let plan = decode_plan(loaded.plan_image(0).unwrap()).unwrap();
 
     // AP CSV: header + 2 radios of the U6 Pro + 1 radio of the generic AP.
     let mut csv = Vec::new();

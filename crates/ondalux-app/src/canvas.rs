@@ -586,6 +586,7 @@ fn handle_tool(
                             doc.project.walls.push(Wall {
                                 segment: Segment::new(a, m),
                                 material: app.wall_material,
+                                thickness_cm: app.wall_thickness_cm,
                             });
                         }
                     }
@@ -719,10 +720,15 @@ fn draw_walls(painter: &egui::Painter, project: &Project, xf: Xf, selection: Sel
             });
         let (a, b) = (xf.to_screen(w.segment.a), xf.to_screen(w.segment.b));
         let selected = selection == Selection::Wall(i);
+        // At scale, but never thinner than 3 px.
+        let width = (w.effective_thickness_cm(&project.materials) * 0.01 * xf.scale()).max(3.0);
         if selected {
-            painter.line_segment([a, b], Stroke::new(7.0, Color32::from_rgb(80, 160, 255)));
+            painter.line_segment(
+                [a, b],
+                Stroke::new(width + 4.0, Color32::from_rgb(80, 160, 255)),
+            );
         }
-        painter.line_segment([a, b], Stroke::new(3.0, color));
+        painter.line_segment([a, b], Stroke::new(width, color));
         if selected {
             for p in [a, b] {
                 painter.circle(p, 5.0, Color32::WHITE, Stroke::new(1.5, Color32::BLACK));
@@ -731,7 +737,37 @@ fn draw_walls(painter: &egui::Painter, project: &Project, xf: Xf, selection: Sel
     }
 }
 
+/// APs of the floors right above and below, faint, where they would be on
+/// this plan.
+fn draw_other_floor_aps(painter: &egui::Painter, project: &Project, xf: Xf) {
+    let f = project.floor_index;
+    let color = Color32::from_rgba_unmultiplied(110, 120, 140, 150);
+    for g in [f.wrapping_sub(1), f + 1] {
+        if g >= project.floor_count() {
+            continue;
+        }
+        let shift = project.floor_info(g).offset_m - project.floor.offset_m;
+        let arrow = if g > f {
+            crate::style::icon::ARROW_UP
+        } else {
+            crate::style::icon::ARROW_DOWN
+        };
+        for ap in project.floor_aps(g) {
+            let p = xf.to_screen(ap.position + shift);
+            painter.circle_stroke(p, 7.0, Stroke::new(1.5, color));
+            painter.text(
+                p + egui::vec2(10.0, 0.0),
+                egui::Align2::LEFT_CENTER,
+                format!("{arrow} {}", ap.name),
+                egui::FontId::proportional(11.0),
+                color,
+            );
+        }
+    }
+}
+
 fn draw_aps(painter: &egui::Painter, project: &Project, xf: Xf, selection: Selection, band: Band) {
+    draw_other_floor_aps(painter, project, xf);
     for ap in &project.aps {
         let p = xf.to_screen(ap.position);
         let selected = selection == Selection::Ap(ap.id);

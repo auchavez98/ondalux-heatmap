@@ -81,6 +81,7 @@ fn main() {
         .map(|&(x0, y0, x1, y1, m)| Wall {
             segment: Segment::new(Vec2::new(x0, y0), Vec2::new(x1, y1)),
             material: MaterialId(m),
+            thickness_cm: None,
         })
         .collect();
 
@@ -117,14 +118,13 @@ fn main() {
         })
         .collect();
 
-    let file = ProjectFile {
+    let file = ProjectFile::single(
         project,
-        plan_image: Some(PlanImage {
+        Some(PlanImage {
             extension: "png".into(),
             bytes: png.into_inner(),
         }),
-        plan_source: None,
-    };
+    );
     file.save(&out).expect("save project");
     println!("wrote {}", out.display());
 }

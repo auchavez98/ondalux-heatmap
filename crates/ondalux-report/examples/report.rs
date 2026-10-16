@@ -23,8 +23,7 @@ fn main() {
         Lang::Es
     };
     let plan = file
-        .plan_image
-        .as_ref()
+        .plan_image(file.project.floor_index)
         .map(|p| decode_plan(p).expect("decode plan"));
     let project = &file.project;
 

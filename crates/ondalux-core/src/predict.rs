@@ -21,14 +21,7 @@ pub struct Obstacles {
 impl Obstacles {
     pub fn new(walls: &[Wall], materials: &MaterialLibrary) -> Self {
         let index = SegmentIndex::build(walls.iter().map(|w| w.segment).collect(), INDEX_CELL_M);
-        let loss = walls
-            .iter()
-            .map(|w| {
-                materials
-                    .get(w.material)
-                    .map_or_else(PerBand::default, |m| m.attenuation)
-            })
-            .collect();
+        let loss = walls.iter().map(|w| w.attenuation(materials)).collect();
         Self { index, loss }
     }
 
@@ -107,6 +100,7 @@ mod tests {
         Wall {
             segment: Segment::new(Vec2::new(x, -10.0), Vec2::new(x, 10.0)),
             material: MaterialId(material),
+            thickness_cm: None,
         }
     }
 

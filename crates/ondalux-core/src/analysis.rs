@@ -437,6 +437,7 @@ mod tests {
             p.walls.push(Wall {
                 segment: Segment::new(c[k], c[(k + 1) % 4]),
                 material: MaterialId(1),
+                thickness_cm: None,
             });
         }
         p
@@ -461,6 +462,7 @@ mod tests {
             p.walls.push(Wall {
                 segment: Segment::new(Vec2::new(x, 0.0), Vec2::new(x, 10.0)),
                 material: MaterialId(6),
+                thickness_cm: None,
             });
         }
         p.aps
@@ -525,6 +527,7 @@ mod tests {
         p.walls.push(Wall {
             segment: Segment::new(Vec2::new(0.0, 0.0), Vec2::new(10.0, 10.0)),
             material: MaterialId(1),
+            thickness_cm: None,
         });
         let grid = GridSpec::covering(20.0, 20.0, 1.0);
         let mask = footprint_mask(&p, &grid);

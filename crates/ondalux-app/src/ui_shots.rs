@@ -6,6 +6,8 @@
 use crate::app::{OndaluxApp, RightTab, Selection, Tool};
 use egui_kittest::Harness;
 use ondalux_core::ap::{ApId, Mount};
+use ondalux_core::geometry::Vec2;
+use ondalux_core::project::Floor;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -97,6 +99,69 @@ fn ui_shots() {
     save(&mut h, &dir, "14-3d-rotated");
     h.state_mut().view3d.enabled = false;
     h.state_mut().view3d.reset();
+
+    // A second floor: same plan, two APs moved, the first floor below.
+    if let Some(doc) = h.state_mut().doc.as_mut() {
+        let p = &doc.project;
+        let mut floor = Floor::new(Default::default(), 0, 0);
+        floor.plan = p.plan.clone();
+        floor.walls = p.walls.clone();
+        floor.aps = p
+            .aps
+            .iter()
+            .take(2)
+            .map(|a| {
+                let mut a = a.clone();
+                a.id = ApId(a.id.0 + 100);
+                a.name = format!("{}-P2", a.name);
+                a.position = a.position + Vec2::new(4.0, 3.0);
+                a.set_mount(Mount::Ceiling);
+                a
+            })
+            .collect();
+        let assets = (**doc.assets()).clone();
+        doc.project.floor.name = "Piso 1".into();
+        floor.info.name = "Piso 2".into();
+        doc.add_floor(1, floor, assets);
+    }
+    h.state_mut().selection = Selection::None;
+    settle(&mut h);
+    save(&mut h, &dir, "15-floor-2");
+    h.state_mut().view3d.enabled = true;
+    h.state_mut().view3d.pitch = 0.5;
+    h.run_steps(6);
+    save(&mut h, &dir, "16-3d-floors");
+    h.state_mut().view3d.enabled = false;
+    h.state_mut().view3d.reset();
+    h.state_mut().floors.settings_open = true;
+    h.run_steps(4);
+    save(&mut h, &dir, "17-floor-settings");
+    h.state_mut().floors.settings_open = false;
+    if let Some(doc) = h.state_mut().doc.as_mut() {
+        doc.remove_floor(1);
+    }
+    settle(&mut h);
+
+    // A thick concrete wall, selected, and the update notice.
+    if let Some(doc) = h.state_mut().doc.as_mut() {
+        doc.project.walls[0].thickness_cm = Some(40.0);
+    }
+    h.state_mut().selection = Selection::Wall(0);
+    h.run_steps(4);
+    save(&mut h, &dir, "18-wall-thickness");
+    h.state_mut().update.available = Some(crate::update::Release {
+        version: "0.3.0".into(),
+        date: "2026-12-01".into(),
+        download: Default::default(),
+        notes: crate::update::PerLang {
+            en: vec!["Example item".into(), "Another one".into()],
+            es: vec!["Novedad de ejemplo".into(), "Otra más".into()],
+        },
+    });
+    h.state_mut().update.open = true;
+    h.run_steps(4);
+    save(&mut h, &dir, "19-update");
+    h.state_mut().update.open = false;
 
     h.state_mut().selection = Selection::None;
     h.state_mut().set_tool(Tool::Wall);

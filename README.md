@@ -23,6 +23,10 @@ real hardware. See [what works](#status) below.
 | Import floor plan: PNG, JPEG, first page of a PDF | ✅ |
 | Scale calibration (two points + known distance) | ✅ |
 | Draw walls with snapping; material library with editable dB per band (2.4/5/6 GHz) | ✅ |
+| Wall thickness in cm (the loss of solid materials scales with it) | ✅ |
+| Multi-floor buildings: plan per floor, slab loss, signal between floors, report per floor | ✅ see [docs/rf-models.md](docs/rf-models.md) |
+| 3D view: extruded walls over the heat map, floors stacked | ✅ |
+| Update notices (reads `ondaluxheatmap.com/version.json` once a day; you choose whether to download) | ✅ can be turned off in Help |
 | Automatic wall detection (beta, opt-in) from vector PDF line art or the image, with preview and materials by thickness | ✅ straight, diagonal and curved walls; see [docs/wall-detection.md](docs/wall-detection.md) |
 | Place / drag APs; radios with band, channel, width, Tx power, antenna gain; AP height | ✅ |
 | AP model catalog by vendor (119 models, 15 vendors, datasheet values with sources) + custom models | ✅ see [docs/ap-catalog.md](docs/ap-catalog.md) |
@@ -127,6 +131,8 @@ and the AP table. Details and the recommendation rules:
 | V, W, A, C, S | Select, Wall, AP, Calibrate, Survey tools |
 | 1–6 | Signal, SNR, SINR, AP count, Channel overlap, Coverage |
 | H | Show / hide heat map |
+| D | 3D view on / off |
+| Page Up / Page Down | Floor above / below |
 | F | Fit plan to window |
 | Del | Delete selection |
 | Esc | Finish wall / back to Select / clear selection |

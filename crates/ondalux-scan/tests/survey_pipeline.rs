@@ -49,6 +49,7 @@ fn walls() -> Vec<Wall> {
     vec![Wall {
         segment: Segment::new(Vec2::new(15.0, 0.0), Vec2::new(15.0, 14.0)),
         material: MaterialId(5),
+        thickness_cm: None,
     }]
 }
 

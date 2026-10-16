@@ -78,8 +78,16 @@ Using large exponents (3–4) *and* explicit walls double-counts losses.
 ## 3. Wall attenuation (2D ray casting)
 
 The straight segment from the AP to the point is intersected with every wall
-on the plan. Each crossed wall subtracts its material's loss for that band,
-**once**, regardless of the incidence angle and wall thickness.
+on the plan. Each crossed wall subtracts its loss for that band, **once**,
+regardless of the incidence angle.
+
+**Thickness.** Solid materials (drywall, wood, brick, concrete, concrete
+block) have a reference thickness (12, 5, 12, 20 and 15 cm). A wall with its
+own thickness scales the material loss linearly (`loss × thickness /
+reference`, factor limited to 0.1–5), since dB grow with the path through a
+uniform material. Glass, metal, doors, elevator shafts and partitions have
+no reference: their loss does not depend on the thickness, which is then
+only drawn. Walls without a thickness use the reference (or 10 cm).
 
 A uniform grid index (1.5 m cells, Amanatides–Woo traversal) limits the
 segment–segment tests to walls near the ray; a test compares it against
@@ -87,14 +95,14 @@ brute force on random walls and rays.
 
 Default material losses (single crossing, dB):
 
-| Material | 2.4 GHz | 5 GHz | 6 GHz |
-|---|---|---|---|
-| Drywall | 3 | 4 | 5 |
-| Wood | 4 | 6 | 7 |
-| Glass | 3 | 7 | 8 |
-| Brick | 8 | 12 | 14 |
-| Concrete | 12 | 18 | 21 |
-| Metal | 25 | 30 | 32 |
+| Material | 2.4 GHz | 5 GHz | 6 GHz | Reference thickness |
+|---|---|---|---|---|
+| Drywall | 3 | 4 | 5 | 12 cm |
+| Wood | 4 | 6 | 7 | 5 cm |
+| Glass | 3 | 7 | 8 | — |
+| Brick | 8 | 12 | 14 | 12 cm |
+| Concrete | 12 | 18 | 21 | 20 cm |
+| Metal | 25 | 30 | 32 | — |
 
 These are typical figures from public measurement literature and vendor
 design guides. Real walls vary widely (thickness, rebar, low-e coatings,
@@ -152,7 +160,13 @@ secondary above for channels 1–7 and below otherwise. The overlapping
 
 ## 7. Known limitations
 
-- **2D model.** One floor; no inter-floor attenuation.
+- **2D model per floor.** In multi-floor buildings, APs up to two floors
+  above and below are added to each floor's prediction: moved into its
+  coordinates (with each floor's plan offset), with their height relative to
+  the floor (so the vertical distance enters the path loss) and minus the
+  loss of every slab in between (15 dB per slab by default, editable per
+  floor). Along the path only the receiving floor's walls are counted; the
+  walls of the AP's floor are not.
 - **No reflection, diffraction or multipath.** Corridors acting as
   waveguides and signal bending around corners are not predicted, so
   shadowed areas behind thick walls are pessimistic.

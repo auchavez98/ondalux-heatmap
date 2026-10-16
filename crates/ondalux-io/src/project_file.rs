@@ -2,7 +2,10 @@
 //!
 //! A `.lux` file is a ZIP archive containing:
 //! - `project.json`: header (`format`, `format_version`) + the project model;
-//! - `floorplan.<ext>`: the original floor plan image bytes (optional).
+//! - `floorplan.<ext>` / `floorplan-source.pdf`: the plan image and the
+//!   original PDF of the lowest floor (optional);
+//! - `floors/<n>/floorplan.<ext>` / `floors/<n>/floorplan-source.pdf`: the
+//!   same for floor `n` (0-based, building order), `n` ≥ 1.
 
 use crate::error::IoError;
 use ondalux_core::project::Project;
@@ -12,8 +15,9 @@ use std::path::Path;
 
 pub const FORMAT_ID: &str = "ondalux-project";
 /// Version history: 1 = Phase 1 model; 2 = adds `surveys` (v1 files load
-/// unchanged, with no surveys).
-pub const FORMAT_VERSION: u32 = 2;
+/// unchanged, with no surveys); 3 = multi-floor buildings (`floors`; v1–2
+/// files load as a single floor).
+pub const FORMAT_VERSION: u32 = 3;
 pub const EXTENSION: &str = "lux";
 /// Format id and extension used before the project was renamed. Still read.
 pub const LEGACY_FORMAT_ID: &str = "heatcraft-project";
@@ -32,12 +36,46 @@ pub struct PlanImage {
     pub bytes: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ProjectFile {
-    pub project: Project,
+/// The files of one floor.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct FloorAssets {
     pub plan_image: Option<PlanImage>,
     /// Original PDF of the plan, kept for wall detection (optional).
     pub plan_source: Option<Vec<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProjectFile {
+    pub project: Project,
+    /// One entry per floor, in building order (missing entries = no files).
+    pub floors: Vec<FloorAssets>,
+}
+
+impl ProjectFile {
+    /// A single-floor project with its plan image.
+    pub fn single(project: Project, plan_image: Option<PlanImage>) -> Self {
+        Self {
+            project,
+            floors: vec![FloorAssets {
+                plan_image,
+                plan_source: None,
+            }],
+        }
+    }
+
+    /// Plan image of floor `i` (building order).
+    pub fn plan_image(&self, i: usize) -> Option<&PlanImage> {
+        self.floors.get(i)?.plan_image.as_ref()
+    }
+}
+
+/// Folder of floor `i`'s files inside the archive.
+fn floor_dir(i: usize) -> String {
+    if i == 0 {
+        String::new()
+    } else {
+        format!("floors/{i}/")
+    }
 }
 
 #[derive(Serialize)]
@@ -85,16 +123,19 @@ impl ProjectFile {
             project: &self.project,
         };
         serde_json::to_writer_pretty(&mut zip, &header)?;
-        if let Some(img) = &self.plan_image {
-            // Images are already compressed; store them as-is.
-            let stored = zip::write::SimpleFileOptions::default()
-                .compression_method(zip::CompressionMethod::Stored);
-            zip.start_file(format!("{PLAN_PREFIX}{}", img.extension), stored)?;
-            zip.write_all(&img.bytes)?;
-        }
-        if let Some(pdf) = &self.plan_source {
-            zip.start_file(PLAN_SOURCE_ENTRY, deflate)?;
-            zip.write_all(pdf)?;
+        for (i, assets) in self.floors.iter().enumerate() {
+            let dir = floor_dir(i);
+            if let Some(img) = &assets.plan_image {
+                // Images are already compressed; store them as-is.
+                let stored = zip::write::SimpleFileOptions::default()
+                    .compression_method(zip::CompressionMethod::Stored);
+                zip.start_file(format!("{dir}{PLAN_PREFIX}{}", img.extension), stored)?;
+                zip.write_all(&img.bytes)?;
+            }
+            if let Some(pdf) = &assets.plan_source {
+                zip.start_file(format!("{dir}{PLAN_SOURCE_ENTRY}"), deflate)?;
+                zip.write_all(pdf)?;
+            }
         }
         zip.finish()?;
         Ok(())
@@ -120,38 +161,52 @@ impl ProjectFile {
                 supported: FORMAT_VERSION,
             });
         }
-        // Older versions would be migrated here, one step at a time.
-        let project: Project = serde_json::from_value(header.project)?;
-
-        let plan_name = zip
-            .file_names()
-            .find(|n| n.starts_with(PLAN_PREFIX))
-            .map(str::to_owned);
-        let plan_image = match plan_name {
-            Some(name) => {
-                let mut bytes = Vec::new();
-                zip.by_name(&name)?.read_to_end(&mut bytes)?;
-                Some(PlanImage {
-                    extension: name[PLAN_PREFIX.len()..].to_ascii_lowercase(),
-                    bytes,
-                })
-            }
-            None => None,
-        };
-        let plan_source = match zip.by_name(PLAN_SOURCE_ENTRY) {
-            Ok(mut entry) => {
-                let mut bytes = Vec::new();
-                entry.read_to_end(&mut bytes)?;
-                Some(bytes)
-            }
-            Err(_) => None,
-        };
-        Ok(Self {
-            project,
-            plan_image,
-            plan_source,
-        })
+        // Versions 1–2 (single floor at the top level) are read by the
+        // project model itself.
+        let mut project: Project = serde_json::from_value(header.project)?;
+        if header.format_version < 3 {
+            project.materials.fill_reference_thickness();
+        }
+        let mut floors = Vec::with_capacity(project.floor_count());
+        for i in 0..project.floor_count() {
+            floors.push(read_floor_assets(&mut zip, &floor_dir(i))?);
+        }
+        Ok(Self { project, floors })
     }
+}
+
+fn read_floor_assets<R: Read + Seek>(
+    zip: &mut zip::ZipArchive<R>,
+    dir: &str,
+) -> Result<FloorAssets, IoError> {
+    let prefix = format!("{dir}{PLAN_PREFIX}");
+    let plan_name = zip
+        .file_names()
+        .find(|n| n.starts_with(&prefix) && !n[prefix.len()..].contains('/'))
+        .map(str::to_owned);
+    let plan_image = match plan_name {
+        Some(name) => {
+            let mut bytes = Vec::new();
+            zip.by_name(&name)?.read_to_end(&mut bytes)?;
+            Some(PlanImage {
+                extension: name[prefix.len()..].to_ascii_lowercase(),
+                bytes,
+            })
+        }
+        None => None,
+    };
+    let plan_source = match zip.by_name(&format!("{dir}{PLAN_SOURCE_ENTRY}")) {
+        Ok(mut entry) => {
+            let mut bytes = Vec::new();
+            entry.read_to_end(&mut bytes)?;
+            Some(bytes)
+        }
+        Err(_) => None,
+    };
+    Ok(FloorAssets {
+        plan_image,
+        plan_source,
+    })
 }
 
 #[cfg(test)]
@@ -175,6 +230,7 @@ mod tests {
         p.walls.push(Wall {
             segment: Segment::new(Vec2::new(1.0, 2.0), Vec2::new(8.0, 2.0)),
             material: MaterialId(5),
+            thickness_cm: None,
         });
         p.aps.push(AccessPoint {
             id: ApId(1),
@@ -195,12 +251,54 @@ mod tests {
         });
         ProjectFile {
             project: p,
-            plan_image: Some(PlanImage {
-                extension: "png".into(),
-                bytes: vec![0x89, b'P', b'N', b'G', 1, 2, 3],
-            }),
-            plan_source: Some(b"%PDF-1.4 test".to_vec()),
+            floors: vec![FloorAssets {
+                plan_image: Some(PlanImage {
+                    extension: "png".into(),
+                    bytes: vec![0x89, b'P', b'N', b'G', 1, 2, 3],
+                }),
+                plan_source: Some(b"%PDF-1.4 test".to_vec()),
+            }],
         }
+    }
+
+    /// The project as format versions 1–2 stored it: one floor at the top
+    /// level.
+    fn legacy_project_json(p: &Project) -> serde_json::Value {
+        let mut v = serde_json::to_value(p).unwrap();
+        let floor = v["floors"][0].clone();
+        let obj = v.as_object_mut().unwrap();
+        for k in ["floors", "active_floor", "cross_floor"] {
+            obj.remove(k);
+        }
+        for k in ["plan", "walls", "aps", "surveys"] {
+            obj.insert(k.into(), floor[k].clone());
+        }
+        v
+    }
+
+    #[test]
+    fn round_trip_with_several_floors() {
+        let mut original = sample();
+        let mut upper = ondalux_core::project::Floor::new(Default::default(), 600, 400);
+        upper.info.name = "Mezzanine".into();
+        original.project.insert_floor(1, upper.clone());
+        original.project.insert_floor(2, upper);
+        original.project.set_active_floor(2);
+        // Floor 1 has no files, floor 2 only an image.
+        original.floors.push(FloorAssets::default());
+        original.floors.push(FloorAssets {
+            plan_image: Some(PlanImage {
+                extension: "jpg".into(),
+                bytes: vec![0xff, 0xd8, 9],
+            }),
+            plan_source: None,
+        });
+        let mut buf = Cursor::new(Vec::new());
+        original.write_to(&mut buf).unwrap();
+        buf.set_position(0);
+        let loaded = ProjectFile::read_from(buf).unwrap();
+        assert_eq!(loaded, original);
+        assert_eq!(loaded.project.floor_index, 2);
     }
 
     #[test]
@@ -266,7 +364,7 @@ mod tests {
         let mut header = serde_json::json!({
             "format": FORMAT_ID,
             "format_version": 1,
-            "project": serde_json::to_value(&sample().project).unwrap(),
+            "project": legacy_project_json(&sample().project),
         });
         header["project"]
             .as_object_mut()
@@ -276,6 +374,19 @@ mod tests {
         let loaded = ProjectFile::read_from(archive_with(&header.to_string())).unwrap();
         assert!(loaded.project.surveys.is_empty());
         assert_eq!(loaded.project.aps, sample().project.aps);
+    }
+
+    #[test]
+    fn loads_version_2_as_one_floor() {
+        let header = serde_json::json!({
+            "format": FORMAT_ID,
+            "format_version": 2,
+            "project": legacy_project_json(&sample().project),
+        });
+        let loaded = ProjectFile::read_from(archive_with(&header.to_string())).unwrap();
+        assert_eq!(loaded.project, sample().project);
+        assert_eq!(loaded.project.floor_count(), 1);
+        assert_eq!(loaded.floors, vec![FloorAssets::default()]);
     }
 
     #[test]

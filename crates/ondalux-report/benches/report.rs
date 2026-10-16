@@ -22,6 +22,7 @@ fn project() -> Project {
         p.walls.push(Wall {
             segment: Segment::new(Vec2::new(x, 0.0), Vec2::new(x, 50.0)),
             material: MaterialId(if i % 4 == 0 { 5 } else { 1 }),
+            thickness_cm: None,
         });
     }
     for (i, (x, y)) in [

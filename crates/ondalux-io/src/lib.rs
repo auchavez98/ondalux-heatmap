@@ -11,4 +11,4 @@ pub mod walls;
 
 pub use error::IoError;
 pub use plan_image::{decode_plan, import_plan, DecodedPlan, ImportedPlan};
-pub use project_file::{PlanImage, ProjectFile};
+pub use project_file::{FloorAssets, PlanImage, ProjectFile};

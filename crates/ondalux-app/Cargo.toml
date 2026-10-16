@@ -21,6 +21,7 @@ dirs = "6"
 egui-phosphor = "0.14"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
+ureq = { version = "2", default-features = false, features = ["tls"] }
 
 [lints]
 workspace = true

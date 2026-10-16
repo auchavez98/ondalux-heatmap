@@ -1,4 +1,4 @@
-# `.lux` project format — version 2
+# `.lux` project format — version 3
 
 A `.lux` file is a standard ZIP archive. Any unzip tool can open it.
 
@@ -7,6 +7,7 @@ A `.lux` file is a standard ZIP archive. Any unzip tool can open it.
 | `project.json` | deflate | Header + project model (UTF-8 JSON) |
 | `floorplan.png` / `floorplan.jpg` | stored | Original floor plan image bytes (optional) |
 | `floorplan-source.pdf` | deflated | Original PDF the plan was imported from (optional), used for wall detection |
+| `floors/<n>/floorplan.<ext>`, `floors/<n>/floorplan-source.pdf` | as above | The same for floor `n` (0-based, building order) when `n` ≥ 1; the lowest floor uses the entries above |
 
 Why ZIP instead of compressed JSON: the floor plan image is already compressed
 and can be large, so it is stored as-is next to a human-readable JSON file.
@@ -17,8 +18,8 @@ ZIP is pure Rust to read and write (no C toolchain) and widely supported.
 ```json
 {
   "format": "ondalux-project",
-  "format_version": 2,
-  "generator": "Ondalux Heatmap 0.1.0",
+  "format_version": 3,
+  "generator": "Ondalux Heatmap 0.2.0",
   "project": { ... }
 }
 ```
@@ -31,6 +32,7 @@ migrated on load, one version at a time.
 |---|---|
 | 1 | Initial format (floor plan, materials, walls, APs, settings) |
 | 2 | Adds `surveys` and `survey_settings`. Version 1 files load unchanged with no surveys |
+| 3 | Multi-floor buildings: `floors[]`, `active_floor`, `cross_floor`; wall `thickness_cm` and material `thickness_cm`. Version 1–2 files (a single floor at the top level: `plan`, `walls`, `aps`, `surveys`) load as one floor, and built-in materials get their reference thickness |
 
 Files written under the project's former name (extension `.hcraft`, `format`
 `"heatcraft-project"`) are still read.
@@ -40,16 +42,28 @@ Files written under the project's former name (extension `.hcraft`, `format`
 | Field | Type | Notes |
 |---|---|---|
 | `name` | string | |
-| `plan.width_px`, `plan.height_px` | integer | Floor plan image size |
-| `plan.calibration` | object or null | `a_px`, `b_px` (`{x, y}` in image pixels) and `distance_m`. Null = uncalibrated (20 px/m assumed) |
-| `materials.materials[]` | array | `id` (int), `name`, `color` ([r, g, b, a]), `attenuation` (`{"2.4GHz": dB, "5GHz": dB, "6GHz": dB}`) |
-| `walls[]` | array | `segment.a`, `segment.b` (`{x, y}` in **meters**), `material` (material id) |
-| `aps[]` | array | See below |
+| `floors[]` | array | The floors, lowest first; see below (v3) |
+| `active_floor` | integer | Floor shown when the project is opened (v3) |
+| `cross_floor` | bool | Include APs of up to two floors above and below in predictions (v3, default true) |
+| `materials.materials[]` | array | `id` (int), `name`, `color` ([r, g, b, a]), `attenuation` (`{"2.4GHz": dB, "5GHz": dB, "6GHz": dB}`), `thickness_cm` (optional, v3: the thickness the attenuation refers to; walls of another thickness scale it linearly; absent = the loss does not depend on thickness) |
 | `settings` | object | `model`, `receiver_height_m`, `receiver_gain` (dBi), `noise_figure` (dB) |
 | `requirements` | object | `min_rssi` (dBm), `min_snr` (dB), `cca_threshold` (dBm) |
 | `grid_cell_m` | number | Heat map sampling step in meters |
-| `surveys[]` | array | Field surveys, see below (v2) |
 | `survey_settings` | object | `interpolation` (`method`: `"idw"`/`"kriging"`, `idw_power`, `neighbors`, `max_distance_m`), `ssids` (list; empty = all), `missing_rssi` (dBm) (v2) |
+
+### Floor
+
+| Field | Type | Notes |
+|---|---|---|
+| `info.name` | string | Empty = numbered by the app |
+| `info.height_m` | number | Floor-to-floor height (default 3) |
+| `info.slab_loss_db` | number | Loss of the slab under this floor, all bands (default 15) |
+| `info.offset_m` | `{x, y}` | Where this floor's plan origin sits in building coordinates, to line plans up |
+| `plan.width_px`, `plan.height_px` | integer | Floor plan image size |
+| `plan.calibration` | object or null | `a_px`, `b_px` (`{x, y}` in image pixels) and `distance_m`. Null = uncalibrated (20 px/m assumed) |
+| `walls[]` | array | `segment.a`, `segment.b` (`{x, y}` in **meters**), `material` (material id), `thickness_cm` (optional, v3; absent = the material's reference thickness) |
+| `aps[]` | array | See below. AP ids are unique across floors |
+| `surveys[]` | array | Field surveys, see below |
 
 All positions are in meters in the plan's coordinate system: origin at the
 top-left corner of the image, x to the right, y down. Pixel position =

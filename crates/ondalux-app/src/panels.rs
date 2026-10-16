@@ -65,16 +65,30 @@ fn wall_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, i: usize) {
         ui.label(t("Largo", "Length"));
         ui.label(format!("{:.2} m", wall.segment.length()));
         ui.end_row();
-        if let Some(m) = doc.project.materials.get(wall.material) {
+        let material = doc.project.materials.get(wall.material);
+        ui.label(t("Grosor", "Thickness"));
+        let typical = material
+            .and_then(|m| m.thickness_cm)
+            .unwrap_or(ondalux_core::material::DEFAULT_WALL_THICKNESS_CM);
+        thickness_edit(ui, &mut wall.thickness_cm, typical);
+        ui.end_row();
+        if let Some(m) = material {
+            let a = wall.attenuation(&doc.project.materials);
             ui.label(t("Atenuación", "Loss"));
-            ui.label(format!(
-                "{:.0} / {:.0} / {:.0} dB",
-                m.attenuation.g2_4.0, m.attenuation.g5.0, m.attenuation.g6.0
-            ))
-            .on_hover_text(t(
-                "Pérdida de señal al atravesar la pared, en 2.4 / 5 / 6 GHz.",
-                "Signal loss when crossing the wall, at 2.4 / 5 / 6 GHz.",
-            ));
+            let text = format!("{:.0} / {:.0} / {:.0} dB", a.g2_4.0, a.g5.0, a.g6.0);
+            let hint = if m.thickness_cm.is_some() {
+                t(
+                    "Pérdida de señal al atravesar la pared, en 2.4 / 5 / 6 GHz, según su grosor.",
+                    "Signal loss when crossing the wall, at 2.4 / 5 / 6 GHz, for its thickness.",
+                )
+            } else {
+                t(
+                    "Pérdida de señal al atravesar la pared, en 2.4 / 5 / 6 GHz. En este material no depende del grosor.",
+                    "Signal loss when crossing the wall, at 2.4 / 5 / 6 GHz. For this material it does not depend on the thickness.",
+                )
+            };
+            ui.label(text)
+            .on_hover_text(hint);
             ui.end_row();
         }
     });
@@ -91,6 +105,48 @@ fn wall_inspector(app: &mut OndaluxApp, ui: &mut egui::Ui, i: usize) {
     {
         app.delete_selection();
     }
+}
+
+/// Wall thickness in cm: a value, or the material's typical one (`None`).
+/// Returns true when it changed.
+pub fn thickness_edit(ui: &mut egui::Ui, value: &mut Option<f32>, typical: f32) -> bool {
+    let mut changed = false;
+    ui.horizontal(|ui| {
+        let mut v = value.unwrap_or(typical);
+        if ui
+            .add(
+                DragValue::new(&mut v)
+                    .range(1.0..=100.0)
+                    .speed(0.2)
+                    .max_decimals(1)
+                    .suffix(" cm"),
+            )
+            .on_hover_text(t(
+                "Grosor del muro. En materiales sólidos (concreto, block, ladrillo, tablaroca…) la pérdida crece con el grosor.",
+                "Wall thickness. For solid materials (concrete, block, brick, drywall…) the loss grows with the thickness.",
+            ))
+            .changed()
+        {
+            *value = Some(v);
+            changed = true;
+        }
+        if value.is_some() {
+            if ui
+                .small_button(icon::ARROW_COUNTER_CLOCKWISE)
+                .on_hover_text(tr!(
+                    "Usar el grosor típico del material ({typical:.0} cm)",
+                    "Use the material's typical thickness ({typical:.0} cm)"
+                ))
+                .clicked()
+            {
+                *value = None;
+                changed = true;
+            }
+        } else {
+            ui.weak(t("típico", "typical"));
+        }
+    });
+    changed
 }
 
 /// One line of the guided steps: status mark, title, detail and action.
@@ -756,12 +812,16 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
             ui.add_space(4.0);
             let ids: Vec<_> = lib.iter().map(|m| m.id).collect();
             let mut remove = None;
-            egui::Grid::new("materials").striped(true).num_columns(6).show(ui, |ui| {
+            egui::Grid::new("materials").striped(true).num_columns(7).show(ui, |ui| {
                 ui.strong(t("Nombre", "Name"));
                 ui.strong(t("Color", "Color"));
                 ui.strong("2.4 GHz");
                 ui.strong("5 GHz");
                 ui.strong("6 GHz");
+                ui.strong(t("Grosor ref.", "Ref. thickness")).on_hover_text(t(
+                    "Grosor al que corresponde la pérdida. Un muro más grueso o delgado la ajusta en proporción. Sin marcar: la pérdida no depende del grosor (vidrio, metal, puertas…).",
+                    "Thickness the loss refers to. A thicker or thinner wall scales it in proportion. Unchecked: the loss does not depend on the thickness (glass, metal, doors…).",
+                ));
                 ui.label("");
                 ui.end_row();
                 for id in ids {
@@ -788,6 +848,15 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
                         let v = m.attenuation.get_mut(band);
                         ui.add(DragValue::new(&mut v.0).range(0.0..=80.0).speed(0.1).suffix(" dB"));
                     }
+                    ui.horizontal(|ui| {
+                        let mut on = m.thickness_cm.is_some();
+                        if ui.checkbox(&mut on, "").changed() {
+                            m.thickness_cm = on.then_some(10.0);
+                        }
+                        if let Some(t_cm) = &mut m.thickness_cm {
+                            ui.add(DragValue::new(t_cm).range(1.0..=100.0).speed(0.2).suffix(" cm"));
+                        }
+                    });
                     let del = ui
                         .add_enabled(!in_use, egui::Button::new(t("Eliminar", "Delete")))
                         .on_disabled_hover_text(t("Hay paredes con este material", "Walls use this material"));
@@ -827,7 +896,10 @@ pub fn materials_window(app: &mut OndaluxApp, ctx: &egui::Context) {
                         .clicked()
                 {
                     for m in missing {
-                        lib.add(m.name, m.color, m.attenuation);
+                        let id = lib.add(m.name, m.color, m.attenuation);
+                        if let Some(added) = lib.get_mut(id) {
+                            added.thickness_cm = m.thickness_cm;
+                        }
                     }
                 }
             });

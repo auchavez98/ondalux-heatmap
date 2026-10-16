@@ -72,7 +72,7 @@ pub enum ThemeChoice {
     Dark,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UiPrefs {
     pub english: bool,
@@ -82,6 +82,27 @@ pub struct UiPrefs {
     /// Beta: propose walls automatically when a floor plan is imported.
     /// Off unless the user turns it on.
     pub auto_detect_walls: bool,
+    /// Look for a new version on the website when the app starts (at most
+    /// once a day).
+    pub check_updates: bool,
+    /// A version the user chose not to be told about again.
+    pub skipped_version: String,
+    /// Last automatic update check (Unix seconds).
+    pub last_update_check: u64,
+}
+
+impl Default for UiPrefs {
+    fn default() -> Self {
+        Self {
+            english: false,
+            theme: ThemeChoice::default(),
+            recent: Vec::new(),
+            auto_detect_walls: false,
+            check_updates: true,
+            skipped_version: String::new(),
+            last_update_check: 0,
+        }
+    }
 }
 
 fn prefs_path() -> Option<std::path::PathBuf> {
@@ -140,12 +161,21 @@ mod tests {
             theme: ThemeChoice::Light,
             recent: vec!["a.lux".into()],
             auto_detect_walls: true,
+            check_updates: false,
+            skipped_version: "0.3.0".into(),
+            last_update_check: 42,
         };
         let s = serde_json::to_string(&p).unwrap();
         assert_eq!(serde_json::from_str::<UiPrefs>(&s).unwrap(), p);
         assert_eq!(
             serde_json::from_str::<UiPrefs>("{}").unwrap(),
             UiPrefs::default()
+        );
+        // Preferences saved before update checks existed turn them on.
+        assert!(
+            serde_json::from_str::<UiPrefs>(r#"{"english":true}"#)
+                .unwrap()
+                .check_updates
         );
     }
 }

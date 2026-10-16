@@ -1,5 +1,6 @@
 //! Builds the PDF design report: summary, heat maps per band, coverage
 //! gaps, recommendations, AP table and (optionally) survey comparison.
+//! Buildings with several floors get one section per floor.
 
 use crate::map::{render_map, GapOverlay, HeatLayer, MapOptions};
 use crate::pdfdoc::{
@@ -97,17 +98,26 @@ impl BandResult {
     }
 }
 
-/// Bands with at least one enabled radio.
+/// Bands with at least one enabled radio, on any floor.
 pub fn bands_in_use(project: &Project) -> Vec<Band> {
     Band::ALL
         .into_iter()
         .filter(|b| {
-            project
-                .aps
-                .iter()
+            (0..project.floor_count())
+                .flat_map(|i| project.floor_aps(i))
                 .any(|a| a.enabled_radios().any(|(_, r)| r.channel.band == *b))
         })
         .collect()
+}
+
+/// Name of floor `i` for the report: its name, or "Floor n".
+pub fn floor_name(project: &Project, i: usize, l: Lang) -> String {
+    let name = project.floor_info(i).name.trim();
+    if name.is_empty() {
+        format!("{} {}", l.t("Piso", "Floor"), i + 1)
+    } else {
+        name.to_owned()
+    }
 }
 
 /// Grid for reports: the project resolution, coarsened if the plan is huge.
@@ -233,7 +243,7 @@ pub fn compute_bands(
     let grid = report_grid(project);
     let obstacles = Obstacles::new(&project.walls, &project.materials);
     let mut cache = LayerCache::new(grid);
-    cache.sync(&project.aps, &obstacles, &project.settings);
+    cache.sync(&project.radiating_aps(), &obstacles, &project.settings);
     let inside = ondalux_core::analysis::footprint_mask(project, &grid);
     bands
         .iter()
@@ -479,22 +489,63 @@ fn radios_in(project: &Project, band: Band) -> usize {
 }
 
 /// Builds the full PDF report.
+/// Report of one floor.
+struct FloorReport<'a> {
+    /// The project with this floor active.
+    project: Project,
+    plan: Option<&'a DecodedPlan>,
+    results: Vec<BandResult>,
+    name: String,
+}
+
+/// Report with `plan` as the active floor's plan (other floors, if any,
+/// are drawn without their plan image).
 pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOptions) -> Vec<u8> {
+    let mut plans = vec![None; project.floor_count()];
+    plans[project.floor_index] = plan;
+    build_building_pdf(project, &plans, opts)
+}
+
+/// Report of every floor; `plans[i]` is floor `i`'s plan (building order).
+pub fn build_building_pdf(
+    project: &Project,
+    plans: &[Option<&DecodedPlan>],
+    opts: &ReportOptions,
+) -> Vec<u8> {
     let l = opts.lang;
-    let bands = if opts.bands.is_empty() {
-        bands_in_use(project)
-    } else {
-        opts.bands.clone()
-    };
     let date = opts.date.clone().unwrap_or_else(today);
-    let mut results = compute_bands(project, plan, &bands, l, opts.image_width_px);
-    if let Some(si) = opts.survey {
-        for r in &mut results {
-            if let Some(f) = survey_bias(project, si, r.band, &r.metrics) {
-                r.analysis.findings.push(f);
+    let multi = project.floor_count() > 1;
+    let floors: Vec<FloorReport> = (0..project.floor_count())
+        .map(|i| {
+            let p = project.with_active_floor(i);
+            let plan = plans.get(i).copied().flatten();
+            let bands = if opts.bands.is_empty() {
+                bands_in_use(&p)
+            } else {
+                opts.bands.clone()
+            };
+            let mut results = compute_bands(&p, plan, &bands, l, opts.image_width_px);
+            // The survey belongs to the active floor.
+            if let (Some(si), true) = (opts.survey, i == project.floor_index) {
+                for r in &mut results {
+                    if let Some(f) = survey_bias(&p, si, r.band, &r.metrics) {
+                        r.analysis.findings.push(f);
+                    }
+                }
             }
-        }
-    }
+            FloorReport {
+                name: floor_name(project, i, l),
+                project: p,
+                plan,
+                results,
+            }
+        })
+        .collect();
+    let active = &floors[project.floor_index];
+    let plan = active.plan;
+    let results = &active.results;
+    let total_aps: usize = floors.iter().map(|f| f.project.aps.len()).sum();
+    let total_walls: usize = floors.iter().map(|f| f.project.walls.len()).sum();
 
     let report_name = l.t("Informe de diseño WiFi", "WiFi design report");
     let title = format!("{report_name} — {}", project.name);
@@ -546,19 +597,27 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
         })
         .collect();
     kpis.truncate(3);
+    if multi {
+        kpis.truncate(2);
+        kpis.push(Kpi {
+            value: floors.len().to_string(),
+            label: l.t("pisos", "floors").into(),
+            color: INK,
+        });
+    }
     kpis.push(Kpi {
-        value: project.aps.len().to_string(),
+        value: total_aps.to_string(),
         label: l.t("puntos de acceso", "access points").into(),
         color: INK,
     });
     if kpis.len() < 4 {
         kpis.push(Kpi {
-            value: project.walls.len().to_string(),
+            value: total_walls.to_string(),
             label: l.t("paredes", "walls").into(),
             color: INK,
         });
     }
-    if kpis.len() < 5 && area > 0.0 {
+    if kpis.len() < 5 && area > 0.0 && !multi {
         kpis.push(Kpi {
             value: format!("{area:.0} m²"),
             label: l.t("área analizada", "analysed area").into(),
@@ -569,17 +628,21 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
 
     let placement = placement_map(project, plan, opts.image_width_px);
     let room = CONTENT_BOTTOM - doc.y() - 70.0;
+    let mut caption = format!(
+        "{} {} {}",
+        l.t("Ubicación de los", "Location of the"),
+        project.aps.len(),
+        l.t(
+            "puntos de acceso sobre el plano.",
+            "access points on the floor plan."
+        )
+    );
+    if multi {
+        caption = format!("{} · {caption}", active.name);
+    }
     doc.figure_card(
         l.t("Sembrado de puntos de acceso", "Access point placement"),
-        &format!(
-            "{} {} {}",
-            l.t("Ubicación de los", "Location of the"),
-            project.aps.len(),
-            l.t(
-                "puntos de acceso sobre el plano.",
-                "access points on the floor plan."
-            )
-        ),
+        &caption,
         &placement,
         room.max(200.0),
     );
@@ -644,13 +707,38 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
             ),
         ),
     ];
+    if multi {
+        // Building-wide figures instead of the active floor's.
+        kv[1] = (
+            l.t("Pisos", "Floors").to_owned(),
+            floors
+                .iter()
+                .map(|f| f.name.clone())
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
+        kv[2].1 = total_aps.to_string();
+        kv[3].1 = total_walls.to_string();
+        kv.push((
+            l.t("Señal entre pisos", "Signal between floors").to_owned(),
+            if project.cross_floor {
+                l.t(
+                    "incluida (hasta 2 pisos, restando cada losa)",
+                    "included (up to 2 floors, minus each slab)",
+                )
+            } else {
+                l.t("no incluida", "not included")
+            }
+            .to_owned(),
+        ));
+    }
     if !opts.author.trim().is_empty() {
         kv.insert(1, (l.t("Autor", "Author").to_owned(), opts.author.clone()));
     }
     doc.key_values(&kv);
 
     doc.heading(l.t("Resultados por banda", "Results by band"), 13.0);
-    if results.is_empty() {
+    if floors.iter().all(|f| f.results.is_empty()) {
         doc.callout(
             l.t(
                 "El proyecto no tiene APs con radios activas.",
@@ -659,130 +747,175 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
             WARN,
         );
     } else {
-        let header = vec![
+        let mut header = vec![
             l.t("Banda", "Band").to_owned(),
             l.t("Radios", "Radios").to_owned(),
             l.t("Cobertura", "Coverage").to_owned(),
             l.t("Zonas sin cobertura", "Coverage gaps").to_owned(),
             l.t("Solapamiento ≥ 2", "Overlap ≥ 2").to_owned(),
         ];
-        let rows: Vec<Vec<String>> = results
+        let mut widths = vec![1.0, 1.0, 1.2, 1.4, 1.4];
+        if multi {
+            header.insert(0, l.t("Piso", "Floor").to_owned());
+            widths.insert(0, 1.4);
+        }
+        let rows: Vec<Vec<String>> = floors
             .iter()
-            .map(|r| {
-                vec![
-                    r.band.label().to_owned(),
-                    radios_in(project, r.band).to_string(),
-                    pct(r.analysis.coverage_ratio),
-                    r.analysis.gaps.len().to_string(),
-                    pct(r.analysis.overlap_share),
-                ]
+            .flat_map(|fr| {
+                fr.results.iter().map(move |r| {
+                    let mut row = vec![
+                        r.band.label().to_owned(),
+                        radios_in(&fr.project, r.band).to_string(),
+                        pct(r.analysis.coverage_ratio),
+                        r.analysis.gaps.len().to_string(),
+                        pct(r.analysis.overlap_share),
+                    ];
+                    if multi {
+                        row.insert(0, fr.name.clone());
+                    }
+                    row
+                })
             })
             .collect();
-        doc.table(&header, &rows, &[1.0, 1.0, 1.2, 1.4, 1.4]);
+        doc.table(&header, &rows, &widths);
     }
 
-    // ---- per band ----
-    for r in &results {
-        doc.new_page();
-        let area = r.analysis.analysed_cells as f32 * r.metrics.grid.cell_m * r.metrics.grid.cell_m;
-        doc.section(
-            &format!("{} {}", l.t("Banda", "Band"), r.band.label()),
-            &format!(
-                "{} {}",
-                l.t("Mapas de calor ·", "Heat maps ·"),
-                r.band.label()
-            ),
-            &format!(
-                "{} ({area:.0} m²).",
-                l.t(
-                    "Área analizada: interior del contorno de paredes",
-                    "Analysed area: inside the outline of the walls"
-                )
-            ),
-        );
-        doc.kpis(&[
-            Kpi {
-                value: pct(r.analysis.coverage_ratio),
-                label: l
-                    .t("cumple los requisitos", "meets the requirements")
-                    .into(),
-                color: coverage_color(r.analysis.coverage_ratio),
-            },
-            Kpi {
-                value: r.analysis.gaps.len().to_string(),
-                label: l.t("zonas sin cobertura", "coverage gaps").into(),
-                color: if r.analysis.gaps.is_empty() { OK } else { WARN },
-            },
-            Kpi {
-                value: pct(r.analysis.overlap_share),
-                label: l
-                    .t("con 2 o más radios solapadas", "with 2+ overlapping radios")
-                    .into(),
-                color: if r.analysis.overlap_share > 0.2 {
-                    WARN
-                } else {
-                    INK
-                },
-            },
-            Kpi {
-                value: radios_in(project, r.band).to_string(),
-                label: l.t("radios activas", "enabled radios").into(),
-                color: INK,
-            },
-        ]);
-        for (kind, img) in &r.maps {
-            let (title, caption) = metric_text(*kind, project, l);
-            doc.figure_card(&title, &caption, img, 192.0);
-        }
-
-        if !r.analysis.gaps.is_empty() {
-            doc.heading(
-                l.t("Zonas con cobertura deficiente", "Areas with poor coverage"),
-                13.0,
+    // ---- per floor and band ----
+    for fr in &floors {
+        let project = &fr.project;
+        if multi {
+            doc.new_page();
+            let (w, h) = project.plan.size_m();
+            let info = &project.floor;
+            doc.section(
+                &fr.name,
+                &format!("{} · {}", l.t("Piso", "Floor"), fr.name),
+                &format!(
+                    "{w:.1} × {h:.1} m · {} {:.1} m · {} {:.0} dB · {} {}",
+                    l.t("altura", "height"),
+                    info.height_m,
+                    l.t("losa", "slab"),
+                    info.slab_loss_db,
+                    project.aps.len(),
+                    l.t("APs", "APs"),
+                ),
             );
-            let header = vec![
-                "#".to_owned(),
-                l.t("Área", "Area").to_owned(),
-                l.t("Centro (x, y)", "Center (x, y)").to_owned(),
-                l.t("Mejor señal", "Best signal").to_owned(),
-            ];
-            let rows: Vec<Vec<String>> = r
-                .analysis
-                .gaps
-                .iter()
-                .take(25)
-                .map(|z| {
-                    vec![
-                        z.number.to_string(),
-                        format!("{:.1} m²", z.area_m2),
-                        format!("{:.1}, {:.1} m", z.centroid.x, z.centroid.y),
-                        z.best_rssi
-                            .map_or(l.t("sin señal", "no signal").to_owned(), |v| {
-                                format!("{:.0} dBm", v.0)
-                            }),
-                    ]
-                })
-                .collect();
-            doc.table(&header, &rows, &[0.5, 1.0, 1.6, 1.2]);
-            if r.analysis.gaps.len() > 25 {
-                doc.text(
-                    &format!(
-                        "{} {} {}",
-                        l.t("…y", "…and"),
-                        r.analysis.gaps.len() - 25,
-                        l.t("zonas más pequeñas.", "smaller areas.")
-                    ),
-                    9.0,
-                    false,
-                    MUTED,
-                    0.0,
-                );
-            }
+            let placement = placement_map(project, fr.plan, opts.image_width_px);
+            doc.figure_card(
+                l.t("Sembrado de puntos de acceso", "Access point placement"),
+                &fr.name,
+                &placement,
+                (CONTENT_BOTTOM - doc.y() - 40.0).max(200.0),
+            );
         }
+        for r in &fr.results {
+            doc.new_page();
+            let area =
+                r.analysis.analysed_cells as f32 * r.metrics.grid.cell_m * r.metrics.grid.cell_m;
+            let floor_prefix = if multi {
+                format!("{} · ", fr.name)
+            } else {
+                String::new()
+            };
+            doc.section(
+                &format!("{floor_prefix}{} {}", l.t("Banda", "Band"), r.band.label()),
+                &format!(
+                    "{} {}",
+                    l.t("Mapas de calor ·", "Heat maps ·"),
+                    r.band.label()
+                ),
+                &format!(
+                    "{} ({area:.0} m²).",
+                    l.t(
+                        "Área analizada: interior del contorno de paredes",
+                        "Analysed area: inside the outline of the walls"
+                    )
+                ),
+            );
+            doc.kpis(&[
+                Kpi {
+                    value: pct(r.analysis.coverage_ratio),
+                    label: l
+                        .t("cumple los requisitos", "meets the requirements")
+                        .into(),
+                    color: coverage_color(r.analysis.coverage_ratio),
+                },
+                Kpi {
+                    value: r.analysis.gaps.len().to_string(),
+                    label: l.t("zonas sin cobertura", "coverage gaps").into(),
+                    color: if r.analysis.gaps.is_empty() { OK } else { WARN },
+                },
+                Kpi {
+                    value: pct(r.analysis.overlap_share),
+                    label: l
+                        .t("con 2 o más radios solapadas", "with 2+ overlapping radios")
+                        .into(),
+                    color: if r.analysis.overlap_share > 0.2 {
+                        WARN
+                    } else {
+                        INK
+                    },
+                },
+                Kpi {
+                    value: radios_in(project, r.band).to_string(),
+                    label: l.t("radios activas", "enabled radios").into(),
+                    color: INK,
+                },
+            ]);
+            for (kind, img) in &r.maps {
+                let (title, caption) = metric_text(*kind, project, l);
+                doc.figure_card(&title, &caption, img, 192.0);
+            }
 
-        doc.heading(l.t("Recomendaciones", "Recommendations"), 13.0);
-        for f in &r.analysis.findings {
-            doc.callout(&finding_text(f, l), severity_color(&f.severity()));
+            if !r.analysis.gaps.is_empty() {
+                doc.heading(
+                    l.t("Zonas con cobertura deficiente", "Areas with poor coverage"),
+                    13.0,
+                );
+                let header = vec![
+                    "#".to_owned(),
+                    l.t("Área", "Area").to_owned(),
+                    l.t("Centro (x, y)", "Center (x, y)").to_owned(),
+                    l.t("Mejor señal", "Best signal").to_owned(),
+                ];
+                let rows: Vec<Vec<String>> = r
+                    .analysis
+                    .gaps
+                    .iter()
+                    .take(25)
+                    .map(|z| {
+                        vec![
+                            z.number.to_string(),
+                            format!("{:.1} m²", z.area_m2),
+                            format!("{:.1}, {:.1} m", z.centroid.x, z.centroid.y),
+                            z.best_rssi
+                                .map_or(l.t("sin señal", "no signal").to_owned(), |v| {
+                                    format!("{:.0} dBm", v.0)
+                                }),
+                        ]
+                    })
+                    .collect();
+                doc.table(&header, &rows, &[0.5, 1.0, 1.6, 1.2]);
+                if r.analysis.gaps.len() > 25 {
+                    doc.text(
+                        &format!(
+                            "{} {} {}",
+                            l.t("…y", "…and"),
+                            r.analysis.gaps.len() - 25,
+                            l.t("zonas más pequeñas.", "smaller areas.")
+                        ),
+                        9.0,
+                        false,
+                        MUTED,
+                        0.0,
+                    );
+                }
+            }
+
+            doc.heading(l.t("Recomendaciones", "Recommendations"), 13.0);
+            for f in &r.analysis.findings {
+                doc.callout(&finding_text(f, l), severity_color(&f.severity()));
+            }
         }
     }
 
@@ -793,14 +926,14 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
         l.t("Puntos de acceso", "Access points"),
         &format!(
             "{} {}",
-            project.aps.len(),
+            total_aps,
             l.t(
                 "puntos de acceso con su modelo, montaje y radios.",
                 "access points with their model, mounting and radios."
             )
         ),
     );
-    let header = vec![
+    let mut header = vec![
         l.t("Nombre", "Name").to_owned(),
         l.t("Modelo", "Model").to_owned(),
         l.t("Posición", "Position").to_owned(),
@@ -811,10 +944,10 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
         )
         .to_owned(),
     ];
-    let rows: Vec<Vec<String>> = project
-        .aps
+    let rows: Vec<Vec<String>> = floors
         .iter()
-        .map(|a| {
+        .flat_map(|fr| fr.project.aps.iter().map(move |a| (fr, a)))
+        .map(|(fr, a)| {
             let model = format!("{} {}", a.vendor, a.model).trim().to_owned();
             let radios = a
                 .radios
@@ -837,7 +970,7 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
                 })
                 .collect::<Vec<_>>()
                 .join("\n");
-            vec![
+            let mut row = vec![
                 a.name.clone(),
                 if model.is_empty() {
                     "—".into()
@@ -855,10 +988,19 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
                     ),
                 },
                 radios,
-            ]
+            ];
+            if multi {
+                row.insert(1, fr.name.clone());
+            }
+            row
         })
         .collect();
-    doc.table(&header, &rows, &[1.0, 1.4, 1.1, 1.0, 3.0]);
+    let mut widths = vec![1.0, 1.4, 1.1, 1.0, 3.0];
+    if multi {
+        header.insert(1, l.t("Piso", "Floor").to_owned());
+        widths.insert(1, 0.9);
+    }
+    doc.table(&header, &rows, &widths);
 
     // ---- method ----
     doc.section(
@@ -867,8 +1009,8 @@ pub fn build_pdf(project: &Project, plan: Option<&DecodedPlan>, opts: &ReportOpt
         "",
     );
     doc.paragraph(l.t(
-        "Predicción con pérdida de trayecto log-distance o de espacio libre más la atenuación de cada pared atravesada por la línea directa entre el AP y cada punto (modelo 2D de un piso). No se modelan reflexiones ni difracción. Los APs en techo se consideran omnidireccionales; los APs en pared usan un patrón horizontal simplificado (apertura del haz y pérdida trasera) según su dirección. La interferencia (SINR) solo considera radios en el mismo canal o en canales que comparten espectro, con la fracción de espectro solapada; los APs en canales distintos no se interfieren. Los valores de potencia y ganancia de los modelos de catálogo provienen de las fichas de cada fabricante; los límites regulatorios locales pueden ser menores. Las mediciones de campo, si se incluyen, permiten calibrar el modelo.",
-        "Prediction with log-distance or free-space path loss plus the loss of every wall crossed by the straight path between the AP and each point (2D, single floor). Reflection and diffraction are not modelled. Ceiling APs are treated as omnidirectional; wall APs use a simplified horizontal pattern (beamwidth and front-to-back loss) along their pointing direction. Interference (SINR) only counts radios on the same channel or on channels sharing spectrum, by their overlapping fraction; APs on different channels do not interfere. Power and gain of catalog models come from vendor datasheets; local regulatory limits may be lower. Field measurements, when included, allow calibrating the model.",
+        "Predicción con pérdida de trayecto log-distance o de espacio libre más la atenuación de cada pared atravesada por la línea directa entre el AP y cada punto (modelo 2D por piso; en edificios de varios pisos, los APs de hasta dos pisos arriba y abajo se suman restando la pérdida de cada losa y con la distancia vertical). No se modelan reflexiones ni difracción. Los APs en techo se consideran omnidireccionales; los APs en pared usan un patrón horizontal simplificado (apertura del haz y pérdida trasera) según su dirección. La interferencia (SINR) solo considera radios en el mismo canal o en canales que comparten espectro, con la fracción de espectro solapada; los APs en canales distintos no se interfieren. Los valores de potencia y ganancia de los modelos de catálogo provienen de las fichas de cada fabricante; los límites regulatorios locales pueden ser menores. Las mediciones de campo, si se incluyen, permiten calibrar el modelo.",
+        "Prediction with log-distance or free-space path loss plus the loss of every wall crossed by the straight path between the AP and each point (2D per floor; in multi-floor buildings, APs up to two floors above and below are added minus the loss of each slab and with the vertical distance). Reflection and diffraction are not modelled. Ceiling APs are treated as omnidirectional; wall APs use a simplified horizontal pattern (beamwidth and front-to-back loss) along their pointing direction. Interference (SINR) only counts radios on the same channel or on channels sharing spectrum, by their overlapping fraction; APs on different channels do not interfere. Power and gain of catalog models come from vendor datasheets; local regulatory limits may be lower. Field measurements, when included, allow calibrating the model.",
     ));
     doc.finish()
 }
@@ -895,11 +1037,13 @@ mod tests {
             p.walls.push(Wall {
                 segment: Segment::new(c[k], c[(k + 1) % 4]),
                 material: MaterialId(5),
+                thickness_cm: None,
             });
         }
         p.walls.push(Wall {
             segment: Segment::new(Vec2::new(20.0, 0.0), Vec2::new(20.0, 20.0)),
             material: MaterialId(6),
+            thickness_cm: None,
         });
         p.aps.push(AccessPoint {
             id: ApId(1),
@@ -975,6 +1119,46 @@ mod tests {
             // Summary + 2 bands + AP table.
             assert!(pdf.pages().len() >= 4, "{}", pdf.pages().len());
         }
+    }
+
+    #[test]
+    fn buildings_get_a_section_per_floor() {
+        let mut p = project();
+        let pages = |p: &Project| {
+            let bytes = build_pdf(
+                p,
+                None,
+                &ReportOptions {
+                    image_width_px: 400,
+                    date: Some("2026-10-16".into()),
+                    ..Default::default()
+                },
+            );
+            hayro::hayro_syntax::Pdf::new(bytes)
+                .expect("valid PDF")
+                .pages()
+                .len()
+        };
+        let single = pages(&p);
+        // A second floor with the same layout and one AP.
+        let mut upper = ondalux_core::project::Floor::new(Default::default(), 0, 0);
+        upper.plan = p.plan.clone();
+        upper.walls = p.walls.clone();
+        let mut ap = p.aps[0].clone();
+        ap.id = ApId(50);
+        upper.aps.push(ap);
+        p.insert_floor(1, upper);
+        assert_eq!(floor_name(&p, 1, Lang::En), "Floor 2");
+        // Floor section + its band pages on top of the single-floor report.
+        assert!(pages(&p) > single + 1, "{} vs {single}", pages(&p));
+        // The lower floor hears the upper AP through the slab.
+        let lower = compute_bands(&p, None, &[Band::G5], Lang::Es, 300);
+        let alone = {
+            let mut q = p.clone();
+            q.cross_floor = false;
+            compute_bands(&q, None, &[Band::G5], Lang::Es, 300)
+        };
+        assert!(lower[0].analysis.coverage_ratio >= alone[0].analysis.coverage_ratio);
     }
 
     #[test]

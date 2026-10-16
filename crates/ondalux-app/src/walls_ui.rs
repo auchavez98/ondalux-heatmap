@@ -73,14 +73,14 @@ pub fn start(app: &mut OndaluxApp, ctx: &egui::Context) {
     let Some(doc) = app.doc.as_ref() else {
         return;
     };
-    let Some(image) = doc.plan_image.clone() else {
+    let Some(image) = doc.plan_image().cloned() else {
         app.error(t(
             "El proyecto no tiene plano.",
             "The project has no floor plan.",
         ));
         return;
     };
-    let source = doc.plan_source.clone();
+    let source = doc.plan_source().cloned();
     let st = &mut app.walls;
     *st = WallDetectState {
         open: true,
@@ -197,9 +197,16 @@ fn apply(app: &mut OndaluxApp) {
     for (w, material) in walls {
         let a = plan.px_to_m(WVec2::new(w.a.x, w.a.y));
         let b = plan.px_to_m(WVec2::new(w.b.x, w.b.y));
+        // The measured thickness, when the scale is known.
+        let thickness_cm = plan.calibration.is_some().then(|| {
+            (w.thickness_px / plan.px_per_m() * 100.0)
+                .round()
+                .clamp(1.0, 100.0)
+        });
         doc.project.walls.push(Wall {
             segment: Segment::new(a, b),
             material,
+            thickness_cm,
         });
     }
     app.walls.open = false;

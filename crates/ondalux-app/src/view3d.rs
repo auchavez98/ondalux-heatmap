@@ -1,6 +1,7 @@
 //! 3D view: the floor plan and heat map on the floor, walls extruded with
 //! their material color and access points at their mounting height, seen
-//! through an orbiting perspective camera.
+//! through an orbiting perspective camera. Other floors of the building are
+//! stacked above and below, faint.
 //!
 //! Drawn with egui meshes (no 3D engine): points are projected on the CPU
 //! and shapes are painted back to front. Walls are semi-transparent so the
@@ -9,23 +10,20 @@
 use crate::app::OndaluxApp;
 use crate::i18n::t;
 use eframe::egui::{self, Color32, Mesh, PointerButton, Pos2, Rect, Sense, Shape, Stroke};
-use ondalux_core::ap::Mount;
+use ondalux_core::ap::{AccessPoint, Mount};
 use ondalux_core::geometry::Vec2 as WVec2;
+use ondalux_core::material::{MaterialLibrary, Wall};
+use ondalux_core::project::FloorInfo;
 
-/// Wall height when the project has no access points yet, in meters.
-pub const DEFAULT_WALL_HEIGHT_M: f32 = 3.0;
-/// Walls are never drawn lower than this.
-const MIN_WALL_HEIGHT_M: f32 = 2.5;
+/// Height walls are extruded to: the floor-to-floor height, raised to the
+/// highest AP mounting height so ceiling APs never float above the walls.
+pub fn floor_wall_height(info: &FloorInfo, aps: &[AccessPoint]) -> f32 {
+    aps.iter().map(|a| a.height_m).fold(info.height_m, f32::max)
+}
 
-/// Height walls are extruded to: the ceiling, taken as the highest AP
-/// mounting height (ceiling APs then sit on it), at least 2.5 m.
+/// Wall height of the active floor.
 pub fn wall_height(project: &ondalux_core::project::Project) -> f32 {
-    project
-        .aps
-        .iter()
-        .map(|a| a.height_m)
-        .fold(None, |m: Option<f32>, h| Some(m.map_or(h, |m| m.max(h))))
-        .map_or(DEFAULT_WALL_HEIGHT_M, |h| h.max(MIN_WALL_HEIGHT_M))
+    floor_wall_height(&project.floor, &project.aps)
 }
 const FOV_Y: f32 = 50.0;
 const NEAR: f32 = 0.05;
@@ -41,6 +39,8 @@ pub struct View3dState {
     pub distance: f32,
     /// Point the camera orbits around (meters); `None` = plan center.
     pub target: Option<[f32; 3]>,
+    /// Draw the other floors of the building.
+    pub other_floors: bool,
 }
 
 impl Default for View3dState {
@@ -51,6 +51,7 @@ impl Default for View3dState {
             pitch: 0.85,
             distance: 0.0,
             target: None,
+            other_floors: true,
         }
     }
 }
@@ -60,6 +61,7 @@ impl View3dState {
     pub fn reset(&mut self) {
         *self = Self {
             enabled: self.enabled,
+            other_floors: self.other_floors,
             ..Self::default()
         };
     }
@@ -184,6 +186,12 @@ fn floor_mesh(
 }
 
 enum Item {
+    /// A flat polygon (slab of another floor).
+    Quad {
+        corners: [Pos2; 4],
+        fill: Color32,
+        edge: Color32,
+    },
     Wall {
         corners: [Pos2; 4],
         fill: Color32,
@@ -196,7 +204,252 @@ enum Item {
         label: String,
         fill: Color32,
         aim: Option<Pos2>,
+        ghost: bool,
     },
+}
+
+/// One floor to draw: its content in its own plan coordinates, where it
+/// sits in the building, and whether it is drawn faint.
+struct FloorView<'a> {
+    walls: &'a [Wall],
+    aps: &'a [AccessPoint],
+    offset: WVec2,
+    base_z: f32,
+    wall_h: f32,
+    ghost: bool,
+}
+
+fn push_floor_items(
+    items: &mut Vec<(f32, Item)>,
+    cam: &Camera,
+    fl: &FloorView,
+    materials: &MaterialLibrary,
+    band: ondalux_core::channel::Band,
+) {
+    let light = norm([0.45, -0.75, 0.0]);
+    let (z0, z1) = (fl.base_z, fl.base_z + fl.wall_h);
+    for wall in fl.walls {
+        let (a, b) = (wall.segment.a + fl.offset, wall.segment.b + fl.offset);
+        let len = a.distance(b);
+        if len < 1e-4 {
+            continue;
+        }
+        let c = materials
+            .get(wall.material)
+            .map_or([150, 150, 150, 255], |m| m.color);
+        // A box as thick as the wall: two sides, the top and both ends.
+        let half = wall.effective_thickness_cm(materials) * 0.005;
+        let (ux, uy) = ((b.x - a.x) / len, (b.y - a.y) / len);
+        let (nx, ny) = (-uy * half, ux * half);
+        let a1 = [a.x + nx, a.y + ny];
+        let a2 = [a.x - nx, a.y - ny];
+        let b1 = [b.x + nx, b.y + ny];
+        let b2 = [b.x - nx, b.y - ny];
+        let lo = |p: [f32; 2]| [p[0], p[1], z0];
+        let hi = |p: [f32; 2]| [p[0], p[1], z1];
+        let side_n = norm([-uy, ux, 0.0]);
+        let end_n = [ux, uy, 0.0];
+        let faces: [([V3; 4], V3, bool); 5] = [
+            ([lo(a1), lo(b1), hi(b1), hi(a1)], side_n, true),
+            ([lo(a2), lo(b2), hi(b2), hi(a2)], side_n, true),
+            ([hi(a1), hi(b1), hi(b2), hi(a2)], [0.0, 0.0, 1.0], false),
+            ([lo(a1), lo(a2), hi(a2), hi(a1)], end_n, false),
+            ([lo(b1), lo(b2), hi(b2), hi(b1)], end_n, false),
+        ];
+        for (pts, n, side) in faces {
+            let proj: Vec<_> = pts.iter().filter_map(|p| cam.project(*p)).collect();
+            if proj.len() < 4 {
+                continue;
+            }
+            let (fill, edge) = if fl.ghost {
+                if !side {
+                    continue;
+                }
+                (
+                    Color32::from_rgba_unmultiplied(150, 160, 175, 38),
+                    Color32::from_rgba_unmultiplied(120, 130, 150, 90),
+                )
+            } else {
+                // The top is lit the most.
+                let shade = if n[2] > 0.5 {
+                    1.0
+                } else {
+                    0.6 + 0.4 * dot(n, light).abs()
+                };
+                let rgb = |v: u8| (v as f32 * shade).round() as u8;
+                (
+                    Color32::from_rgba_unmultiplied(rgb(c[0]), rgb(c[1]), rgb(c[2]), 165),
+                    Color32::from_rgba_unmultiplied(
+                        (c[0] as f32 * 0.45) as u8,
+                        (c[1] as f32 * 0.45) as u8,
+                        (c[2] as f32 * 0.45) as u8,
+                        230,
+                    ),
+                )
+            };
+            let mid = [
+                pts.iter().map(|p| p[0]).sum::<f32>() * 0.25,
+                pts.iter().map(|p| p[1]).sum::<f32>() * 0.25,
+                pts.iter().map(|p| p[2]).sum::<f32>() * 0.25,
+            ];
+            items.push((
+                cam.depth(mid),
+                Item::Wall {
+                    corners: [proj[0].0, proj[1].0, proj[2].0, proj[3].0],
+                    fill,
+                    edge,
+                },
+            ));
+        }
+    }
+    for ap in fl.aps {
+        let p = ap.position + fl.offset;
+        let top = [p.x, p.y, z0 + ap.height_m];
+        let (Some((ts, depth)), Some((fs, _))) = (cam.project(top), cam.project([p.x, p.y, z0]))
+        else {
+            continue;
+        };
+        let has_band = ap.enabled_radios().any(|(_, r)| r.channel.band == band);
+        let fill = match (fl.ghost, has_band) {
+            (true, _) => Color32::from_rgba_unmultiplied(110, 130, 170, 140),
+            (false, true) => Color32::from_rgb(40, 110, 220),
+            (false, false) => Color32::from_gray(130),
+        };
+        let aim = (ap.mount == Mount::Wall && !fl.ghost)
+            .then(|| {
+                let d = ap.direction();
+                cam.project([p.x + d.x * 1.2, p.y + d.y * 1.2, top[2]])
+            })
+            .flatten()
+            .map(|p| p.0);
+        let r = (0.25 * cam.focal_px / depth).clamp(4.0, 14.0);
+        items.push((
+            depth,
+            Item::Ap {
+                top: ts,
+                floor: fs,
+                radius: if fl.ghost { r * 0.7 } else { r },
+                label: ap.name.clone(),
+                fill,
+                aim,
+                ghost: fl.ghost,
+            },
+        ));
+    }
+}
+
+/// The outline of another floor's plan, as a faint slab.
+fn push_slab(items: &mut Vec<(f32, Item)>, cam: &Camera, min: WVec2, max: WVec2, z: f32) {
+    let pts = [
+        [min.x, min.y, z],
+        [max.x, min.y, z],
+        [max.x, max.y, z],
+        [min.x, max.y, z],
+    ];
+    let proj: Vec<_> = pts.iter().filter_map(|p| cam.project(*p)).collect();
+    if proj.len() < 4 {
+        return;
+    }
+    let center = [(min.x + max.x) * 0.5, (min.y + max.y) * 0.5, z];
+    items.push((
+        // Behind everything standing on it.
+        cam.depth(center) + (max.x - min.x).max(max.y - min.y),
+        Item::Quad {
+            corners: [proj[0].0, proj[1].0, proj[2].0, proj[3].0],
+            fill: Color32::from_rgba_unmultiplied(170, 180, 195, 22),
+            edge: Color32::from_rgba_unmultiplied(120, 130, 150, 110),
+        },
+    ));
+}
+
+fn paint_items(painter: &egui::Painter, mut items: Vec<(f32, Item)>) {
+    items.sort_by(|a, b| b.0.total_cmp(&a.0));
+    for (_, item) in items {
+        match item {
+            Item::Quad {
+                corners,
+                fill,
+                edge,
+            } => {
+                let mut mesh = Mesh::default();
+                for p in corners {
+                    mesh.colored_vertex(p, fill);
+                }
+                mesh.add_triangle(0, 1, 2);
+                mesh.add_triangle(0, 2, 3);
+                painter.add(Shape::mesh(mesh));
+                let stroke = Stroke::new(1.0, edge);
+                for i in 0..4 {
+                    painter.line_segment([corners[i], corners[(i + 1) % 4]], stroke);
+                }
+            }
+            Item::Wall {
+                corners,
+                fill,
+                edge,
+            } => {
+                let mut mesh = Mesh::default();
+                for p in corners {
+                    mesh.colored_vertex(p, fill);
+                }
+                mesh.add_triangle(0, 1, 2);
+                mesh.add_triangle(0, 2, 3);
+                painter.add(Shape::mesh(mesh));
+                let stroke = Stroke::new(1.2, edge);
+                painter.line_segment([corners[3], corners[2]], stroke);
+                painter.line_segment([corners[0], corners[3]], stroke);
+                painter.line_segment([corners[1], corners[2]], stroke);
+                painter.line_segment([corners[0], corners[1]], Stroke::new(2.0, edge));
+            }
+            Item::Ap {
+                top,
+                floor,
+                radius,
+                label,
+                fill,
+                aim,
+                ghost,
+            } => {
+                let line = if ghost {
+                    Color32::from_white_alpha(90)
+                } else {
+                    Color32::from_white_alpha(200)
+                };
+                painter.add(Shape::dashed_line(
+                    &[floor, top],
+                    Stroke::new(1.5, line),
+                    4.0,
+                    3.0,
+                ));
+                painter.circle_filled(floor, 3.0, Color32::from_black_alpha(140));
+                if let Some(a) = aim {
+                    painter
+                        .line_segment([top, a], Stroke::new(2.5, Color32::from_rgb(255, 170, 40)));
+                }
+                painter.circle(top, radius, fill, Stroke::new(2.0, line));
+                if ghost {
+                    continue;
+                }
+                let font = egui::FontId::proportional(12.0);
+                let pos = top + egui::vec2(0.0, -radius - 4.0);
+                let r = painter.text(
+                    pos,
+                    egui::Align2::CENTER_BOTTOM,
+                    &label,
+                    font.clone(),
+                    Color32::WHITE,
+                );
+                painter.rect_filled(r.expand(2.0), 3.0, Color32::from_black_alpha(170));
+                painter.text(
+                    pos,
+                    egui::Align2::CENTER_BOTTOM,
+                    label,
+                    font,
+                    Color32::WHITE,
+                );
+            }
+        }
+    }
 }
 
 pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
@@ -209,11 +462,16 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     let (w, h) = project.plan.size_m();
     let span = w.max(h).max(1.0);
     let wall_h = wall_height(project);
+    // The active floor in building coordinates.
+    let fi = project.floor_index;
+    let origin = project.floor.offset_m;
+    let base_z = project.floor_elevation_m(fi);
     let st = &mut app.view3d;
     if st.distance <= 0.0 {
         st.distance = span * 1.25;
     }
-    let mut target = st.target.unwrap_or([w * 0.5, h * 0.5, 0.0]);
+    let home = [origin.x + w * 0.5, origin.y + h * 0.5, base_z];
+    let mut target = st.target.unwrap_or(home);
 
     // ---- interaction ----
     if response.dragged_by(PointerButton::Primary) {
@@ -243,8 +501,16 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
     if response.double_clicked() {
         st.reset();
         st.distance = span * 1.25;
-        target = [w * 0.5, h * 0.5, 0.0];
+        target = home;
     }
+    // Switching floors moves the camera with them.
+    if (target[2] - base_z).abs() > 1e-3 {
+        target[2] = base_z;
+        if st.target.is_some() {
+            st.target = Some(target);
+        }
+    }
+    let show_others = st.other_floors;
     let cam = Camera::new(st, target, rect);
 
     // ---- drawing ----
@@ -255,32 +521,50 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
         crate::style::LIGHT
     };
     painter.rect_filled(rect, 0.0, pal.backdrop);
-    let steps = 36;
-    // Floor: the plan image, then the heat map on top.
-    match &app.plan_texture {
-        Some(tex) => {
-            painter.add(Shape::mesh(floor_mesh(
-                &cam,
-                tex.id(),
-                WVec2::new(0.0, 0.0),
-                WVec2::new(w, h),
-                Color32::WHITE,
-                0.0,
-                steps,
-            )));
-        }
-        None => {
-            painter.add(Shape::mesh(floor_mesh(
-                &cam,
-                egui::TextureId::default(),
-                WVec2::new(0.0, 0.0),
-                WVec2::new(w, h),
-                Color32::from_gray(225),
-                0.0,
-                steps,
-            )));
+    let band = app.heat.band;
+
+    // Floors below first: the active floor's plan covers them.
+    let mut below: Vec<(f32, Item)> = Vec::new();
+    let mut above: Vec<(f32, Item)> = Vec::new();
+    if show_others && project.floor_count() > 1 {
+        let floors = project.floors();
+        for (g, floor) in floors.iter().enumerate() {
+            if g == fi {
+                continue;
+            }
+            let z = project.floor_elevation_m(g);
+            let off = floor.info.offset_m;
+            let (fw, fh) = floor.plan.size_m();
+            let items = if g < fi { &mut below } else { &mut above };
+            push_slab(items, &cam, off, off + WVec2::new(fw, fh), z);
+            let view = FloorView {
+                walls: &floor.walls,
+                aps: &floor.aps,
+                offset: off,
+                base_z: z,
+                wall_h: floor_wall_height(&floor.info, &floor.aps),
+                ghost: true,
+            };
+            push_floor_items(items, &cam, &view, &project.materials, band);
         }
     }
+    paint_items(&painter, below);
+
+    // The active floor: the plan image, then the heat map on top.
+    let steps = 36;
+    let (tex, tint) = match &app.plan_texture {
+        Some(tex) => (tex.id(), Color32::WHITE),
+        None => (egui::TextureId::default(), Color32::from_gray(225)),
+    };
+    painter.add(Shape::mesh(floor_mesh(
+        &cam,
+        tex,
+        origin,
+        origin + WVec2::new(w, h),
+        tint,
+        base_z,
+        steps,
+    )));
     if app.heat.show {
         if let (Some(tex), Some(f)) = (&app.heat.texture, &app.heat.field) {
             let g = f.grid;
@@ -288,157 +572,30 @@ pub fn show(app: &mut OndaluxApp, ui: &mut egui::Ui) {
             painter.add(Shape::mesh(floor_mesh(
                 &cam,
                 tex.id(),
-                g.origin,
-                WVec2::new(
-                    g.origin.x + g.cols as f32 * g.cell_m,
-                    g.origin.y + g.rows as f32 * g.cell_m,
-                ),
+                origin + g.origin,
+                origin
+                    + WVec2::new(
+                        g.origin.x + g.cols as f32 * g.cell_m,
+                        g.origin.y + g.rows as f32 * g.cell_m,
+                    ),
                 Color32::from_white_alpha(alpha),
-                0.01,
+                base_z + 0.01,
                 steps,
             )));
         }
     }
 
-    // Walls and APs, back to front.
-    let light = norm([0.45, -0.75, 0.0]);
-    let mut items: Vec<(f32, Item)> = Vec::new();
-    for wall in &project.walls {
-        let (a, b) = (wall.segment.a, wall.segment.b);
-        let pts = [
-            [a.x, a.y, 0.0],
-            [b.x, b.y, 0.0],
-            [b.x, b.y, wall_h],
-            [a.x, a.y, wall_h],
-        ];
-        let proj: Vec<_> = pts.iter().filter_map(|p| cam.project(*p)).collect();
-        if proj.len() < 4 {
-            continue;
-        }
-        let c = project
-            .materials
-            .get(wall.material)
-            .map_or([150, 150, 150, 255], |m| m.color);
-        let n = norm([-(b.y - a.y), b.x - a.x, 0.0]);
-        let shade = 0.6 + 0.4 * dot(n, light).abs();
-        let rgb = |v: u8| (v as f32 * shade).round() as u8;
-        let fill = Color32::from_rgba_unmultiplied(rgb(c[0]), rgb(c[1]), rgb(c[2]), 165);
-        let edge = Color32::from_rgba_unmultiplied(
-            (c[0] as f32 * 0.45) as u8,
-            (c[1] as f32 * 0.45) as u8,
-            (c[2] as f32 * 0.45) as u8,
-            230,
-        );
-        let mid = [(a.x + b.x) * 0.5, (a.y + b.y) * 0.5, wall_h * 0.5];
-        items.push((
-            cam.depth(mid),
-            Item::Wall {
-                corners: [proj[0].0, proj[1].0, proj[2].0, proj[3].0],
-                fill,
-                edge,
-            },
-        ));
-    }
-    for ap in &project.aps {
-        let top = [ap.position.x, ap.position.y, ap.height_m];
-        let (Some((ts, depth)), Some((fs, _))) = (
-            cam.project(top),
-            cam.project([ap.position.x, ap.position.y, 0.0]),
-        ) else {
-            continue;
-        };
-        let has_band = ap
-            .enabled_radios()
-            .any(|(_, r)| r.channel.band == app.heat.band);
-        let fill = if has_band {
-            Color32::from_rgb(40, 110, 220)
-        } else {
-            Color32::from_gray(130)
-        };
-        let aim = (ap.mount == Mount::Wall)
-            .then(|| {
-                let d = ap.direction();
-                cam.project([
-                    ap.position.x + d.x * 1.2,
-                    ap.position.y + d.y * 1.2,
-                    ap.height_m,
-                ])
-            })
-            .flatten()
-            .map(|p| p.0);
-        items.push((
-            depth,
-            Item::Ap {
-                top: ts,
-                floor: fs,
-                radius: (0.25 * cam.focal_px / depth).clamp(4.0, 14.0),
-                label: ap.name.clone(),
-                fill,
-                aim,
-            },
-        ));
-    }
-    items.sort_by(|a, b| b.0.total_cmp(&a.0));
-    for (_, item) in items {
-        match item {
-            Item::Wall {
-                corners,
-                fill,
-                edge,
-            } => {
-                let mut mesh = Mesh::default();
-                for p in corners {
-                    mesh.colored_vertex(p, fill);
-                }
-                mesh.add_triangle(0, 1, 2);
-                mesh.add_triangle(0, 2, 3);
-                painter.add(Shape::mesh(mesh));
-                let stroke = Stroke::new(1.2, edge);
-                painter.line_segment([corners[3], corners[2]], stroke);
-                painter.line_segment([corners[0], corners[3]], stroke);
-                painter.line_segment([corners[1], corners[2]], stroke);
-                painter.line_segment([corners[0], corners[1]], Stroke::new(2.0, edge));
-            }
-            Item::Ap {
-                top,
-                floor,
-                radius,
-                label,
-                fill,
-                aim,
-            } => {
-                painter.add(Shape::dashed_line(
-                    &[floor, top],
-                    Stroke::new(1.5, Color32::from_white_alpha(200)),
-                    4.0,
-                    3.0,
-                ));
-                painter.circle_filled(floor, 3.0, Color32::from_black_alpha(140));
-                if let Some(a) = aim {
-                    painter
-                        .line_segment([top, a], Stroke::new(2.5, Color32::from_rgb(255, 170, 40)));
-                }
-                painter.circle(top, radius, fill, Stroke::new(2.0, Color32::WHITE));
-                let font = egui::FontId::proportional(12.0);
-                let pos = top + egui::vec2(0.0, -radius - 4.0);
-                let r = painter.text(
-                    pos,
-                    egui::Align2::CENTER_BOTTOM,
-                    &label,
-                    font.clone(),
-                    Color32::WHITE,
-                );
-                painter.rect_filled(r.expand(2.0), 3.0, Color32::from_black_alpha(170));
-                painter.text(
-                    pos,
-                    egui::Align2::CENTER_BOTTOM,
-                    label,
-                    font,
-                    Color32::WHITE,
-                );
-            }
-        }
-    }
+    // Walls and APs of the active floor and the floors above, back to front.
+    let view = FloorView {
+        walls: &project.walls,
+        aps: &project.aps,
+        offset: origin,
+        base_z,
+        wall_h,
+        ghost: false,
+    };
+    push_floor_items(&mut above, &cam, &view, &project.materials, band);
+    paint_items(&painter, above);
 
     if let (true, Some(field)) = (app.heat.show, &app.heat.field) {
         crate::canvas::draw_legend(
@@ -472,6 +629,7 @@ mod tests {
             pitch: 0.8,
             distance: 30.0,
             target: None,
+            other_floors: true,
         };
         let rect = Rect::from_min_size(Pos2::ZERO, egui::vec2(800.0, 600.0));
         let cam = Camera::new(&st, [10.0, 5.0, 0.0], rect);
@@ -491,20 +649,22 @@ mod tests {
     }
 
     #[test]
-    fn walls_reach_the_highest_ap() {
+    fn walls_reach_the_ceiling_and_the_highest_ap() {
         use ondalux_core::project::Project;
         let mut p = Project::new("t", 100, 100);
-        assert_eq!(wall_height(&p), DEFAULT_WALL_HEIGHT_M);
+        // The floor-to-floor height (3 m by default).
+        assert_eq!(wall_height(&p), 3.0);
         let ap = crate::canvas::new_ap(&p, WVec2::new(1.0, 1.0));
         for h in [4.2, 2.0] {
             let mut a = ap.clone();
             a.height_m = h;
             p.aps.push(a);
         }
+        // An AP above the ceiling raises the walls with it.
         assert_eq!(wall_height(&p), 4.2);
         p.aps.retain(|a| a.height_m < 3.0);
-        // A low AP never makes the walls lower than 2.5 m.
-        assert_eq!(wall_height(&p), 2.5);
+        p.floor.height_m = 2.6;
+        assert_eq!(wall_height(&p), 2.6);
     }
 
     #[test]
@@ -515,6 +675,7 @@ mod tests {
             pitch: 0.5,
             distance: 10.0,
             target: None,
+            other_floors: true,
         };
         let rect = Rect::from_min_size(Pos2::ZERO, egui::vec2(400.0, 300.0));
         let cam = Camera::new(&st, [0.0, 0.0, 0.0], rect);

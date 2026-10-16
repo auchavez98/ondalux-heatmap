@@ -28,6 +28,7 @@ fn office_walls() -> Vec<Wall> {
             walls.push(Wall {
                 segment: Segment::new(Vec2::new(x, y0), Vec2::new(x, y0 + 7.0)),
                 material: MaterialId(if i % 4 == 0 { 5 } else { 1 }),
+                thickness_cm: None,
             });
         }
     }
@@ -38,6 +39,7 @@ fn office_walls() -> Vec<Wall> {
             walls.push(Wall {
                 segment: Segment::new(Vec2::new(x0, y), Vec2::new(x0 + 4.0, y)),
                 material: MaterialId(if j % 2 == 0 { 3 } else { 1 }),
+                thickness_cm: None,
             });
         }
     }

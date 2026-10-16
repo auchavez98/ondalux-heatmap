@@ -11,7 +11,8 @@ use ondalux_core::colormap::ColorScale;
 use ondalux_io::{decode_plan, DecodedPlan};
 use ondalux_report::map::{render_map, HeatLayer, MapOptions};
 use ondalux_report::report::bands_in_use;
-use ondalux_report::{build_pdf, Lang, ReportOptions};
+use ondalux_report::report::build_building_pdf;
+use ondalux_report::{Lang, ReportOptions};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 
@@ -44,7 +45,7 @@ impl ExportState {
 }
 
 fn decoded_plan(app: &OndaluxApp) -> Option<DecodedPlan> {
-    let plan = app.doc.as_ref()?.plan_image.as_ref()?;
+    let plan = app.doc.as_ref()?.plan_image()?;
     decode_plan(plan).ok()
 }
 
@@ -312,14 +313,18 @@ pub fn report_window(app: &mut OndaluxApp, ctx: &egui::Context) {
         return;
     }
     let project = doc.project.clone();
-    let plan_bytes = doc.plan_image.clone();
+    let plan_files: Vec<_> = doc.floors.clone();
     let (tx, rx) = mpsc::channel();
     let ctx = ctx.clone();
     let spawned = std::thread::Builder::new()
         .name("report".into())
         .spawn(move || {
-            let plan = plan_bytes.as_ref().and_then(|p| decode_plan(p).ok());
-            let pdf = build_pdf(&project, plan.as_ref(), &opts);
+            let plans: Vec<_> = plan_files
+                .iter()
+                .map(|f| f.plan_image.as_ref().and_then(|p| decode_plan(p).ok()))
+                .collect();
+            let refs: Vec<_> = plans.iter().map(Option::as_ref).collect();
+            let pdf = build_building_pdf(&project, &refs, &opts);
             let result = std::fs::write(&path, &pdf)
                 .map(|()| pdf.len() / 1024)
                 .map_err(|e| e.to_string());

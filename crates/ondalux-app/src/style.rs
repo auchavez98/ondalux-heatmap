@@ -340,7 +340,10 @@ pub fn tool_button(
             font,
             fg,
         );
-        // Shortcut key in a small keycap.
+        // Shortcut key in a small keycap (none for an empty key).
+        if key.is_empty() {
+            return response;
+        }
         let key_rect = egui::Rect::from_center_size(
             rect.right_center() - egui::vec2(18.0, 0.0),
             egui::vec2(20.0, 20.0),
