@@ -18,7 +18,8 @@ use std::sync::mpsc::{self, Receiver};
 
 pub struct ExportState {
     pub report_open: bool,
-    lang: Lang,
+    /// Report language; starts as the interface language.
+    pub lang: Lang,
     author: String,
     bands: Vec<(Band, bool)>,
     include_survey: bool,
@@ -29,7 +30,11 @@ impl Default for ExportState {
     fn default() -> Self {
         Self {
             report_open: false,
-            lang: Lang::Es,
+            lang: if crate::i18n::is_english() {
+                Lang::En
+            } else {
+                Lang::Es
+            },
             author: String::new(),
             bands: Vec::new(),
             include_survey: true,

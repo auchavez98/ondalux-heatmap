@@ -17,6 +17,8 @@ mod survey_ui;
 #[cfg(test)]
 mod ui_shots;
 mod update;
+#[cfg(test)]
+mod video;
 mod view;
 mod view3d;
 mod walls_ui;
