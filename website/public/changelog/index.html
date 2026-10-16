@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What's new — Ondalux Heatmap changelog</title>
+  <meta name="description" content="Every Ondalux Heatmap release and what changed: new features, fixes and AP catalog updates.">
+  <link rel="canonical" href="https://ondaluxheatmap.com/changelog/">
+  <link rel="alternate" hreflang="en" href="https://ondaluxheatmap.com/changelog/">
+  <link rel="alternate" hreflang="es" href="https://ondaluxheatmap.com/es/novedades/">
+  <link rel="alternate" hreflang="x-default" href="https://ondaluxheatmap.com/changelog/">
+  <meta name="theme-color" content="#0b0d12">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Ondalux Heatmap">
+  <meta property="og:title" content="What's new — Ondalux Heatmap changelog">
+  <meta property="og:description" content="Every Ondalux Heatmap release and what changed: new features, fixes and AP catalog updates.">
+  <meta property="og:url" content="https://ondaluxheatmap.com/changelog/">
+  <meta property="og:image" content="https://ondaluxheatmap.com/assets/shots/en/03-ap-selected.png">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32.png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="/assets/css/style.css?v=mvb9xrbk">
+  <meta name="google-adsense-account" content="ca-pub-1554642167695614">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1554642167695614" crossorigin="anonymous"></script>
+  
+  <script defer src="/assets/js/main.js?v=mvb9xrbk"></script>
+</head>
+<body class="page-changelog">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="top">
+    <div class="wrap nav__inner">
+      <a class="brand" href="/" aria-label="Ondalux Heatmap">
+        <img src="/assets/img/logo.png" width="32" height="32" alt="">
+        <span>Ondalux <b>Heatmap</b></span>
+      </a>
+      <nav class="nav__links" aria-label="Main">
+        <a href="/#features">Features</a>
+        <a href="/#how">How it works</a>
+        <a href="/#screens">Screenshots</a>
+        <a href="/articles/">Learn</a>
+        <a href="/open-source/">Open source</a>
+      </nav>
+      <div class="nav__actions">
+        <a class="lang" href="/es/novedades/" hreflang="es" lang="es" title="Español">ES</a>
+        <a class="btn btn--small btn--primary" href="/#download">Download</a>
+        <button class="nav__toggle" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <aside class="release-pop" data-version="0.2.0" aria-labelledby="release-pop-title" hidden>
+    <button class="release-pop__close" aria-label="Close">×</button>
+    <span class="tag tag--green">New version · v0.2.0</span>
+    <h2 id="release-pop-title">3D, multi-floor buildings and wall thickness</h2>
+    <ul>
+      <li>3D view (D): walls extruded at their real thickness over the heat map, access points at their height; orbit, pan and zoom.</li><li>Multi-floor buildings: one plan per floor, floor height, slab loss and plan offset. APs up to two floors above and below add their signal through the slabs.</li><li>A PDF with several pages becomes one floor per page. Calibrating one floor applies the scale to the floors of the same size.</li>
+    </ul>
+    <div class="release-pop__actions">
+      <a class="btn btn--primary" href="/downloads/ondalux-heatmap-0.2.0-windows-x64.exe" download data-download>Download</a>
+      <a class="release-pop__more" href="/changelog/">See everything new →</a>
+    </div>
+  </aside>
+
+  <div class="lang-hint" hidden>
+    <span>¿Prefieres leer en español?</span>
+    <a href="/es/novedades/">Español</a>
+    <button aria-label="Close">×</button>
+  </div>
+
+  <main id="main">
+    <section class="subhero">
+      <div class="wrap wrap--narrow subhero__inner">
+        <p class="eyebrow reveal">Changelog</p>
+        <h1 class="reveal">What's <span class="grad">new</span></h1>
+        <p class="article__lead reveal">Every release of Ondalux Heatmap and what changed. The app tells you when a new version is out.</p>
+        <div class="hero__cta reveal">
+          <a class="btn btn--primary" href="/downloads/ondalux-heatmap-0.2.0-windows-x64.exe" download data-download>Download v0.2.0</a>
+          <a class="btn btn--ghost" href="https://github.com/auchavez98/ondalux-heatmap" rel="noopener">Source code</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--tight">
+      <div class="wrap wrap--narrow">
+        <ol class="releases">
+          
+          <li class="release reveal" id="v0.2.0">
+            <header class="release__head">
+              <h2>v0.2.0</h2>
+              <span class="tag tag--green">Latest</span>
+              <time datetime="2026-10-16">October 16, 2026</time>
+            </header>
+            <h3>3D, multi-floor buildings and wall thickness</h3>
+            <ul>
+              <li>3D view (D): walls extruded at their real thickness over the heat map, access points at their height; orbit, pan and zoom.</li><li>Multi-floor buildings: one plan per floor, floor height, slab loss and plan offset. APs up to two floors above and below add their signal through the slabs.</li><li>A PDF with several pages becomes one floor per page. Calibrating one floor applies the scale to the floors of the same size.</li><li>Wall thickness in cm, per wall and for new walls. The loss of solid materials (concrete, block, brick, drywall, wood) follows the thickness.</li><li>Wall detection (beta) now finds diagonal and curved walls, and keeps the measured thickness.</li><li>14 Fortinet FortiAP models (Wi-Fi 6, 6E and 7): 119 models from 15 vendors in the catalog.</li><li>PDF reports cover every floor of the building.</li><li>Help menu: website, GitHub repository, report a problem and check for updates. The app tells you when a new version is out; you decide whether to download it.</li><li>Project files are now format 3; projects from 0.1.0 open as a single floor.</li>
+            </ul>
+          </li>
+          
+          <li class="release reveal" id="v0.1.0">
+            <header class="release__head">
+              <h2>v0.1.0</h2>
+              
+              <time datetime="2026-10-14">October 14, 2026</time>
+            </header>
+            <h3>First release</h3>
+            <ul>
+              <li>Predictive design on floor plans (PNG, JPG, PDF) with scale calibration, walls and a material library per band.</li><li>Heat maps for 2.4, 5 and 6 GHz: signal, SNR, SINR, APs heard, channel overlap and requirements met.</li><li>AP catalog with 105 models from 14 vendors, plus custom models; ceiling or wall mounting with direction.</li><li>Automatic wall detection (beta) from vector PDFs or images.</li><li>On-site survey with Windows WiFi scanning, IDW or kriging interpolation, and predicted vs. measured comparison.</li><li>PDF reports (English or Spanish), PNG and CSV exports. Interface in English and Spanish.</li>
+            </ul>
+          </li>
+          
+        </ol>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <a class="brand" href="/">
+        <img src="/assets/img/logo.png" width="28" height="28" alt="">
+        <span>Ondalux <b>Heatmap</b></span>
+      </a>
+      <p>WiFi network design and survey with heat maps.</p>
+      <nav class="footer__links" aria-label="Site">
+        <a href="/guide/">Guide</a>
+        <a href="/articles/">Articles</a>
+        <a href="/open-source/">Open source</a>
+        <a href="/changelog/">What's new</a>
+        <a href="https://github.com/auchavez98/ondalux-heatmap" rel="noopener">GitHub</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="#" data-consent>Cookie settings</a>
+        <a href="/es/novedades/" hreflang="es">Español</a>
+      </nav>
+      <p class="footer__small">Support: <a href="mailto:support@ondaluxheatmap.com">support@ondaluxheatmap.com</a></p>
+      <p class="footer__small">© 2026 Ondalux Heatmap · MIT / Apache-2.0</p>
+    </div>
+  </footer>
+</body>
+</html>
+

@@ -1,0 +1,35 @@
+{{> head}}
+  <main id="main">
+    <section class="subhero">
+      <div class="wrap wrap--narrow subhero__inner">
+        <p class="eyebrow reveal">{{changelogUi.eyebrow}}</p>
+        <h1 class="reveal">{{{changelogUi.title}}}</h1>
+        <p class="article__lead reveal">{{changelogUi.lead}}</p>
+        <div class="hero__cta reveal">
+          <a class="btn btn--primary" href="/downloads/{{exe.name}}" download data-download>{{changelogUi.download}} v{{version}}</a>
+          {{#github.enabled}}<a class="btn btn--ghost" href="{{github.url}}" rel="noopener">{{changelogUi.source}}</a>{{/github.enabled}}
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--tight">
+      <div class="wrap wrap--narrow">
+        <ol class="releases">
+          {{#releases}}
+          <li class="release reveal" id="v{{version}}">
+            <header class="release__head">
+              <h2>v{{version}}</h2>
+              {{#latest}}<span class="tag tag--green">{{changelogUi.latest}}</span>{{/latest}}
+              <time datetime="{{date}}">{{dateText}}</time>
+            </header>
+            <h3>{{title}}</h3>
+            <ul>
+              {{#notes}}<li>{{.}}</li>{{/notes}}
+            </ul>
+          </li>
+          {{/releases}}
+        </ol>
+      </div>
+    </section>
+  </main>
+{{> footer}}

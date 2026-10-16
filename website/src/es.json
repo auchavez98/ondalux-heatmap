@@ -40,12 +40,12 @@
   },
   "stats": [
     {
-      "value": "105",
+      "value": "119",
       "suffix": "",
       "label": "modelos de AP en el catálogo"
     },
     {
-      "value": "14",
+      "value": "15",
       "suffix": "",
       "label": "fabricantes"
     },
@@ -73,7 +73,7 @@
       {
         "icon": "catalog",
         "title": "Catálogo de APs",
-        "text": "105 modelos de 14 fabricantes con los valores de radio de sus fichas técnicas oficiales. O captura tus propios datos a mano."
+        "text": "119 modelos de 15 fabricantes con los valores de radio de sus fichas técnicas oficiales. O captura tus propios datos a mano."
       },
       {
         "icon": "mount",
@@ -84,7 +84,7 @@
         "icon": "walls",
         "title": "Detección automática de muros",
         "beta": true,
-        "text": "Importa un plano y obtén una propuesta de muros a partir de las líneas vectoriales del PDF o de la imagen. Revisa, elige materiales y listo."
+        "text": "Importa un plano y obtén los muros propuestos desde las líneas vectoriales del PDF o desde la imagen: rectos, diagonales y curvos. Revisa, elige materiales y listo."
       },
       {
         "icon": "survey",
@@ -105,6 +105,21 @@
         "icon": "report",
         "title": "Reportes profesionales",
         "text": "Un PDF moderno con el sembrado de APs, todos los mapas, zonas sin cobertura y recomendaciones. Además exporta PNG y CSV."
+      },
+      {
+        "icon": "cube",
+        "title": "Vista 3D",
+        "text": "Mira el plano en 3D con los muros a su altura y grosor reales sobre el mapa de calor. Gira, desplaza y acerca."
+      },
+      {
+        "icon": "floors",
+        "title": "Edificios de varios pisos",
+        "text": "Un plano por piso —o cada página de un PDF— con pérdida de losa. Los APs de pisos cercanos suman su señal."
+      },
+      {
+        "icon": "bell",
+        "title": "Siempre al día",
+        "text": "La app te avisa cuando hay una versión nueva y qué trae. Tú decides cuándo instalarla."
       },
       {
         "icon": "portable",
@@ -170,6 +185,11 @@
         "caption": "Muros propuestos automáticamente desde un PDF: gruesos en naranja, delgados en azul."
       },
       {
+        "name": "3D y pisos",
+        "file": "16-3d-floors.png",
+        "caption": "Vista 3D de un edificio de dos pisos: muros con su grosor real y el piso de abajo en gris claro."
+      },
+      {
         "name": "Mediciones",
         "file": "04-survey.png",
         "caption": "Panel de mediciones: escanea con el WiFi de tu computadora, importa o exporta CSV y compara con el diseño."
@@ -177,7 +197,7 @@
       {
         "name": "Catálogo de APs",
         "file": "05-catalog.png",
-        "caption": "105 modelos de puntos de acceso de 14 fabricantes, con los valores de su ficha técnica y su fuente."
+        "caption": "119 modelos de puntos de acceso de 15 fabricantes, con los valores de su ficha técnica y su fuente."
       },
       {
         "name": "Tema claro",
@@ -216,7 +236,8 @@
     "verify": "Verificar la descarga",
     "sha": "Suma SHA-256 del archivo:",
     "smartscreen": "La app todavía no tiene firma digital, así que Windows SmartScreen puede mostrar un aviso la primera vez. Haz clic en “Más información” y luego en “Ejecutar de todas formas”.",
-    "other": "Las versiones para macOS y Linux están en desarrollo."
+    "other": "Las versiones para macOS y Linux están en desarrollo.",
+    "whatsNew": "Novedades de esta versión"
   },
   "faq": {
     "eyebrow": "Preguntas",
@@ -232,11 +253,11 @@
       },
       {
         "q": "¿Qué planos puedo importar?",
-        "a": "PNG, JPG y PDF (primera página). Los PDF vectoriales exportados de CAD funcionan mejor, sobre todo para la detección automática de muros."
+        "a": "PNG, JPG y PDF. Un PDF de varias páginas se convierte en un piso por página. Los PDF vectoriales exportados de CAD funcionan mejor, sobre todo para la detección automática de muros."
       },
       {
         "q": "¿Qué tan precisa es la predicción?",
-        "a": "Usa un modelo de pérdida de trayecto más la atenuación de cada muro atravesado (2D, un piso), sin reflexiones. Es una estimación de diseño: mide en sitio para confirmarla y calibrarla."
+        "a": "Usa un modelo de pérdida de trayecto más la atenuación de cada muro atravesado (2D por piso, con la pérdida de las losas entre pisos), sin reflexiones. Es una estimación de diseño: mide en sitio para confirmarla y calibrarla."
       },
       {
         "q": "¿Puedo medir en sitio?",
@@ -244,7 +265,7 @@
       },
       {
         "q": "¿Mis planos se suben a algún lado?",
-        "a": "No. Todo se queda en tu computadora: no hay cuenta, ni nube, ni telemetría."
+        "a": "No. Todo se queda en tu computadora: no hay cuenta, ni nube, ni telemetría. Solo revisa una vez al día si hay una versión nueva (puedes desactivarlo)."
       },
       {
         "q": "¿En qué idiomas está?",
@@ -269,7 +290,8 @@
     "guide": "/es/guia/",
     "privacy": "/es/privacidad/",
     "opensource": "/es/codigo-abierto/",
-    "articles": "/es/articulos/"
+    "articles": "/es/articulos/",
+    "changelog": "/es/novedades/"
   },
   "pages": {
     "home": {
@@ -291,6 +313,10 @@
     "articles": {
       "title": "Artículos de diseño WiFi — Ondalux Heatmap",
       "description": "Artículos prácticos de diseño WiFi: plan de canales, atenuación de muros, mediciones en sitio y ubicación de puntos de acceso."
+    },
+    "changelog": {
+      "title": "Novedades — historial de versiones de Ondalux Heatmap",
+      "description": "Cada versión de Ondalux Heatmap y lo que cambió: funciones nuevas, correcciones y modelos nuevos en el catálogo."
     }
   },
   "support": "Para dudas, reportes de errores o consultas comerciales escribe a",
@@ -332,5 +358,20 @@
     "latest": "Del blog",
     "latestTitle": "Aprende diseño WiFi",
     "all": "Todos los artículos"
+  },
+  "changelogUi": {
+    "eyebrow": "Historial de cambios",
+    "title": "<span class=\"grad\">Novedades</span>",
+    "lead": "Cada versión de Ondalux Heatmap y lo que cambió. La app te avisa cuando hay una nueva.",
+    "latest": "Más reciente",
+    "download": "Descargar",
+    "source": "Código fuente",
+    "footer": "Novedades"
+  },
+  "releasePop": {
+    "badge": "Nueva versión",
+    "download": "Descargar",
+    "all": "Ver todas las novedades",
+    "close": "Cerrar"
   }
 }

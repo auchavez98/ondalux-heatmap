@@ -50,6 +50,19 @@
     </div>
   </header>
 
+  <aside class="release-pop" data-version="{{release.version}}" aria-labelledby="release-pop-title" hidden>
+    <button class="release-pop__close" aria-label="{{releasePop.close}}">×</button>
+    <span class="tag tag--green">{{releasePop.badge}} · v{{release.version}}</span>
+    <h2 id="release-pop-title">{{release.title}}</h2>
+    <ul>
+      {{#release.highlights}}<li>{{.}}</li>{{/release.highlights}}
+    </ul>
+    <div class="release-pop__actions">
+      <a class="btn btn--primary" href="/downloads/{{exe.name}}" download data-download>{{releasePop.download}}</a>
+      <a class="release-pop__more" href="{{routes.changelog}}">{{releasePop.all}} →</a>
+    </div>
+  </aside>
+
   <div class="lang-hint" hidden>
     <span>{{other.hint}}</span>
     <a href="{{page.other}}">{{other.name}}</a>

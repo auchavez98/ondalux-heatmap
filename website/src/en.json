@@ -40,12 +40,12 @@
   },
   "stats": [
     {
-      "value": "105",
+      "value": "119",
       "suffix": "",
       "label": "AP models in the catalog"
     },
     {
-      "value": "14",
+      "value": "15",
       "suffix": "",
       "label": "vendors"
     },
@@ -73,7 +73,7 @@
       {
         "icon": "catalog",
         "title": "AP catalog",
-        "text": "105 models from 14 vendors with radio values taken from official datasheets. Or enter your own access point data by hand."
+        "text": "119 models from 15 vendors with radio values taken from official datasheets. Or enter your own access point data by hand."
       },
       {
         "icon": "mount",
@@ -84,7 +84,7 @@
         "icon": "walls",
         "title": "Automatic wall detection",
         "beta": true,
-        "text": "Import a plan and get walls proposed from the PDF's vector lines or from the image. Review, pick materials, done."
+        "text": "Import a plan and get walls proposed from the PDF's vector lines or from the image — straight, diagonal and curved. Review, pick materials, done."
       },
       {
         "icon": "survey",
@@ -105,6 +105,21 @@
         "icon": "report",
         "title": "Professional reports",
         "text": "A modern PDF with the AP placement, every heat map, coverage gaps and recommendations. Plus PNG and CSV exports."
+      },
+      {
+        "icon": "cube",
+        "title": "3D view",
+        "text": "See the plan in 3D with walls at their real height and thickness over the heat map. Orbit, pan and zoom."
+      },
+      {
+        "icon": "floors",
+        "title": "Multi-floor buildings",
+        "text": "One plan per floor — or every page of a PDF — with slab loss. APs on nearby floors add their signal."
+      },
+      {
+        "icon": "bell",
+        "title": "Always up to date",
+        "text": "The app tells you when a new version is out, with what's new. You decide when to install it."
       },
       {
         "icon": "portable",
@@ -170,6 +185,11 @@
         "caption": "Walls proposed automatically from a PDF: thick walls in orange, thin walls in blue."
       },
       {
+        "name": "3D and floors",
+        "file": "16-3d-floors.png",
+        "caption": "3D view of a two-floor building: walls at their real thickness, the floor below in light gray."
+      },
+      {
         "name": "Survey",
         "file": "04-survey.png",
         "caption": "Survey panel: scan with your computer's WiFi, import or export CSV, compare with the design."
@@ -177,7 +197,7 @@
       {
         "name": "AP catalog",
         "file": "05-catalog.png",
-        "caption": "105 access point models from 14 vendors, with their datasheet values and sources."
+        "caption": "119 access point models from 15 vendors, with their datasheet values and sources."
       },
       {
         "name": "Light theme",
@@ -216,7 +236,8 @@
     "verify": "Verify the download",
     "sha": "SHA-256 checksum of the file:",
     "smartscreen": "The app is not code-signed yet, so Windows SmartScreen may show a warning the first time. Click “More info” and then “Run anyway”.",
-    "other": "macOS and Linux versions are in development."
+    "other": "macOS and Linux versions are in development.",
+    "whatsNew": "What's new in this version"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -232,11 +253,11 @@
       },
       {
         "q": "Which floor plans can I import?",
-        "a": "PNG, JPG and PDF (first page). Vector PDFs exported from CAD work best, especially for automatic wall detection."
+        "a": "PNG, JPG and PDF. A PDF with several pages becomes one floor per page. Vector PDFs exported from CAD work best, especially for automatic wall detection."
       },
       {
         "q": "How accurate is the prediction?",
-        "a": "It uses a path loss model plus the loss of every wall crossed (2D, one floor), without reflections. It is a design estimate: survey the site to confirm and calibrate it."
+        "a": "It uses a path loss model plus the loss of every wall crossed (2D per floor, with the loss of the slabs between floors), without reflections. It is a design estimate: survey the site to confirm and calibrate it."
       },
       {
         "q": "Can I survey on site?",
@@ -244,7 +265,7 @@
       },
       {
         "q": "Are my floor plans uploaded anywhere?",
-        "a": "No. Everything stays on your computer: there is no account, no cloud and no telemetry."
+        "a": "No. Everything stays on your computer: there is no account, no cloud and no telemetry. It only checks once a day whether a new version is out (you can turn that off)."
       },
       {
         "q": "Which languages are supported?",
@@ -269,7 +290,8 @@
     "guide": "/guide/",
     "privacy": "/privacy/",
     "opensource": "/open-source/",
-    "articles": "/articles/"
+    "articles": "/articles/",
+    "changelog": "/changelog/"
   },
   "pages": {
     "home": {
@@ -291,6 +313,10 @@
     "articles": {
       "title": "Articles on WiFi design — Ondalux Heatmap",
       "description": "Practical articles on WiFi design: channel planning, wall attenuation, site surveys and access point placement."
+    },
+    "changelog": {
+      "title": "What's new — Ondalux Heatmap changelog",
+      "description": "Every Ondalux Heatmap release and what changed: new features, fixes and AP catalog updates."
     }
   },
   "support": "For questions, bug reports or business inquiries write to",
@@ -332,5 +358,20 @@
     "latest": "From the blog",
     "latestTitle": "Learn WiFi design",
     "all": "All articles"
+  },
+  "changelogUi": {
+    "eyebrow": "Changelog",
+    "title": "What's <span class=\"grad\">new</span>",
+    "lead": "Every release of Ondalux Heatmap and what changed. The app tells you when a new version is out.",
+    "latest": "Latest",
+    "download": "Download",
+    "source": "Source code",
+    "footer": "What's new"
+  },
+  "releasePop": {
+    "badge": "New version",
+    "download": "Download",
+    "all": "See everything new",
+    "close": "Close"
   }
 }

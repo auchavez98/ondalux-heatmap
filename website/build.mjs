@@ -93,6 +93,9 @@ const icons = {
   compare: svg('<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="M4 9l6-4 6 7 5-5"/>'),
   metrics: svg('<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>'),
   report: svg('<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 17v-3M13 17v-5M16 17v-2"/>'),
+  cube: svg('<path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/>'),
+  floors: svg('<path d="M12 3 2 8l10 5 10-5z"/><path d="M2 12.5l10 5 10-5M2 17l10 5 10-5"/>'),
+  bell: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>'),
   portable: svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 6h4M12 11v6m0 0-2.5-2.5M12 17l2.5-2.5"/>'),
 };
 
@@ -149,6 +152,11 @@ const contact = config.contact || "";
 // Articles: src/articles.json lists them; the body of each is in
 // src/articles/<key>.<lang>.html.
 const articles = JSON.parse(readFileSync(join(src, "articles.json"), "utf8"));
+// Releases, newest first: the changelog page and version.json.
+const releases = JSON.parse(readFileSync(join(src, "releases.json"), "utf8"));
+if (releases[0]?.version !== version) {
+  throw new Error(`src/releases.json starts with ${releases[0]?.version}, Cargo.toml says ${version}: add the release notes`);
+}
 const articleRoute = (a, lang) => `${strings[lang].routes.articles}${a.slug[lang]}/`;
 const dateText = (iso, lang) =>
   new Intl.DateTimeFormat(lang === "en" ? "en-US" : "es-MX", { dateStyle: "long", timeZone: "UTC" }).format(
@@ -156,7 +164,7 @@ const dateText = (iso, lang) =>
   );
 
 // Every page: key, template, route per language and per-page context.
-const corePages = ["home", "guide", "privacy", "opensource", "articles"];
+const corePages = ["home", "guide", "privacy", "opensource", "articles", "changelog"];
 const pages = [
   ...corePages.map((key) => ({
     key,
@@ -282,6 +290,20 @@ for (const lang of langs) {
       jsonld,
       article,
       posts: postsFor(lang, null),
+      // The newest release, for the floating announcement.
+      release: {
+        version: releases[0].version,
+        title: releases[0].title[lang],
+        highlights: releases[0].notes[lang].slice(0, 3),
+      },
+      releases: releases.map((r, i) => ({
+        version: r.version,
+        date: r.date,
+        dateText: dateText(r.date, lang),
+        title: r.title[lang],
+        notes: r.notes[lang],
+        latest: i === 0,
+      })),
       latest: postsFor(lang, null).slice(0, 3),
       related: p.article ? postsFor(lang, p.article.key).slice(0, 3) : [],
     };
@@ -294,7 +316,7 @@ for (const lang of langs) {
 }
 
 // ---- version.json: read by the app to tell users about new versions ----
-const release = JSON.parse(readFileSync(join(src, "release.json"), "utf8"));
+const release = releases[0];
 writeFileSync(
   join(pub, "version.json"),
   JSON.stringify(
@@ -304,12 +326,12 @@ writeFileSync(
       download: { en: `${domain}/#download`, es: `${domain}/es/#download` },
       file: `${domain}/downloads/${exe.name}`,
       sha256: exe.sha256,
+      title: release.title,
       notes: release.notes,
     },
     null,
     2,
-  ) + "
-",
+  ) + "\n",
 );
 console.log("wrote version.json");
 

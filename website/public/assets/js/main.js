@@ -113,6 +113,26 @@
     select(tabs[0], false);
   }
 
+  // ---- new version announcement: once per version, not on the changelog ----
+  const pop = $(".release-pop");
+  if (pop) {
+    const key = "ondalux-release-seen";
+    const version = pop.dataset.version;
+    const onChangelog = /\/(changelog|novedades)\//.test(location.pathname);
+    let seen = null;
+    try { seen = localStorage.getItem(key); } catch (_) { /* storage unavailable */ }
+    if (seen !== version && !onChangelog) {
+      const remember = () => {
+        pop.hidden = true;
+        try { localStorage.setItem(key, version); } catch (_) { /* ignore */ }
+      };
+      setTimeout(() => { pop.hidden = false; }, 2500);
+      $(".release-pop__close", pop).addEventListener("click", remember);
+      $("a", pop).forEach((a) => a.addEventListener("click", remember));
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) remember(); });
+    }
+  }
+
   // ---- Google AdSense: fill each ad slot; reopen the consent message ----
   if ($("ins.adsbygoogle")) {
     $$("ins.adsbygoogle").forEach(() => {

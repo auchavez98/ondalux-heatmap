@@ -6,14 +6,15 @@ Key facts:
 
 - Price: free. License: MIT or Apache-2.0. Source code: https://github.com/auchavez98/ondalux-heatmap
 - Platform: Windows 10/11 64-bit, portable executable. macOS and Linux build from source; their WiFi scanning is not yet tested on real hardware.
-- Predictive design: import a floor plan (PNG, JPG or PDF), calibrate the scale, draw walls with materials (drywall, glass, brick, concrete, metal, doors and more), place access points, and see predicted coverage instantly.
+- Predictive design: import a floor plan (PNG, JPG or PDF), calibrate the scale, draw walls with materials (drywall, glass, brick, concrete, metal, doors and more) and thickness in cm, place access points, and see predicted coverage instantly.
+- Multi-floor buildings: one plan per floor (a multi-page PDF becomes one floor per page), slab loss and signal between floors; 3D view with extruded walls.
 - Heat maps: signal strength (RSSI), SNR, SINR, number of APs heard, channel overlap and requirements met, for 2.4, 5 and 6 GHz.
-- Access point catalog: 105 models from 14 vendors with values from official datasheets; custom models can be entered by hand.
+- Access point catalog: 119 models from 15 vendors with values from official datasheets; custom models can be entered by hand.
 - Ceiling or wall mounting, with a directional pattern and pointing direction for wall-mounted APs.
-- Automatic wall detection (beta) from vector PDF floor plans or images.
+- Automatic wall detection (beta) from vector PDF floor plans or images: straight, diagonal and curved walls.
 - On-site survey: record real WiFi scans (Windows), interpolated with IDW or kriging; compare measured vs. predicted coverage.
 - Exports: PDF report (English or Spanish) with AP placement, every heat map, coverage gaps and recommendations; PNG heat maps; CSV.
-- Privacy: the app sends no data anywhere; no telemetry.
+- Privacy: no telemetry and no project data leaves the computer; the only request the app makes is a once-a-day check of https://ondaluxheatmap.com/version.json for new versions (can be turned off).
 - Interface and reports in English and Spanish.
 - Support: support@ondaluxheatmap.com
 
@@ -23,6 +24,7 @@ Key facts:
 - [Inicio (español)](https://ondaluxheatmap.com/es/): funciones, capturas, descarga y preguntas frecuentes
 - [Download for Windows](https://ondaluxheatmap.com/#download): portable .exe with SHA-256 checksum
 - [Open source](https://ondaluxheatmap.com/open-source/): architecture, how to build from source, how to contribute, roadmap
+- [Changelog](https://ondaluxheatmap.com/changelog/): every release and what changed ([Novedades](https://ondaluxheatmap.com/es/novedades/))
 - [Código abierto](https://ondaluxheatmap.com/es/codigo-abierto/)
 
 ## Guides and articles
