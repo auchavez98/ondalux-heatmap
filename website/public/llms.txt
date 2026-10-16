@@ -1,0 +1,50 @@
+# Ondalux Heatmap
+
+> Ondalux Heatmap is free, open-source (MIT / Apache-2.0) desktop software for WiFi heat maps: predictive WiFi network design on floor plans and on-site WiFi site surveys, with professional PDF reports. It runs on Windows as a single portable .exe (no installer, no account, works offline). En español: software gratis y de código abierto para mapas de calor WiFi, diseño de redes WiFi y mediciones en sitio.
+
+Key facts:
+
+- Price: free. License: MIT or Apache-2.0. Source code: https://github.com/auchavez98/ondalux-heatmap
+- Platform: Windows 10/11 64-bit, portable executable. macOS and Linux build from source; their WiFi scanning is not yet tested on real hardware.
+- Predictive design: import a floor plan (PNG, JPG or PDF), calibrate the scale, draw walls with materials (drywall, glass, brick, concrete, metal, doors and more), place access points, and see predicted coverage instantly.
+- Heat maps: signal strength (RSSI), SNR, SINR, number of APs heard, channel overlap and requirements met, for 2.4, 5 and 6 GHz.
+- Access point catalog: 105 models from 14 vendors with values from official datasheets; custom models can be entered by hand.
+- Ceiling or wall mounting, with a directional pattern and pointing direction for wall-mounted APs.
+- Automatic wall detection (beta) from vector PDF floor plans or images.
+- On-site survey: record real WiFi scans (Windows), interpolated with IDW or kriging; compare measured vs. predicted coverage.
+- Exports: PDF report (English or Spanish) with AP placement, every heat map, coverage gaps and recommendations; PNG heat maps; CSV.
+- Privacy: the app sends no data anywhere; no telemetry.
+- Interface and reports in English and Spanish.
+- Support: support@ondaluxheatmap.com
+
+## Main pages
+
+- [Home (English)](https://ondaluxheatmap.com/): features, screenshots, download and FAQ
+- [Inicio (español)](https://ondaluxheatmap.com/es/): funciones, capturas, descarga y preguntas frecuentes
+- [Download for Windows](https://ondaluxheatmap.com/#download): portable .exe with SHA-256 checksum
+- [Open source](https://ondaluxheatmap.com/open-source/): architecture, how to build from source, how to contribute, roadmap
+- [Código abierto](https://ondaluxheatmap.com/es/codigo-abierto/)
+
+## Guides and articles
+
+- [How to design a WiFi network with a heat map](https://ondaluxheatmap.com/guide/): requirements, walls, AP placement, channels, heat maps and site validation
+- [Cómo diseñar una red WiFi con un mapa de calor](https://ondaluxheatmap.com/es/guia/)
+- [WiFi channel planning for 2.4, 5 and 6 GHz](https://ondaluxheatmap.com/articles/wifi-channel-planning/)
+- [How much WiFi signal does each wall material absorb?](https://ondaluxheatmap.com/articles/wall-attenuation-by-material/)
+- [How to do a WiFi site survey, step by step](https://ondaluxheatmap.com/articles/how-to-do-a-wifi-site-survey/)
+- [Ceiling or wall: where to mount an access point](https://ondaluxheatmap.com/articles/ceiling-or-wall-access-point-mounting/)
+- [Artículos en español](https://ondaluxheatmap.com/es/articulos/)
+
+## Documentation
+
+- [RF models and their limits](https://github.com/auchavez98/ondalux-heatmap/blob/main/docs/rf-models.md)
+- [The .lux project format](https://github.com/auchavez98/ondalux-heatmap/blob/main/docs/project-format.md)
+- [Wall detection](https://github.com/auchavez98/ondalux-heatmap/blob/main/docs/wall-detection.md)
+- [AP catalog](https://github.com/auchavez98/ondalux-heatmap/blob/main/docs/ap-catalog.md)
+- [WiFi scanning per operating system](https://github.com/auchavez98/ondalux-heatmap/blob/main/docs/scanning.md)
+- [Reports and exports](https://github.com/auchavez98/ondalux-heatmap/blob/main/docs/reports.md)
+
+## Optional
+
+- [Privacy policy](https://ondaluxheatmap.com/privacy/)
+- [Sitemap](https://ondaluxheatmap.com/sitemap.xml)
