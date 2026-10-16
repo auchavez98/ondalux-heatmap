@@ -764,17 +764,26 @@ pub fn calibration_dialog(app: &mut OndaluxApp, ctx: &egui::Context) {
             let parsed = text.trim().replace(',', ".").parse::<f32>().ok();
             match parsed.and_then(|d| Calibration::new(a, b, d)) {
                 Some(c) => {
+                    let mut shared = 0;
                     if let Some(doc) = app.doc.as_mut() {
                         doc.checkpoint();
                         doc.project.set_calibration(Some(c));
+                        shared = doc.project.share_calibration();
                     }
                     app.canvas.calib_pending = None;
                     app.tool = Tool::Select;
-                    app.info(format!(
+                    let mut msg = format!(
                         "{} {:.1} px/m.",
                         t("Escala calibrada:", "Scale set:"),
                         c.px_per_m()
-                    ));
+                    );
+                    if shared > 0 {
+                        msg += &tr!(
+                            " También se aplicó a {shared} piso(s) con un plano del mismo tamaño.",
+                            " Also applied to {shared} floor(s) with a plan of the same size."
+                        );
+                    }
+                    app.info(msg);
                 }
                 None => {
                     app.error(t(

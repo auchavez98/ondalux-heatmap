@@ -20,11 +20,11 @@ real hardware. See [what works](#status) below.
 
 | Feature | State |
 |---|---|
-| Import floor plan: PNG, JPEG, first page of a PDF | ✅ |
+| Import floor plan: PNG, JPEG or PDF (every page of a multi-page PDF, one floor each) | ✅ |
 | Scale calibration (two points + known distance) | ✅ |
 | Draw walls with snapping; material library with editable dB per band (2.4/5/6 GHz) | ✅ |
 | Wall thickness in cm (the loss of solid materials scales with it) | ✅ |
-| Multi-floor buildings: plan per floor, slab loss, signal between floors, report per floor | ✅ see [docs/rf-models.md](docs/rf-models.md) |
+| Multi-floor buildings: plan per floor (a multi-page PDF becomes one floor per page), slab loss, signal between floors, report per floor | ✅ see [docs/rf-models.md](docs/rf-models.md) |
 | 3D view: extruded walls over the heat map, floors stacked | ✅ |
 | Update notices (reads `ondaluxheatmap.com/version.json` once a day; you choose whether to download) | ✅ can be turned off in Help |
 | Automatic wall detection (beta, opt-in) from vector PDF line art or the image, with preview and materials by thickness | ✅ straight, diagonal and curved walls; see [docs/wall-detection.md](docs/wall-detection.md) |

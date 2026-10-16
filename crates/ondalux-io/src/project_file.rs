@@ -5,7 +5,11 @@
 //! - `floorplan.<ext>` / `floorplan-source.pdf`: the plan image and the
 //!   original PDF of the lowest floor (optional);
 //! - `floors/<n>/floorplan.<ext>` / `floors/<n>/floorplan-source.pdf`: the
-//!   same for floor `n` (0-based, building order), `n` ≥ 1.
+//!   same for floor `n` (0-based, building order), `n` ≥ 1;
+//! - `[floors/<n>/]floorplan-source.json` (optional): `{"page": p,
+//!   "same_as": m}` — the plan is page `p` of the PDF, and the PDF is the
+//!   one stored for floor `m` (several floors from one multi-page PDF
+//!   store it once).
 
 use crate::error::IoError;
 use ondalux_core::project::Project;
@@ -42,7 +46,21 @@ pub struct FloorAssets {
     pub plan_image: Option<PlanImage>,
     /// Original PDF of the plan, kept for wall detection (optional).
     pub plan_source: Option<Vec<u8>>,
+    /// Page of `plan_source` with this floor's plan (0-based).
+    pub plan_source_page: usize,
 }
+
+/// Sidecar of a floor's source PDF.
+#[derive(Serialize, Deserialize, Default)]
+struct SourceInfo {
+    #[serde(default)]
+    page: usize,
+    /// Floor whose entry holds the PDF bytes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    same_as: Option<usize>,
+}
+
+const SOURCE_INFO_ENTRY: &str = "floorplan-source.json";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProjectFile {
@@ -58,7 +76,7 @@ impl ProjectFile {
             project,
             floors: vec![FloorAssets {
                 plan_image,
-                plan_source: None,
+                ..Default::default()
             }],
         }
     }
@@ -133,8 +151,21 @@ impl ProjectFile {
                 zip.write_all(&img.bytes)?;
             }
             if let Some(pdf) = &assets.plan_source {
-                zip.start_file(format!("{dir}{PLAN_SOURCE_ENTRY}"), deflate)?;
-                zip.write_all(pdf)?;
+                let same_as = self.floors[..i]
+                    .iter()
+                    .position(|f| f.plan_source.as_ref() == Some(pdf));
+                if same_as.is_none() {
+                    zip.start_file(format!("{dir}{PLAN_SOURCE_ENTRY}"), deflate)?;
+                    zip.write_all(pdf)?;
+                }
+                if same_as.is_some() || assets.plan_source_page != 0 {
+                    let info = SourceInfo {
+                        page: assets.plan_source_page,
+                        same_as,
+                    };
+                    zip.start_file(format!("{dir}{SOURCE_INFO_ENTRY}"), deflate)?;
+                    serde_json::to_writer(&mut zip, &info)?;
+                }
             }
         }
         zip.finish()?;
@@ -169,7 +200,19 @@ impl ProjectFile {
         }
         let mut floors = Vec::with_capacity(project.floor_count());
         for i in 0..project.floor_count() {
-            floors.push(read_floor_assets(&mut zip, &floor_dir(i))?);
+            let mut assets = read_floor_assets(&mut zip, &floor_dir(i))?;
+            let info: SourceInfo =
+                match zip.by_name(&format!("{}{SOURCE_INFO_ENTRY}", floor_dir(i))) {
+                    Ok(entry) => serde_json::from_reader(entry)?,
+                    Err(_) => SourceInfo::default(),
+                };
+            assets.plan_source_page = info.page;
+            if let Some(m) = info.same_as.filter(|&m| m < i) {
+                assets.plan_source = floors
+                    .get(m)
+                    .and_then(|f: &FloorAssets| f.plan_source.clone());
+            }
+            floors.push(assets);
         }
         Ok(Self { project, floors })
     }
@@ -206,6 +249,7 @@ fn read_floor_assets<R: Read + Seek>(
     Ok(FloorAssets {
         plan_image,
         plan_source,
+        plan_source_page: 0,
     })
 }
 
@@ -257,6 +301,7 @@ mod tests {
                     bytes: vec![0x89, b'P', b'N', b'G', 1, 2, 3],
                 }),
                 plan_source: Some(b"%PDF-1.4 test".to_vec()),
+                plan_source_page: 0,
             }],
         }
     }
@@ -284,17 +329,27 @@ mod tests {
         original.project.insert_floor(1, upper.clone());
         original.project.insert_floor(2, upper);
         original.project.set_active_floor(2);
-        // Floor 1 has no files, floor 2 only an image.
+        // Floor 1 has no files, floor 2 an image and page 3 of floor 0's PDF.
         original.floors.push(FloorAssets::default());
         original.floors.push(FloorAssets {
             plan_image: Some(PlanImage {
                 extension: "jpg".into(),
                 bytes: vec![0xff, 0xd8, 9],
             }),
-            plan_source: None,
+            plan_source: original.floors[0].plan_source.clone(),
+            plan_source_page: 2,
         });
         let mut buf = Cursor::new(Vec::new());
         original.write_to(&mut buf).unwrap();
+        buf.set_position(0);
+        // The shared PDF is stored once.
+        let zip = zip::ZipArchive::new(&mut buf).unwrap();
+        let pdfs = zip
+            .file_names()
+            .filter(|n| n.ends_with(PLAN_SOURCE_ENTRY))
+            .count();
+        assert_eq!(pdfs, 1);
+        drop(zip);
         buf.set_position(0);
         let loaded = ProjectFile::read_from(buf).unwrap();
         assert_eq!(loaded, original);

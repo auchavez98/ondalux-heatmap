@@ -130,6 +130,33 @@ pub struct Floor {
     pub surveys: Vec<Survey>,
 }
 
+/// Rescales positions in meters so they keep their place on the image
+/// when the plan scale changes.
+fn rescale(
+    plan: &mut FloorPlan,
+    calibration: Option<Calibration>,
+    walls: &mut [Wall],
+    aps: &mut [AccessPoint],
+    surveys: &mut [Survey],
+) {
+    let old = plan.px_per_m();
+    plan.calibration = calibration;
+    let k = old / plan.px_per_m();
+    if (k - 1.0).abs() < f32::EPSILON {
+        return;
+    }
+    for w in walls {
+        w.segment.a = w.segment.a * k;
+        w.segment.b = w.segment.b * k;
+    }
+    for ap in aps {
+        ap.position = ap.position * k;
+    }
+    for m in surveys.iter_mut().flat_map(|s| &mut s.measurements) {
+        m.position = m.position * k;
+    }
+}
+
 impl Floor {
     pub fn new(info: FloorInfo, width_px: u32, height_px: u32) -> Self {
         Self {
@@ -448,22 +475,37 @@ impl Project {
     /// Changes the plan calibration. Walls and APs keep their position on
     /// the image, so their coordinates in meters are rescaled.
     pub fn set_calibration(&mut self, calibration: Option<Calibration>) {
-        let old = self.plan.px_per_m();
-        self.plan.calibration = calibration;
-        let k = old / self.plan.px_per_m();
-        if (k - 1.0).abs() < f32::EPSILON {
-            return;
+        rescale(
+            &mut self.plan,
+            calibration,
+            &mut self.walls,
+            &mut self.aps,
+            &mut self.surveys,
+        );
+    }
+
+    /// Gives the active floor's calibration to the other floors whose plan
+    /// has the same size and no calibration yet (pages of one PDF are
+    /// usually drawn at the same scale). Returns how many floors got it.
+    pub fn share_calibration(&mut self) -> usize {
+        let Some(c) = self.plan.calibration else {
+            return 0;
+        };
+        let size = (self.plan.width_px, self.plan.height_px);
+        let mut n = 0;
+        for f in &mut self.other_floors {
+            if f.plan.calibration.is_none() && (f.plan.width_px, f.plan.height_px) == size {
+                rescale(
+                    &mut f.plan,
+                    Some(c),
+                    &mut f.walls,
+                    &mut f.aps,
+                    &mut f.surveys,
+                );
+                n += 1;
+            }
         }
-        for w in &mut self.walls {
-            w.segment.a = w.segment.a * k;
-            w.segment.b = w.segment.b * k;
-        }
-        for ap in &mut self.aps {
-            ap.position = ap.position * k;
-        }
-        for m in self.surveys.iter_mut().flat_map(|s| &mut s.measurements) {
-            m.position = m.position * k;
-        }
+        n
     }
 
     /// A new AP id, unique across all floors.
@@ -619,6 +661,33 @@ mod tests {
 
         p.cross_floor = false;
         assert_eq!(p.radiating_aps().len(), 1);
+    }
+
+    #[test]
+    fn calibration_is_shared_with_same_size_floors() {
+        let mut p = three_floors(); // all 400 × 200 px
+        let mut other = Floor::new(Default::default(), 800, 600);
+        other.info.name = "big".into();
+        p.insert_floor(3, other);
+        // Floor "2" already has its own scale.
+        p.set_active_floor(2);
+        p.set_calibration(Calibration::new(
+            Vec2::new(0.0, 0.0),
+            Vec2::new(100.0, 0.0),
+            10.0,
+        ));
+        p.set_active_floor(0);
+        p.set_calibration(Calibration::new(
+            Vec2::new(0.0, 0.0),
+            Vec2::new(100.0, 0.0),
+            5.0,
+        ));
+        // Floor "1" only: "2" was calibrated, "big" has another size.
+        assert_eq!(p.share_calibration(), 1);
+        let floors = p.floors();
+        assert!((floors[1].plan.px_per_m() - 20.0).abs() < 1e-4);
+        assert!((floors[2].plan.px_per_m() - 10.0).abs() < 1e-4);
+        assert!(floors[3].plan.calibration.is_none());
     }
 
     #[test]

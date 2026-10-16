@@ -1,5 +1,5 @@
-//! PDF floor plan import: the first page is rasterized to PNG with the
-//! pure-Rust `hayro` renderer.
+//! PDF floor plan import: pages are rasterized to PNG with the pure-Rust
+//! `hayro` renderer (one floor per page for multi-page plans).
 //!
 //! Limitations (inherited from hayro): encrypted PDFs, blend modes,
 //! knockout groups and a few rarely used features are not supported.
@@ -30,12 +30,23 @@ pub struct RenderedPdf {
 
 /// Rasterizes the first page of a PDF to PNG bytes.
 pub fn rasterize_first_page(bytes: Vec<u8>) -> Result<RenderedPdf, IoError> {
+    rasterize_page(bytes, 0)
+}
+
+/// Number of pages of a PDF.
+pub fn page_count(bytes: Vec<u8>) -> Result<usize, IoError> {
+    let pdf = Pdf::new(bytes).map_err(|e| IoError::Format(format!("cannot read PDF: {e:?}")))?;
+    Ok(pdf.pages().len())
+}
+
+/// Rasterizes page `index` (0-based) of a PDF to PNG bytes.
+pub fn rasterize_page(bytes: Vec<u8>, index: usize) -> Result<RenderedPdf, IoError> {
     let pdf = Pdf::new(bytes).map_err(|e| IoError::Format(format!("cannot read PDF: {e:?}")))?;
     let pages = pdf.pages();
     let page_count = pages.len();
     let page = pages
-        .first()
-        .ok_or_else(|| IoError::Format("the PDF has no pages".into()))?;
+        .get(index)
+        .ok_or_else(|| IoError::Format(format!("the PDF has no page {}", index + 1)))?;
     let (w, h) = page.render_dimensions();
     if w <= 0.0 || h <= 0.0 {
         return Err(IoError::Format("the PDF page has an empty size".into()));
@@ -58,16 +69,21 @@ pub fn rasterize_first_page(bytes: Vec<u8>) -> Result<RenderedPdf, IoError> {
     Ok(RenderedPdf { png, page_count })
 }
 
-/// Line-art mask of the first page for wall detection: the page is drawn
+/// Line-art mask of page `index` for wall detection: the page is drawn
 /// again with only its dark strokes and fills, leaving out text, images
 /// and dashed lines (hidden or overhead elements), at `width × height`
 /// (the plan image size times the detection scale).
-pub fn vector_mask(bytes: Vec<u8>, width: usize, height: usize) -> Result<Mask, IoError> {
+pub fn vector_mask(
+    bytes: Vec<u8>,
+    index: usize,
+    width: usize,
+    height: usize,
+) -> Result<Mask, IoError> {
     let pdf = Pdf::new(bytes).map_err(|e| IoError::Format(format!("cannot read PDF: {e:?}")))?;
     let pages = pdf.pages();
     let page = pages
-        .first()
-        .ok_or_else(|| IoError::Format("the PDF has no pages".into()))?;
+        .get(index)
+        .ok_or_else(|| IoError::Format(format!("the PDF has no page {}", index + 1)))?;
     let (w, h) = page.render_dimensions();
     if w <= 0.0 || h <= 0.0 || width == 0 || height == 0 {
         return Err(IoError::Format("the PDF page has an empty size".into()));
@@ -309,6 +325,100 @@ pub(crate) mod tests {
             .as_bytes(),
         );
         out
+    }
+
+    /// Two pages: 200 × 100 pt with a rectangle on the left, then 300 ×
+    /// 100 pt with one on the right.
+    pub(crate) fn two_page_pdf() -> Vec<u8> {
+        let c1 = "0 0 0 rg 10 10 40 80 re f";
+        let c2 = "0 0 0 rg 250 10 40 80 re f";
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+            "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>".to_owned(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>".to_owned(),
+            format!(
+                "<< /Length {} >>
+stream
+{c1}
+endstream",
+                c1.len()
+            ),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 100] /Contents 6 0 R >>".to_owned(),
+            format!(
+                "<< /Length {} >>
+stream
+{c2}
+endstream",
+                c2.len()
+            ),
+        ];
+        let mut out = b"%PDF-1.4
+"
+        .to_vec();
+        let mut offsets = Vec::new();
+        for (i, obj) in objects.iter().enumerate() {
+            offsets.push(out.len());
+            out.extend_from_slice(
+                format!(
+                    "{} 0 obj
+{obj}
+endobj
+",
+                    i + 1
+                )
+                .as_bytes(),
+            );
+        }
+        let xref = out.len();
+        out.extend_from_slice(
+            format!(
+                "xref
+0 {}
+0000000000 65535 f 
+",
+                objects.len() + 1
+            )
+            .as_bytes(),
+        );
+        for off in offsets {
+            out.extend_from_slice(
+                format!(
+                    "{off:010} 00000 n 
+"
+                )
+                .as_bytes(),
+            );
+        }
+        out.extend_from_slice(
+            format!(
+                "trailer
+<< /Size {} /Root 1 0 R >>
+startxref
+{xref}
+%%EOF
+",
+                objects.len() + 1
+            )
+            .as_bytes(),
+        );
+        out
+    }
+
+    #[test]
+    fn renders_every_page() {
+        let pdf = two_page_pdf();
+        assert_eq!(page_count(pdf.clone()).unwrap(), 2);
+        let png = rasterize_page(pdf.clone(), 1).unwrap().png;
+        let img = image::load_from_memory(&png).unwrap().to_rgba8();
+        // The second page is wider (3:1) and its ink is on the right.
+        assert!((img.width() as f32 / img.height() as f32 - 3.0).abs() < 0.05);
+        let y = img.height() / 2;
+        assert!(img.get_pixel(img.width() * 9 / 10, y)[0] < 50);
+        assert!(img.get_pixel(img.width() / 10, y)[0] > 200);
+        // The vector mask follows the page too.
+        let m = vector_mask(pdf.clone(), 1, 300, 100).unwrap();
+        assert!(m.get(270, 50) && !m.get(30, 50));
+        assert!(rasterize_page(pdf, 2).is_err());
     }
 
     #[test]

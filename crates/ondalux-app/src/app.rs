@@ -19,7 +19,7 @@ use ondalux_core::interpolate::Variogram;
 use ondalux_core::material::MaterialId;
 use ondalux_core::metrics::MetricKind;
 use ondalux_core::project::Project;
-use ondalux_io::{decode_plan, import_plan, ProjectFile};
+use ondalux_io::{decode_plan, ProjectFile};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -367,22 +367,33 @@ impl OndaluxApp {
         self.import_plan_path(ctx, path);
     }
 
+    /// New project from a plan file. A PDF with several pages becomes a
+    /// building with one floor per page (first page = lowest floor).
     fn import_plan_path(&mut self, ctx: &egui::Context, path: PathBuf) {
-        match import_plan(&path) {
-            Ok(ondalux_io::ImportedPlan {
-                image: plan,
-                decoded,
-                source_pdf,
-            }) => {
+        match ondalux_io::import_plan_pages(&path) {
+            Ok(pages) if !pages.is_empty() => {
                 let name = path
                     .file_stem()
                     .map_or_else(|| "Untitled".into(), |s| s.to_string_lossy().into_owned());
-                let project = Project::new(name, decoded.width, decoded.height);
+                let n = pages.len();
+                let mut pages = pages.into_iter();
+                let first = pages.next().expect("at least one page");
+                let project = Project::new(name, first.decoded.width, first.decoded.height);
                 let mut doc = Document::new(project, None, None);
-                doc.set_assets(ondalux_io::FloorAssets {
-                    plan_image: Some(plan),
-                    plan_source: source_pdf,
-                });
+                doc.set_assets(crate::floors_ui::assets_of(&first));
+                if n > 1 {
+                    // Floors stay unnamed: they show as "Floor n" in the UI language.
+                    for (i, page) in pages.enumerate() {
+                        let floor = ondalux_core::project::Floor::new(
+                            Default::default(),
+                            page.decoded.width,
+                            page.decoded.height,
+                        );
+                        let assets = crate::floors_ui::assets_of(&page);
+                        doc.project.insert_floor(i + 1, floor);
+                        doc.floors.insert(i + 1, std::sync::Arc::new(assets));
+                    }
+                }
                 doc.dirty = true;
                 self.set_document(ctx, Some(doc));
                 // Beta, opt-in: propose walls right away for review.
@@ -390,8 +401,20 @@ impl OndaluxApp {
                     crate::walls_ui::start(self, ctx);
                 }
                 self.tool = Tool::Calibrate;
-                self.info(t("Plano importado. Calibra la escala: haz clic en dos puntos de distancia conocida.", "Floor plan imported. Calibrate the scale: click two points a known distance apart."));
+                if n > 1 {
+                    self.info(tr!(
+                        "PDF de {n} páginas: se creó un piso por página. Calibra la escala del piso 1; se aplicará a los pisos del mismo tamaño. Si alguna página no es un plano, elimina ese piso.",
+                        "{n}-page PDF: one floor was created per page. Calibrate the scale of floor 1; it will be applied to floors of the same size. If a page is not a floor plan, delete that floor."
+                    ));
+                } else {
+                    self.info(t("Plano importado. Calibra la escala: haz clic en dos puntos de distancia conocida.", "Floor plan imported. Calibrate the scale: click two points a known distance apart."));
+                }
             }
+            Ok(_) => self.error(tr!(
+                "{} no tiene páginas.",
+                "{} has no pages.",
+                path.display()
+            )),
             Err(e) => self.error(tr!(
                 "No se pudo importar {}: {e}",
                 "Could not import {}: {e}",

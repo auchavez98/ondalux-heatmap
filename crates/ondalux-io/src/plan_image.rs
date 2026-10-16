@@ -24,6 +24,41 @@ pub struct ImportedPlan {
     /// The original file when it was a PDF (its line art is used to
     /// detect walls).
     pub source_pdf: Option<Vec<u8>>,
+    /// Page of `source_pdf` this plan comes from (0-based).
+    pub source_page: usize,
+}
+
+/// Multi-page PDFs import at most this many pages (one floor each).
+pub const MAX_PDF_PAGES: usize = 40;
+
+/// Reads a floor plan file: one plan per page for a PDF (at most
+/// [`MAX_PDF_PAGES`]), otherwise one.
+pub fn import_plan_pages(path: &Path) -> Result<Vec<ImportedPlan>, IoError> {
+    let is_pdf = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("pdf"));
+    if !is_pdf {
+        return Ok(vec![import_plan(path)?]);
+    }
+    let bytes = std::fs::read(path)?;
+    let n = crate::pdf::page_count(bytes.clone())?.min(MAX_PDF_PAGES);
+    let mut out = Vec::with_capacity(n);
+    for page in 0..n {
+        let png = crate::pdf::rasterize_page(bytes.clone(), page)?.png;
+        let image = PlanImage {
+            extension: "png".to_owned(),
+            bytes: png,
+        };
+        let decoded = decode_plan(&image)?;
+        out.push(ImportedPlan {
+            image,
+            decoded,
+            source_pdf: Some(bytes.clone()),
+            source_page: page,
+        });
+    }
+    Ok(out)
 }
 
 /// Reads a floor plan file and checks that it decodes.
@@ -60,6 +95,7 @@ pub fn import_plan(path: &Path) -> Result<ImportedPlan, IoError> {
         image: plan,
         decoded,
         source_pdf,
+        source_page: 0,
     })
 }
 
@@ -137,5 +173,24 @@ mod tests {
             bytes: vec![1, 2, 3],
         };
         assert!(decode_plan(&plan).is_err());
+    }
+
+    #[test]
+    fn multi_page_pdfs_give_one_plan_per_page() {
+        let dir = std::env::temp_dir().join(format!("ondalux-pages-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("plans.pdf");
+        std::fs::write(&path, crate::pdf::tests::two_page_pdf()).unwrap();
+        let pages = import_plan_pages(&path).unwrap();
+        assert_eq!(pages.len(), 2);
+        assert_eq!((pages[0].source_page, pages[1].source_page), (0, 1));
+        // 2:1 and 3:1 pages, both scaled to the same longest side.
+        assert!(pages[1].decoded.height < pages[0].decoded.height);
+        assert!(pages.iter().all(|p| p.source_pdf.is_some()));
+        // Images give a single plan.
+        let png = dir.join("plan.png");
+        std::fs::write(&png, png_bytes(40, 20)).unwrap();
+        assert_eq!(import_plan_pages(&png).unwrap().len(), 1);
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

@@ -8,6 +8,7 @@ A `.lux` file is a standard ZIP archive. Any unzip tool can open it.
 | `floorplan.png` / `floorplan.jpg` | stored | Original floor plan image bytes (optional) |
 | `floorplan-source.pdf` | deflated | Original PDF the plan was imported from (optional), used for wall detection |
 | `floors/<n>/floorplan.<ext>`, `floors/<n>/floorplan-source.pdf` | as above | The same for floor `n` (0-based, building order) when `n` ≥ 1; the lowest floor uses the entries above |
+| `[floors/<n>/]floorplan-source.json` | deflated | Optional: `{"page": p, "same_as": m}`. The plan is page `p` (0-based) of the source PDF, and the PDF bytes are stored in floor `m`'s entry (a multi-page PDF imported as several floors is stored once). Absent = page 0, PDF in this floor's entry |
 
 Why ZIP instead of compressed JSON: the floor plan image is already compressed
 and can be large, so it is stored as-is next to a human-readable JSON file.

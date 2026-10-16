@@ -9,7 +9,7 @@ use eframe::egui::{self, Color32, Stroke};
 use ondalux_core::geometry::{Segment, Vec2 as WVec2};
 use ondalux_core::material::{MaterialId, Wall};
 use ondalux_core::walldetect::DetectedWall;
-use ondalux_io::walls::{plan_mask, MaskSource, PlanMask, Tuning};
+use ondalux_io::walls::{plan_mask_page, MaskSource, PlanMask, Tuning};
 use std::sync::mpsc::{self, Receiver};
 use std::sync::Arc;
 
@@ -81,6 +81,7 @@ pub fn start(app: &mut OndaluxApp, ctx: &egui::Context) {
         return;
     };
     let source = doc.plan_source().cloned();
+    let page = doc.assets().plan_source_page;
     let st = &mut app.walls;
     *st = WallDetectState {
         open: true,
@@ -95,7 +96,7 @@ pub fn start(app: &mut OndaluxApp, ctx: &egui::Context) {
         .name("wall-mask".into())
         .spawn(move || {
             let result = ondalux_io::decode_plan(&image)
-                .and_then(|decoded| plan_mask(&decoded, source.as_deref()))
+                .and_then(|decoded| plan_mask_page(&decoded, source.as_deref(), page))
                 .map_err(|e| e.to_string());
             let _ = tx.send(result);
             ctx.request_repaint();

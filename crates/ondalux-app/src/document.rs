@@ -36,7 +36,7 @@ impl Document {
     pub fn new(project: Project, plan_image: Option<PlanImage>, path: Option<PathBuf>) -> Self {
         let floors = vec![Arc::new(FloorAssets {
             plan_image,
-            plan_source: None,
+            ..Default::default()
         })];
         let mut doc = Self {
             project,
@@ -91,13 +91,25 @@ impl Document {
         self.floors[i] = Arc::new(assets);
     }
 
-    /// Adds a floor at `index` (building order) and makes it active.
-    pub fn add_floor(&mut self, index: usize, floor: Floor, assets: FloorAssets) {
+    /// Adds floors from `index` up (building order), as one undo step, and
+    /// makes the first one active.
+    pub fn add_floors(&mut self, index: usize, floors: Vec<(Floor, FloorAssets)>) {
+        if floors.is_empty() {
+            return;
+        }
         self.checkpoint();
         let index = index.min(self.project.floor_count());
-        self.project.insert_floor(index, floor);
-        self.floors.insert(index, Arc::new(assets));
+        for (k, (floor, assets)) in floors.into_iter().enumerate() {
+            self.project.insert_floor(index + k, floor);
+            self.floors.insert(index + k, Arc::new(assets));
+        }
         self.project.set_active_floor(index);
+    }
+
+    /// Adds one floor at `index` and makes it active.
+    #[cfg(test)]
+    pub fn add_floor(&mut self, index: usize, floor: Floor, assets: FloorAssets) {
+        self.add_floors(index, vec![(floor, assets)]);
     }
 
     /// Removes floor `index` (never the only one).
@@ -231,7 +243,7 @@ mod tests {
             floor,
             FloorAssets {
                 plan_image: Some(img(2)),
-                plan_source: None,
+                ..Default::default()
             },
         );
         assert_eq!(d.project.floor_index, 1);

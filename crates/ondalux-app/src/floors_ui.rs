@@ -7,7 +7,7 @@ use crate::style::{self, icon};
 use crate::tr;
 use eframe::egui;
 use ondalux_core::project::{Floor, FloorInfo, Project};
-use ondalux_io::{import_plan, FloorAssets};
+use ondalux_io::{import_plan, import_plan_pages, FloorAssets};
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -125,16 +125,28 @@ pub fn switch(app: &mut OndaluxApp, i: usize) {
     }
 }
 
+/// Plan files of an imported page.
+pub fn assets_of(p: &ondalux_io::ImportedPlan) -> FloorAssets {
+    FloorAssets {
+        plan_image: Some(p.image.clone()),
+        plan_source: p.source_pdf.clone(),
+        plan_source_page: p.source_page,
+    }
+}
+
+/// Adds a floor above or below the active one: a copy of its plan, or the
+/// plan(s) in a file (a multi-page PDF adds one floor per page, in page
+/// order going up).
 fn add_floor(app: &mut OndaluxApp, above: bool, same_plan: bool) {
     let Some(doc) = &app.doc else {
         return;
     };
     let current = doc.project.floor_index;
     let index = if above { current + 1 } else { current };
-    let (mut floor, assets) = if same_plan {
+    let new: Vec<(Floor, FloorAssets)> = if same_plan {
         let mut f = Floor::new(FloorInfo::default(), 0, 0);
         f.plan = doc.project.plan.clone();
-        (f, (**doc.assets()).clone())
+        vec![(f, (**doc.assets()).clone())]
     } else {
         let Some(path) = rfd::FileDialog::new()
             .set_title(t("Plano del nuevo piso", "Floor plan of the new floor"))
@@ -143,24 +155,19 @@ fn add_floor(app: &mut OndaluxApp, above: bool, same_plan: bool) {
         else {
             return;
         };
-        match import_plan(&path) {
-            Ok(imported) => {
-                let mut f = Floor::new(
-                    FloorInfo::default(),
-                    imported.decoded.width,
-                    imported.decoded.height,
-                );
-                // Same drawing size: most likely the same scale.
-                let cur = &doc.project.plan;
-                if (cur.width_px, cur.height_px) == (f.plan.width_px, f.plan.height_px) {
-                    f.plan.calibration = cur.calibration;
-                }
-                let assets = FloorAssets {
-                    plan_image: Some(imported.image),
-                    plan_source: imported.source_pdf,
-                };
-                (f, assets)
-            }
+        match import_plan_pages(&path) {
+            Ok(pages) => pages
+                .iter()
+                .map(|p| {
+                    let mut f = Floor::new(FloorInfo::default(), p.decoded.width, p.decoded.height);
+                    // Same drawing size: most likely the same scale.
+                    let cur = &doc.project.plan;
+                    if (cur.width_px, cur.height_px) == (f.plan.width_px, f.plan.height_px) {
+                        f.plan.calibration = cur.calibration;
+                    }
+                    (f, assets_of(p))
+                })
+                .collect(),
             Err(e) => {
                 app.error(tr!(
                     "No se pudo importar {}: {e}",
@@ -171,31 +178,41 @@ fn add_floor(app: &mut OndaluxApp, above: bool, same_plan: bool) {
             }
         }
     };
+    if new.is_empty() {
+        return;
+    }
     let Some(doc) = &mut app.doc else {
         return;
     };
-    // Name floors so APs seen from other floors say where they are.
-    let n = doc.project.floor_count();
-    if doc.project.floor.name.trim().is_empty() && n == 1 {
-        doc.project.floor.name = label(&doc.project, 0);
-    }
-    floor.info.height_m = doc.project.floor.height_m;
-    floor.info.slab_loss_db = doc.project.floor.slab_loss_db;
-    floor.info.offset_m = doc.project.floor.offset_m;
-    let calibrated = floor.plan.calibration.is_some();
-    doc.add_floor(index, floor, assets);
-    // Default name from its position.
-    doc.project.floor.name = tr!("Piso {}", "Floor {}", index + 1);
-    app.info(if calibrated {
-        t(
+    let template = doc.project.floor.clone();
+    let count = new.len();
+    let calibrated = new.iter().all(|(f, _)| f.plan.calibration.is_some());
+    let new = new
+        .into_iter()
+        .map(|(mut floor, assets)| {
+            // Unnamed: shown as "Floor n" by position, in the UI language.
+            floor.info.height_m = template.height_m;
+            floor.info.slab_loss_db = template.slab_loss_db;
+            floor.info.offset_m = template.offset_m;
+            (floor, assets)
+        })
+        .collect();
+    doc.add_floors(index, new);
+    app.info(match (count, calibrated) {
+        (1, true) => t(
             "Piso agregado. Dibuja sus muros y coloca sus APs.",
             "Floor added. Draw its walls and place its APs.",
         )
-    } else {
-        t(
+        .to_owned(),
+        (1, false) => t(
             "Piso agregado. Calibra la escala de su plano.",
             "Floor added. Calibrate the scale of its plan.",
         )
+        .to_owned(),
+        (n, _) => tr!(
+            "{n} pisos agregados, uno por página del PDF.",
+            "{n} floors added, one per page of the PDF."
+        ),
     });
     if !calibrated {
         app.tool = crate::app::Tool::Calibrate;
@@ -363,10 +380,7 @@ fn replace_floor_plan(app: &mut OndaluxApp) {
             if !same_size {
                 plan.calibration = None;
             }
-            doc.set_assets(FloorAssets {
-                plan_image: Some(imported.image),
-                plan_source: imported.source_pdf,
-            });
+            doc.set_assets(assets_of(&imported));
             if same_size {
                 app.info(t("Plano reemplazado.", "Plan replaced."));
             } else {

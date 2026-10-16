@@ -33,11 +33,20 @@ pub struct PlanMask {
 /// Builds the mask: from the PDF when available and it has enough line
 /// art, otherwise from the image.
 pub fn plan_mask(plan: &DecodedPlan, source_pdf: Option<&[u8]>) -> Result<PlanMask, IoError> {
+    plan_mask_page(plan, source_pdf, 0)
+}
+
+/// Like [`plan_mask`], with the plan on page `page` of the PDF.
+pub fn plan_mask_page(
+    plan: &DecodedPlan,
+    source_pdf: Option<&[u8]>,
+    page: usize,
+) -> Result<PlanMask, IoError> {
     let (w, h) = (plan.width as usize, plan.height as usize);
     let factor = w.max(h).div_ceil(DETECT_MAX_SIDE).max(1);
     let (mw, mh) = (w.div_ceil(factor), h.div_ceil(factor));
     if let Some(pdf) = source_pdf {
-        if let Ok(mask) = crate::pdf::vector_mask(pdf.to_vec(), mw, mh) {
+        if let Ok(mask) = crate::pdf::vector_mask(pdf.to_vec(), page, mw, mh) {
             // A scanned PDF has (almost) no line art: fall back to the image.
             if mask.ink_count() > mw * mh / 500 {
                 let auto = walldetect::estimate_params(&mask);
