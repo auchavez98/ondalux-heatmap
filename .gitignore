@@ -2,3 +2,5 @@
 *.lux.bak
 .claude/
 /dist
+# The website is kept outside the repository.
+/website/

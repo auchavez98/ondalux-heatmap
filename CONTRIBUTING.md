@@ -39,8 +39,6 @@ changes for the user. Formatting, clippy and tests must pass. New
 behavior needs a test; RF model changes need an update to
 [docs/rf-models.md](docs/rf-models.md).
 
-The website lives in [`website/`](website/README.md).
-
 ## Support
 
 Questions that are not bugs: support@ondaluxheatmap.com

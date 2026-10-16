@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to Ondalux Heatmap. Also published at https://ondaluxheatmap.com/changelog/
-(Spanish: https://ondaluxheatmap.com/es/novedades/). Source: `website/src/releases.json`.
+(Spanish: https://ondaluxheatmap.com/es/novedades/).
 
 ## 0.2.0 — 2026-10-16
 
