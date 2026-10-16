@@ -120,8 +120,6 @@ fn ui_shots() {
             })
             .collect();
         let assets = (**doc.assets()).clone();
-        doc.project.floor.name = "Piso 1".into();
-        floor.info.name = "Piso 2".into();
         doc.add_floor(1, floor, assets);
     }
     h.state_mut().selection = Selection::None;

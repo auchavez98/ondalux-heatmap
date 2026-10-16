@@ -8,7 +8,7 @@ maps, written in Rust.
 **[Website](https://ondaluxheatmap.com)** ·
 **[Download for Windows](https://ondaluxheatmap.com/#download)** ·
 **[WiFi design guide](https://ondaluxheatmap.com/guide/)** ·
-[Contributing](CONTRIBUTING.md) · Support: support@ondaluxheatmap.com
+[Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · Support: support@ondaluxheatmap.com
 
 Windows builds are portable (a single `.exe`, no installer). macOS and
 Linux build from source; their WiFi scanning backends are not yet tested on
