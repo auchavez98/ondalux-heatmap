@@ -177,6 +177,8 @@ pub struct OndaluxApp {
 
 /// Source code repository.
 pub const REPO_URL: &str = "https://github.com/auchavez98/ondalux-heatmap";
+/// Donations page.
+pub const SUPPORT_URL: &str = "https://buymeacoffee.com/ondaluxheatmap";
 
 /// How long status bar messages stay visible.
 const STATUS_TTL: Duration = Duration::from_secs(6);
@@ -1048,6 +1050,20 @@ impl OndaluxApp {
                 {
                     ui.ctx()
                         .open_url(egui::OpenUrl::new_tab(format!("{REPO_URL}/issues")));
+                }
+                if ui
+                    .button(format!(
+                        "{}  {}",
+                        icon::COFFEE,
+                        t("Apoyar el proyecto", "Support the project")
+                    ))
+                    .on_hover_text(t(
+                        "Ondalux es gratis y de código abierto. Invítanos un café en Buy Me a Coffee.",
+                        "Ondalux is free and open source. Buy us a coffee on Buy Me a Coffee.",
+                    ))
+                    .clicked()
+                {
+                    ui.ctx().open_url(egui::OpenUrl::new_tab(SUPPORT_URL));
                 }
                 ui.separator();
                 let checking = self.update.busy();

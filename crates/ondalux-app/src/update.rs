@@ -247,6 +247,20 @@ pub fn window(app: &mut OndaluxApp, ctx: &egui::Context) {
             "Tus proyectos no se modifican. Instala la nueva versión cuando quieras.",
             "Your projects are not changed. Install the new version whenever you like.",
         ));
+        ui.add_space(6.0);
+        ui.horizontal(|ui| {
+            ui.weak(t("¿Te sirve Ondalux?", "Finding Ondalux useful?"));
+            if ui
+                .link(format!(
+                    "{}  {}",
+                    icon::COFFEE,
+                    t("Invítanos un café", "Buy us a coffee")
+                ))
+                .clicked()
+            {
+                ctx.open_url(egui::OpenUrl::new_tab(crate::app::SUPPORT_URL));
+            }
+        });
     });
     match action {
         Some(0) => {
